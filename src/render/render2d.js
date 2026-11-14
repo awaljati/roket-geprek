@@ -117,21 +117,22 @@ export function createRenderer(canvas) {
         ctx.stroke();
       }
     } else {
+      // Titik posisi roket = ekor roket, supaya roket berdiri tepat di permukaan Bumi.
       if (f.thrusting) {
         ctx.fillStyle = COLORS.flame;
         ctx.beginPath();
-        ctx.moveTo(-3, -8);
-        ctx.lineTo(3, -8);
-        ctx.lineTo(0, -16 - Math.random() * 6);
+        ctx.moveTo(-3, 0);
+        ctx.lineTo(3, 0);
+        ctx.lineTo(0, -8 - Math.random() * 6);
         ctx.fill();
       }
       ctx.fillStyle = COLORS.rocket;
       ctx.beginPath();
-      ctx.moveTo(0, 12);
-      ctx.lineTo(4, 4);
-      ctx.lineTo(4, -8);
-      ctx.lineTo(-4, -8);
-      ctx.lineTo(-4, 4);
+      ctx.moveTo(0, 20);
+      ctx.lineTo(4, 12);
+      ctx.lineTo(4, 0);
+      ctx.lineTo(-4, 0);
+      ctx.lineTo(-4, 12);
       ctx.closePath();
       ctx.fill();
     }

@@ -19,7 +19,9 @@ const COLORS = {
   prediction: 0xffffff,
   station: 0xffd54a,
 };
-const TILT = (22 * Math.PI) / 180; // kemiringan kamera supaya planet terlihat bulat 3D
+// Kamera tegak lurus bidang permainan, supaya posisi roket di tepi Bumi tepat seperti fisikanya.
+// Planet tetap terlihat 3D dari tekstur dan cahaya; pemain bisa memutar pandangan sendiri.
+const TILT = 0;
 
 export async function createRenderer(canvas) {
   const THREE = await import('three');
@@ -163,6 +165,8 @@ export async function createRenderer(canvas) {
     const thrust = kind === 'capsule' ? v.craft.thrusting : v.flight && v.flight.thrusting;
     const flicker = thrust ? Math.floor(performance.now() / 60) % 3 : 0;
     const key = [kind, thrust, flicker, v.panelsOpen, v.antennaOpen, v.phase].join('|');
+    // Roket berdiri di ekornya (titik posisi = ekor); CubeSat dan kapsul di tengahnya.
+    craft.center.set(0.5, kind === 'rocket' ? 1 - 92 / 128 : 0.5);
     if (key === craftKey) return;
     craftKey = key;
     const c = craftCanvas.getContext('2d');
