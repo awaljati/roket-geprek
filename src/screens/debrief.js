@@ -21,6 +21,13 @@ export function debriefScreen(app, el) {
     <p><b>${r.success ? 'Misi berhasil' : 'Misi gagal'}</b>${r.failCode ? ` · ${r.failCode}` : ''}</p>
     ${r.failCode ? `<p>${FAIL_CODES[r.failCode]}</p>` : ''}
     <p class="muted">Skor ${r.score} · Sisa bahan bakar ${Math.round(r.fuelLeft * 100)}%${app.level === 2 ? ` · Foto berguna ${r.photos}` : ''}</p>
+    ${
+      app.level === 1 && r.orbitErrorPct != null
+        ? `<p class="muted">Ketepatan masuk orbit: meleset ${String(r.orbitErrorPct).replace('.', ',')}%${
+            r.orbitErrorPct <= L.orbitAccuracyFor3StarsPct ? ' ✓' : ` (bintang 3 butuh maksimal ${L.orbitAccuracyFor3StarsPct}%)`
+          }</p>`
+        : ''
+    }
     ${showHint ? `<p class="card">Hint: ${L.hint}</p>` : ''}
     <p class="card">Misi nyata yang mirip: ${M.realMission}</p>
     <div class="row">

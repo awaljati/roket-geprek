@@ -63,7 +63,7 @@ export function stepAssist(a, s, ctrl) {
   if (a.stage === 'coast') {
     ctrl.mode = 'prograde';
     const nearTop = o.radial < 4;
-    a.msg = nearTop ? 'SEKARANG! Tekan Gas + (W) untuk menambah kecepatan.' : 'Mesin mati, roket meluncur naik. Tunggu sampai hampir di puncak…';
+    a.msg = nearTop ? 'SEKARANG! Tekan Gas + (W). Makin cepat bereaksi, makin tepat orbitnya.' : 'Mesin mati, roket meluncur naik. Tunggu sampai hampir di puncak…';
     a.urgent = nearTop;
     if (ctrl.throttle > 0) a.stage = 'burn2';
   }
