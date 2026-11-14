@@ -35,7 +35,18 @@ export function debriefScreen(app, el) {
     }
     ${
       app.level === 3 && r.landingSpeed != null
-        ? `<p class="muted">Saat menyentuh permukaan: ${String(r.landingSpeed).replace('.', ',')} u/s (maks. ${L.maxLandingSpeed}) · miring ${r.landingTiltDeg}° (maks. ${L.maxLandingTiltDeg}°)</p>`
+        ? `<p class="muted">Saat menyentuh permukaan: ${String(r.landingSpeed).replace('.', ',')} u/s (maks. ${L.maxLandingSpeed}) · miring ${r.landingTiltDeg}° (maks. ${
+            r.landingSite ? L.sites[r.landingSite].maxTiltDeg : L.maxLandingTiltDeg
+          }°)</p>
+          <p class="muted">Titik pendaratan: ${
+            r.landingSite
+              ? `<b>${L.sites[r.landingSite].name}</b> (es ${L.sites[r.landingSite].ice}) · bintang maks. ${L.sites[r.landingSite].maxStars}${
+                  r.landingSite === 'crater' && r.success && r.stars < 3
+                    ? ` (bintang 3 butuh mendarat ≤ ${L.smoothLandingSpeed} u/s dan sisa bahan bakar ≥ ${Math.round(L.minFuelFor3Stars * 100)}%)`
+                    : ''
+                }`
+              : `di luar kedua titik · bintang maks. ${L.outsideMaxStars}`
+          }</p>`
         : ''
     }
     <p class="card">${

@@ -115,16 +115,29 @@ export function mountSpecialistPanel2(container, send) {
   };
 }
 
-// Panel Spesialis Level 3: membacakan angka pendaratan ke Navigator (belum ada tombol wahana).
-export function mountSpecialistPanel3(container) {
+// Panel Spesialis Level 3: memilih titik pendaratan dan membacakan angka pendaratan ke Navigator.
+export function mountSpecialistPanel3(container, send) {
   container.innerHTML = `
     <h2>Spesialis</h2>
     <div class="status" id="sp-status"></div>
+    <div class="card"><b>Titik pendaratan</b>
+      <button id="sp-ridge">Puncak bukit (1)</button>
+      <button id="sp-crater">Dekat kawah gelap (2)</button>
+      <small class="muted" id="sp-site"></small>
+    </div>
     <div class="card" id="sp-read"></div>
     <div>Bahan bakar</div><div class="bar"><i id="sp-fuel"></i></div>
     <small class="muted" id="sp-log"></small>
   `;
   const $ = (s) => container.querySelector(s);
+  $('#sp-ridge').onclick = () => send('siteRidge');
+  $('#sp-crater').onclick = () => send('siteCrater');
+  window.addEventListener('keydown', onKey);
+  function onKey(e) {
+    if (!container.isConnected) return window.removeEventListener('keydown', onKey);
+    if (e.key === '1') send('siteRidge');
+    if (e.key === '2') send('siteCrater');
+  }
 
   return function update(v) {
     if (!v) return;
@@ -134,14 +147,24 @@ export function mountSpecialistPanel3(container) {
       v.phase === 'orbit'
         ? 'Di orbit rendah Bulan. Minta Navigator mengerem (Gas +).'
         : v.phase === 'descent'
-          ? Math.abs(v.vSide) > 3
-            ? 'Masih bergeser ke samping: rem dulu.'
+          ? !v.siteChoice
+            ? 'Pilih titik pendaratan sekarang!'
             : tooFast
               ? 'Aba-aba: TERLALU CEPAT, tambah gas!'
-              : 'Aba-aba: kecepatan turun pas.'
+              : `Aba-aba: ${v.direction}`
           : v.phase === 'landed'
             ? 'Mendarat!'
             : 'Misi selesai.';
+    const canPick = v.phase === 'descent' && v.sites;
+    for (const [id, btn] of [['ridge', '#sp-ridge'], ['crater', '#sp-crater']]) {
+      const s = v.sites && v.sites.find((x) => x.id === id);
+      $(btn).disabled = !canPick || v.siteChoice === id;
+      $(btn).className = v.siteChoice === id ? 'primary' : '';
+      $(btn).innerHTML = s
+        ? `${s.name}${v.siteChoice === id ? ' ✓' : ''} (${id === 'ridge' ? 1 : 2})<br><small>${s.about} ★ maks. ${s.maxStars}</small>`
+        : `${id === 'ridge' ? 'Puncak bukit' : 'Dekat kawah gelap'} (setelah mulai turun)`;
+    }
+    $('#sp-site').textContent = v.direction || '';
     const ok = (b) => (b ? '✓' : '⚠');
     $('#sp-read').innerHTML = `
       <div>Ketinggian: <b>${v.altitude.toFixed(0)} u</b></div>

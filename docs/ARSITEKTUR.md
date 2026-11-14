@@ -63,6 +63,9 @@ Tampilan samping: permukaan Bulan berbukit di bawah, pendarat bergerak di bidang
 3. **Gas 50% = melayang** untuk massa acuan (`thrustToWeight: 2`). Pendarat yang lebih berat butuh gas lebih besar.
 4. **Mendarat:** kecepatan total ≤ `maxLandingSpeed` dan miring ≤ `maxLandingTiltDeg`. Selain itu F-CRASH. Tanpa mesin pendarat: F-CRASH langsung.
 
+5. **Titik pendaratan (tahap 2):** permukaan punya sepasang tempat yang berulang setiap `sitePeriod` u: *Puncak bukit* (landasan lebar, selalu di atas garis sinar Matahari, bintang maks. 2) dan *Dekat kawah gelap* (landasan sempit di balik bukit kecil, dalam bayangan, miring maks. 5°, bintang 3 kalau mulus). Saat mulai turun, pasangan di depan pendarat diberi penanda. Spesialis memilih dengan perintah `siteRidge` / `siteCrater`; bantuan pilot menggeser pendarat ke titik itu. Mendarat di luar titik tetap sah, bintang maks. 2.
+6. **Bayangan:** Matahari rendah di kiri (`sunElevationDeg`). Level menghitung titik permukaan yang dalam bayangan dan bayangan pendarat, lalu mengirimnya di snapshot (`terrain[i].s`, `craftShadow`); tampilan hanya menggambar.
+
 Semua angka ada di `LEVELS[3]` (`src/data/levels.js`). Level 3 selalu memakai tampilan 2D (belum ada versi 3D).
 
 ## Tampilan 3D
