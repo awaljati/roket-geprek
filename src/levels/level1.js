@@ -80,7 +80,7 @@ export function stepLevel1(game, ctrl, dt) {
 
   if (game.phase === 'launch' || game.phase === 'release') {
     // Naik ke orbit diperlambat supaya pemain sempat bereaksi.
-    const flightDt = game.phase === 'launch' ? dt * L.launchTimeScale : dt;
+    const flightDt = dt * (game.phase === 'launch' ? L.launchTimeScale : L.orbitTimeScale);
     if (game.assist && game.phase === 'launch' && ctrl) stepAssist(game.assist, game.flight, ctrl);
     stepFlight(game.flight, ctrl, flightDt);
     if (game.flight.failCode) return finish(game, false, game.flight.failCode);
@@ -92,7 +92,7 @@ export function stepLevel1(game, ctrl, dt) {
   }
 
   // Setelah dilepas, CubeSat tetap mengorbit (tanpa dorongan).
-  stepFlight(game.flight, null, dt);
+  stepFlight(game.flight, null, dt * L.orbitTimeScale); // CubeSat mengorbit pelan supaya mudah diikuti
 
   game.battery = Math.min(game.batteryMax, game.battery + netPower(game) * WH_PER_WATT_SECOND * dt);
   if (game.battery <= 0) return finish(game, false, 'F-POWER');
