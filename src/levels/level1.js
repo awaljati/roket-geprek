@@ -181,7 +181,7 @@ export function snapshotLevel1(game, withTrail = true) {
     released: !!game.releasedOnce,
     flight: {
       x: f.x, y: f.y, vx: f.vx, vy: f.vy, angle: f.angle, fuel: f.fuel,
-      status: f.status, thrusting: !!f.thrusting, inRing: !!f.inRing, inRingFor: f.inRingFor,
+      status: f.status, thrusting: !!f.thrusting, earthAngle: f.earthAngle, inRing: !!f.inRing, inRingFor: f.inRingFor,
       trail: withTrail ? f.trail : [],
     },
     countdown: game.countdown,

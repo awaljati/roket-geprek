@@ -2,7 +2,9 @@
 // Bantuan mengatur ARAH roket (gravity turn) dan mematikan mesin di saat yang pas.
 // Pemain tetap menyalakan mesin sendiri: saat lepas landas dan saat di puncak lintasan.
 
-import { orbitExtremes, orbitCheck } from './flight.js';
+import { orbitExtremes, orbitCheck, positionAngle } from './flight.js';
+
+const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 
 const TILT_START_ALT = 6; // u di atas permukaan
 const TILT_ANGLE = (70 * Math.PI) / 180;
@@ -24,7 +26,8 @@ export function stepAssist(a, s, ctrl) {
     a.stage = 'pad';
     a.msg = s.padTooWeak ? 'Gas belum cukup. Tekan Gas + sampai 100%.' : 'Tekan Gas + (W) sampai 100% untuk lepas landas.';
     ctrl.mode = 'manual';
-    ctrl.targetAngle = 0;
+    ctrl.targetAngle = s.padAngle;
+    a.launchAngle = positionAngle(s);
     return a;
   }
   if (s.status === 'orbit') {
@@ -38,8 +41,10 @@ export function stepAssist(a, s, ctrl) {
   if (a.stage === 'pad' || a.stage === 'climb') {
     a.stage = 'climb';
     ctrl.mode = 'manual';
-    ctrl.targetAngle = alt > TILT_START_ALT ? TILT_ANGLE : 0;
-    if (alt > TILT_START_ALT && Math.abs(s.angle - TILT_ANGLE) < 0.05) {
+    // Miring relatif terhadap arah "atas" di landasan (landasan ikut berputar bersama Bumi).
+    const tilt = a.launchAngle + TILT_ANGLE;
+    ctrl.targetAngle = alt > TILT_START_ALT ? tilt : a.launchAngle;
+    if (alt > TILT_START_ALT && Math.abs(wrap(s.angle - tilt)) < 0.05) {
       ctrl.mode = 'prograde';
       a.stage = 'burn1';
     }
