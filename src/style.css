@@ -98,3 +98,15 @@ button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 .level-foot { margin-top: auto; display: flex; justify-content: space-between; align-items: center; }
 .tag { font-size: 0.75rem; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
 .stars-sm { color: var(--warn); letter-spacing: 2px; }
+/* Battle */
+select { font: inherit; padding: 10px; border-radius: 10px; border: 1px solid var(--line); background: #0b1020; color: var(--text); }
+.team-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+table.score { width: 100%; border-collapse: collapse; margin-top: 8px; font-variant-numeric: tabular-nums; }
+table.score th, table.score td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); }
+table.score th { color: var(--muted); font-weight: 600; font-size: 0.85rem; }
+.big-code { font-size: 3.4rem; letter-spacing: 14px; }
+.center-text { text-align: center; }
+.winner { color: var(--warn); font-weight: 700; }
+.battle-timer { font-weight: 800; font-size: 1.1rem; padding: 8px 14px; border-radius: 10px; background: var(--panel); border: 1px solid var(--line); align-self: flex-start; }
+.battle-timer.floating { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); z-index: 3; }
+.battle-timer.urgent { background: var(--bad); border-color: var(--bad); color: #fff; }

@@ -33,6 +33,8 @@ Satu pemain jadi **Navigator** yang menyetir roket, satu lagi jadi **Spesialis**
 4. **Terbang:** Navigator mengatur gas dan arah, Spesialis membuka panel, mengirim sinyal, memotret, dan membaca prediksi lintasan.
 5. **Debrief:** bintang, skor, alasan gagal, dan misi NASA nyata yang mirip.
 
+**Mode Battle (2–3 tim):** satu perangkat (misalnya laptop di proyektor) membuka *Buat battle* sebagai layar skor. Setiap tim bergabung dengan kode battle, memilih tim (Merah, Biru, Hijau) dan peran. Layar skor memulai level; semua tim mendapat penyimpangan acak yang sama, waktu Rakit 3 menit dan Terbang 5 menit, tanpa ulangi misi. Setelah tiap level, papan skor menjelaskan kenapa pemenangnya unggul, lalu hasil akhir menjumlahkan semua level. Dana cadangan tidak dipakai di Battle.
+
 **Dana misi:** misi yang berhasil dan hemat memberi dana (bintang, sisa anggaran, bonus orbit tepat atau foto lengkap). Dana cadangan bisa ditambahkan ke anggaran misi berikutnya di layar Rakit, maksimal 50% anggaran level, seperti misi sungguhan yang mendapat pendanaan lanjutan.
 
 **Bantuan pilot** (default nyala) mengatur arah roket secara otomatis dan memberi tahu kapan harus menekan tombol, cocok untuk pemula. Bisa dimatikan di layar Rakit.

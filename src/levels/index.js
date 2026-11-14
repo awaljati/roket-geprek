@@ -29,3 +29,8 @@ export const LEVEL_MODULES = {
 };
 
 export const LAST_LEVEL = 2;
+
+// Hasil kalau waktu battle habis (bentuk sama dengan hasil level lain).
+export function timeoutResult(fuelLeft = 0) {
+  return { success: false, failCode: 'F-TIME', stars: 0, score: 0, fuelLeft, photos: 0, reward: 0 };
+}

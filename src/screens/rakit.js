@@ -2,6 +2,8 @@ import { LEVELS, CUBESAT_SIZES, ROCKETS } from '../data/levels.js';
 import { LEVEL_MODULES } from '../levels/index.js';
 import { REWARD } from '../data/levels.js';
 import { getFunds } from './progress.js';
+import { BATTLE_LIMITS } from './battle.js';
+import { timeoutResult } from '../levels/index.js';
 
 export function rakitScreen(app, el) {
   const L = LEVELS[app.level];
@@ -43,6 +45,7 @@ export function rakitScreen(app, el) {
       <b>Bahan bakar ${isCubeSat ? 'roket' : 'kapsul'}: <span id="fuelv"></span></b>
       <input type="range" id="fuel" min="1" max="10" step="1" style="width:100%">
     </div>
+    ${app.battle ? '<div class="battle-timer" id="btimer"></div>' : ''}
     <div class="card" id="fundsCard"></div>
     <div class="card" id="bars"></div>
     <div class="row">
@@ -69,9 +72,12 @@ export function rakitScreen(app, el) {
     $('#assist').onchange = () => (b.assist = $('#assist').checked);
   }
   // Dana cadangan: maksimal 50% anggaran level, dan tidak lebih dari dana yang dimiliki.
-  const funds = getFunds();
+  // Di mode Battle dana cadangan tidak dipakai, supaya semua tim mulai dengan anggaran yang sama.
+  const funds = app.battle ? 0 : getFunds();
   const maxExtra = Math.min(funds, Math.floor(L.budget * REWARD.maxExtraShare));
+  if (app.battle) b.extraBudget = 0;
   b.extraBudget = Math.min(b.extraBudget || 0, maxExtra);
+  if (app.battle) $('#fundsCard').style.display = 'none';
   $('#fundsCard').innerHTML =
     maxExtra > 0
       ? `<b>Dana cadangan: ${funds} juta $</b> <span class="muted">(dari misi sebelumnya)</span>
@@ -108,6 +114,26 @@ export function rakitScreen(app, el) {
   }
   update();
 
-  $('#back').onclick = () => app.go('levels');
+  $('#back').onclick = () => app.go(app.battle ? 'battle' : 'levels');
   $('#launch').onclick = () => app.go('flight');
+
+  // Batas waktu Rakit di mode Battle: saat habis, roket diluncurkan otomatis kalau desainnya valid.
+  let timer = null;
+  if (app.battle) {
+    const tick = () => {
+      const left = Math.max(0, Math.ceil((app.battle.rakitDeadline - Date.now()) / 1000));
+      $('#btimer').textContent = `Waktu rakit ${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
+      $('#btimer').classList.toggle('urgent', left <= 30);
+      if (left > 0) return;
+      clearInterval(timer);
+      if (!$('#launch').disabled) return app.go('flight');
+      app.result = timeoutResult();
+      app.battle.store.saveResult(app.battle.team, app.level, app.result);
+      app.go('debrief');
+    };
+    if (!app.battle.rakitDeadline) app.battle.rakitDeadline = Date.now() + BATTLE_LIMITS.rakitSec * 1000;
+    tick();
+    timer = setInterval(tick, 500);
+  }
+  return () => timer && clearInterval(timer);
 }

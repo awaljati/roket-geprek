@@ -7,13 +7,13 @@
 //   room.sendState(snapshot);       // dari Navigator, ~10x per detik
 //   room.saveResult(team, level, result);  // untuk battle
 
+import { hasFirebase, getFirebase } from './firebase.js';
+export { hasFirebase };
+
 export function makeRoomCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   return Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
 }
-
-const env = import.meta.env || {};
-export const hasFirebase = Boolean(env.VITE_FIREBASE_DATABASE_URL);
 
 export async function openRoom(code, handlers) {
   return hasFirebase ? openFirebaseRoom(code, handlers) : openLocalRoom(code, handlers);
@@ -40,21 +40,8 @@ function openLocalRoom(code, { onCmd, onState }) {
 }
 
 async function openFirebaseRoom(code, { onCmd, onState }) {
-  const { initializeApp, getApps } = await import('firebase/app');
-  const { getAuth, signInAnonymously } = await import('firebase/auth');
-  const { getDatabase, ref, push, set, onChildAdded, onValue, off } = await import('firebase/database');
-
-  const app =
-    getApps()[0] ||
-    initializeApp({
-      apiKey: env.VITE_FIREBASE_API_KEY,
-      authDomain: env.VITE_FIREBASE_AUTH_DOMAIN,
-      databaseURL: env.VITE_FIREBASE_DATABASE_URL,
-      projectId: env.VITE_FIREBASE_PROJECT_ID,
-      appId: env.VITE_FIREBASE_APP_ID,
-    });
-  await signInAnonymously(getAuth(app));
-  const db = getDatabase(app);
+  const { db, fb } = await getFirebase();
+  const { ref, push, set, onChildAdded, onValue, off } = fb;
   const cmdsRef = ref(db, `room/${code}/cmds`);
   const stateRef = ref(db, `room/${code}/state`);
   const startedAt = Date.now();

@@ -9,7 +9,7 @@ export function debriefScreen(app, el) {
   const M = LEVEL_MODULES[app.level];
   if (r.success) saveStars(app.level, r.stars);
   // Dana misi ditambahkan sekali untuk setiap hasil.
-  if (r.reward && !r.rewardPaid) {
+  if (r.reward && !r.rewardPaid && !app.battle) {
     addFunds(r.reward);
     r.rewardPaid = true;
   }
@@ -33,18 +33,28 @@ export function debriefScreen(app, el) {
           }</p>`
         : ''
     }
-    <p class="card">${
-      r.reward ? `Dana misi diterima: <b>+${r.reward} juta $</b>` : 'Misi gagal: tidak ada dana misi.'
-    } · Dana cadangan sekarang <b>${getFunds()} juta $</b><br><small class="muted">Bisa ditambahkan ke anggaran misi berikutnya di layar Rakit.</small></p>
+    ${
+      app.battle
+        ? ''
+        : `<p class="card">${r.reward ? `Dana misi diterima: <b>+${r.reward} juta $</b>` : 'Misi gagal: tidak ada dana misi.'} · Dana cadangan sekarang <b>${getFunds()} juta $</b><br><small class="muted">Bisa ditambahkan ke anggaran misi berikutnya di layar Rakit.</small></p>`
+    }
     ${showHint ? `<p class="card">Hint: ${L.hint}</p>` : ''}
     <p class="card">Misi nyata yang mirip: ${M.realMission}</p>
-    <div class="row">
+    ${
+      app.battle
+        ? '<div class="row"><button class="primary" id="board">Lihat papan skor</button></div><small class="muted">Mode Battle: tidak ada ulangi misi. Tunggu layar skor memulai level berikutnya.</small>'
+        : `<div class="row">
       <button id="again">Main lagi</button>
       <button id="retry">Ubah rakitan</button>
       <button class="primary" id="next" ${hasNext ? '' : 'disabled'}>${app.level >= LAST_LEVEL && r.success ? 'Level berikutnya belum dibuat' : 'Lanjut'}</button>
     </div>
-    <div class="row"><button id="levels">Pilih misi lain</button><button id="home">Menu utama</button></div>
+    <div class="row"><button id="levels">Pilih misi lain</button><button id="home">Menu utama</button></div>`
+    }
   `;
+  if (app.battle) {
+    el.querySelector('#board').onclick = () => app.go('battle');
+    return;
+  }
   el.querySelector('#again').onclick = () => app.go('flight');
   el.querySelector('#retry').onclick = () => app.go('rakit');
   el.querySelector('#home').onclick = () => app.go('home');

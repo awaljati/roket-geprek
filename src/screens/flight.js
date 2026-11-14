@@ -7,6 +7,8 @@ import { mountPanelFor } from './specialistPanel.js';
 import { createControls, controlAction } from '../engine/attitude.js';
 import { bindControls, helpHtml } from './controls.js';
 import { spendFunds } from './progress.js';
+import { BATTLE_LIMITS } from './battle.js';
+import { timeoutResult } from '../levels/index.js';
 
 const DT = 1 / 60;
 const MODE_NAME = { manual: 'manual', prograde: 'searah gerak', retrograde: 'lawan arah', left: 'kiri jalur', right: 'kanan jalur' };
@@ -19,6 +21,7 @@ export function flightScreen(app, el) {
       <div class="stage" id="stage"><canvas id="cv"></canvas></div>
       <div class="timeline" id="timeline"></div>
       <div class="coach" id="coach"></div>
+      ${app.battle ? '<div class="battle-timer floating" id="btimer"></div>' : ''}
       <div class="hud"><div id="hud"></div>
         <details><summary class="muted">Kontrol</summary><div class="keys">${helpHtml()}</div></details>
       </div>
@@ -28,10 +31,8 @@ export function flightScreen(app, el) {
         <div class="card pause-card">
           <h2>Misi dijeda</h2>
           <button class="primary" id="pResume">Lanjutkan</button>
-          <button id="pRestart">Ulangi misi</button>
-          <button id="pRakit">Ubah rakitan</button>
-          <button id="pView"></button>
-          <button id="pHome">Keluar ke menu utama</button>
+          ${app.battle ? '<small class="muted">Mode Battle: tidak ada ulangi misi, dan waktu tetap berjalan.</small>' : '<button id="pRestart">Ulangi misi</button><button id="pRakit">Ubah rakitan</button><button id="pView"></button>'}
+          <button id="pHome">${app.battle ? 'Keluar ke papan skor' : 'Keluar ke menu utama'}</button>
         </div>
       </div>
     </div>
@@ -40,8 +41,11 @@ export function flightScreen(app, el) {
   const $ = (s) => el.querySelector(s);
   const renderer = createView($('#stage'));
   // Dana cadangan yang dipakai terpotong setiap kali misi dimulai (termasuk Ulangi misi).
-  if (app.build.extraBudget) app.build.extraBudget = spendFunds(app.build.extraBudget);
-  const game = M.create(app.build, app.code || 'solo');
+  if (app.build.extraBudget && !app.battle) app.build.extraBudget = spendFunds(app.build.extraBudget);
+  // Di Battle semua tim memakai seed yang sama (kode battle + ronde), jadi kejadian acaknya sama.
+  const seed = app.battle ? `${app.battle.code}-${app.battle.round}` : app.code || 'solo';
+  const game = M.create(app.build, seed);
+  if (app.battle && !app.battle.flightDeadline) app.battle.flightDeadline = Date.now() + BATTLE_LIMITS.flightSec * 1000;
   const craft = () => game.flight || game.craft;
   const ctrl = createControls();
   let warp = 1;
@@ -75,15 +79,17 @@ export function flightScreen(app, el) {
   };
   $('#menuBtn').onclick = () => setPaused(true);
   $('#pResume').onclick = () => setPaused(false);
-  $('#pRestart').onclick = () => app.go('flight');
-  $('#pRakit').onclick = () => app.go('rakit');
-  $('#pHome').onclick = () => app.go('home');
+  if ($('#pRestart')) $('#pRestart').onclick = () => app.go('flight');
+  if ($('#pRakit')) $('#pRakit').onclick = () => app.go('rakit');
+  $('#pHome').onclick = () => app.go(app.battle ? 'battle' : 'home');
   // Ganti tampilan 2D/3D: misi diulang dengan tampilan baru.
-  $('#pView').textContent = prefers3D() ? 'Pakai tampilan 2D (lebih ringan)' : 'Pakai tampilan 3D';
-  $('#pView').onclick = () => {
-    setPrefer3D(!prefers3D());
-    app.go('flight');
-  };
+  if ($('#pView')) {
+    $('#pView').textContent = prefers3D() ? 'Pakai tampilan 2D (lebih ringan)' : 'Pakai tampilan 3D';
+    $('#pView').onclick = () => {
+      setPrefer3D(!prefers3D());
+      app.go('flight');
+    };
+  }
   const onEsc = (e) => {
     if (e.key === 'Escape' || e.key.toLowerCase() === 'p') setPaused(!paused);
   };
@@ -130,8 +136,15 @@ export function flightScreen(app, el) {
       app.room.sendState(M.snapshot(game, false));
       lastSend = now;
     }
+    if (app.battle && !game.result) {
+      const left = Math.max(0, Math.ceil((app.battle.flightDeadline - Date.now()) / 1000));
+      $('#btimer').textContent = `Waktu terbang ${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
+      $('#btimer').classList.toggle('urgent', left <= 30);
+      if (left === 0) game.result = timeoutResult((game.flight || game).fuel);
+    }
     if (game.result) {
       app.result = game.result;
+      if (app.battle) app.battle.store.saveResult(app.battle.team, app.level, game.result);
       if (app.room) {
         app.room.sendState(M.snapshot(game, false));
         app.room.saveResult('tim', app.level, game.result);

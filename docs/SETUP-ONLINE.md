@@ -7,7 +7,7 @@ Dikerjakan satu orang (sains data), sekitar 20 menit. Hasilnya: room bisa dipaka
 1. Buka https://console.firebase.google.com → **Add project** → nama `roket-geprek` → Google Analytics boleh dimatikan → **Create project**.
 2. Menu kiri **Build → Authentication** → **Get started** → tab **Sign-in method** → pilih **Anonymous** → **Enable** → **Save**.
 3. Menu kiri **Build → Realtime Database** → **Create Database** → lokasi **Singapore (asia-southeast1)** → pilih **Start in locked mode** → **Enable**.
-4. Masih di Realtime Database, tab **Rules** → hapus isinya, tempel isi file `database.rules.json` dari repo ini → **Publish**.
+4. Masih di Realtime Database, tab **Rules** → hapus isinya, tempel isi file `database.rules.json` dari repo ini → **Publish**. Ulangi langkah ini setiap kali `database.rules.json` berubah (misalnya setelah mode Battle ditambahkan).
 5. Klik ikon roda gigi **Project settings** → bagian **Your apps** → klik ikon **</>** (Web) → nama `roket-geprek-web` → **Register app** (Firebase Hosting tidak perlu dicentang).
 6. Muncul `firebaseConfig`. Salin nilainya ke file `.env` di folder repo (salin dari `.env.example`):
 
