@@ -7,6 +7,9 @@ export const EARTH = {
   radius: 120, // u
   gm: 1.2e6, // u^3/s^2 -> gravitasi permukaan ~83 u/s^2
   orbitRadius: 180, // cincin orbit rendah (mewakili ~400 km)
+  // Rotasi Bumi (rad/detik game), searah jarum jam seperti arah orbit di game.
+  // Kecepatan permukaan = 0,05 x 120 = 6 u/s, sekitar 6% kecepatan orbit, mirip aslinya (0,47 dari 7,8 km/s).
+  spin: 0.05,
 };
 
 export const ROCKET_TUNING = {
@@ -32,6 +35,8 @@ export function createFlight({ planet = EARTH, fuel = 1, massRatio = 1, orbitHol
     vx: 0,
     vy: 0,
     angle: 0,
+    earthAngle: 0, // sudut putar Bumi sejak awal misi
+    padAngle: 0, // posisi landasan di permukaan Bumi (ikut berputar)
     fuel, // 0..1
     massRatio, // >1 = lebih berat, dorongan terasa lebih lemah
     orbitHoldSec,
@@ -49,7 +54,23 @@ export function stepFlight(s, ctrl, dt) {
   const T = ROCKET_TUNING;
   const p = s.planet;
 
+  s.earthAngle += (p.spin || 0) * dt;
+  const onPad = s.status === 'pad';
+  if (onPad) {
+    // Landasan ikut berputar bersama Bumi: roket tegak di permukaan dan bergerak dengan kecepatan permukaan.
+    s.padAngle = s.earthAngle;
+    const surfaceSpeed = (p.spin || 0) * p.radius;
+    s.x = Math.sin(s.padAngle) * p.radius;
+    s.y = Math.cos(s.padAngle) * p.radius;
+    s.vx = Math.cos(s.padAngle) * surfaceSpeed;
+    s.vy = -Math.sin(s.padAngle) * surfaceSpeed;
+  }
+
   const throttle = ctrl ? applyControls(ctrl, s, T.turnRate, dt) : 0;
+  if (onPad) {
+    s.angle = s.padAngle;
+    if (ctrl && ctrl.mode === 'manual') ctrl.targetAngle = s.padAngle;
+  }
 
   let ax = 0;
   let ay = 0;

@@ -53,7 +53,7 @@ export function createRenderer(canvas) {
 
     // Stasiun Bumi (Level 1): menyala saat lintasan terbuka
     if (view.level === 1 && ['countdown', 'deploy', 'transmit'].includes(view.phase)) {
-      const a = Math.PI / 4;
+      const a = Math.PI / 4 + (view.flight.earthAngle || 0); // stasiun ikut berputar bersama Bumi
       const sx = Math.sin(a) * EARTH.radius;
       const sy = Math.cos(a) * EARTH.radius;
       ctx.beginPath();

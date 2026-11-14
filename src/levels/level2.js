@@ -504,6 +504,7 @@ export function snapshotLevel2(game, withPaths = true) {
     signalLost: game.signalLost,
     lastLog: game.log[game.log.length - 1] || '',
     coach: game.assist ? game.coach : null,
+    earthAngle: game.flight.earthAngle + game.t * EARTH.spin,
     secondsToTli: game.phase === 'tli' ? game.secondsToTli : null,
     // Saat peluncuran, tampilan memakai gambar orbit Bumi seperti Level 1.
     flight:
@@ -517,6 +518,7 @@ export function snapshotLevel2(game, withPaths = true) {
             fuel: game.flight.fuel,
             status: game.flight.status,
             thrusting: !!game.flight.thrusting,
+            earthAngle: game.flight.earthAngle,
             inRing: !!game.flight.inRing,
             inRingFor: game.flight.inRingFor,
             trail: withPaths ? game.flight.trail : [],

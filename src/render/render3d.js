@@ -81,8 +81,13 @@ export async function createRenderer(canvas) {
     mesh.rotation.x = Math.PI / 2 - 0.4; // kutub utara condong ke kamera, supaya benua terlihat
     return mesh;
   }
+  // Bumi dilihat dari atas kutub selatan: bidang orbit = bidang ekuator, dan Bumi berputar searah jarum jam,
+  // sama dengan arah orbit di game (peluncuran ke timur memanfaatkan rotasi Bumi).
   const earth = planet(EARTH.radius, COLORS.earth, TEXTURES.earth);
-  scene.add(earth);
+  earth.rotation.set(-Math.PI / 2, 0, 0);
+  const earthSpin = new THREE.Group();
+  earthSpin.add(earth);
+  scene.add(earthSpin);
   const atmosphere = new THREE.Mesh(
     new THREE.SphereGeometry(EARTH.radius * 1.06, 48, 24),
     new THREE.MeshBasicMaterial({ color: COLORS.atmosphere, transparent: true, opacity: 0.16, side: THREE.BackSide }),
@@ -145,10 +150,9 @@ export async function createRenderer(canvas) {
   scene.add(ringLine);
 
   // Stasiun Bumi Level 1
-  const stationAngle = Math.PI / 4;
   const station = new THREE.Mesh(new THREE.SphereGeometry(5, 12, 8), new THREE.MeshBasicMaterial({ color: COLORS.station }));
-  station.position.set(Math.sin(stationAngle) * EARTH.radius, Math.cos(stationAngle) * EARTH.radius, 0);
   scene.add(station);
+  let localEarthAngle = 0;
 
   // ---------- Wahana (gambar datar yang selalu menghadap kamera) ----------
   const craftCanvas = document.createElement('canvas');
@@ -268,7 +272,13 @@ export async function createRenderer(canvas) {
   function draw(v) {
     resize();
     const cislunar = v.level === 2 && v.phase !== 'launch';
-    earth.rotation.y += 0.0008; // Bumi berputar pelan pada porosnya
+    // Putaran Bumi mengikuti fisika (landasan dan stasiun Bumi ikut berputar).
+    const ea = v.flight && v.flight.earthAngle !== undefined ? v.flight.earthAngle : v.earthAngle;
+    if (ea !== undefined) localEarthAngle = ea;
+    else localEarthAngle += EARTH.spin / 60;
+    earthSpin.rotation.z = -localEarthAngle;
+    const stationAngle = Math.PI / 4 + localEarthAngle;
+    station.position.set(Math.sin(stationAngle) * EARTH.radius, Math.cos(stationAngle) * EARTH.radius, 0);
 
     if (cislunar) {
       frame('moon', -112, 535, 400, 820);
