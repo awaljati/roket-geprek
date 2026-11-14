@@ -10,6 +10,7 @@ src/
                 cislunar.js  gravitasi Bumi-Bulan (dipakai untuk menghitung jalur Level 2)
                 attitude.js  gas bertahap, arah, mode searah/lawan arah/kiri/kanan jalur
                 assist.js    bantuan pilot untuk peluncuran
+                landerAssist.js  bantuan pilot untuk pendaratan (Level 3)
                 rng.js       angka acak dengan seed (kejadian sama untuk semua tim battle)
   levels/     aturan tiap level dan daftar level (index.js)
   net/        room dengan kode: Firebase atau lokal (BroadcastChannel)
@@ -52,6 +53,17 @@ Fisika penuh Bumi-Bulan terlalu sensitif untuk dimainkan: dorongan sangat kecil 
 3. **Koreksi (MCC):** dorongan ke kiri atau kanan jalur mengubah laju penyimpangan. Koreksi awal butuh sedikit bahan bakar, koreksi terlambat butuh jauh lebih banyak.
 
 Jarak terdekat ke Bulan dan sudut masuk atmosfer dihitung dari penyimpangan itu dan ditampilkan ke Spesialis sebagai prediksi.
+
+## Model Level 3
+
+Tampilan samping: permukaan Bulan berbukit di bawah, pendarat bergerak di bidang x (menyamping) dan y (ketinggian).
+
+1. **Orbit datar:** permukaan dianggap datar, tapi gravitasi efektif = g × (1 − (vx / orbitSpeed)²). Pada kecepatan orbit pendarat tidak jatuh; setelah direm (deorbit) gravitasi penuh bekerja.
+2. **Gravitasi:** 1/6 gravitasi permukaan Bumi game (`EARTH.gm / EARTH.radius²`). Waktu diperlambat (`timeScale`) supaya sempat bereaksi.
+3. **Gas 50% = melayang** untuk massa acuan (`thrustToWeight: 2`). Pendarat yang lebih berat butuh gas lebih besar.
+4. **Mendarat:** kecepatan total ≤ `maxLandingSpeed` dan miring ≤ `maxLandingTiltDeg`. Selain itu F-CRASH. Tanpa mesin pendarat: F-CRASH langsung.
+
+Semua angka ada di `LEVELS[3]` (`src/data/levels.js`). Level 3 selalu memakai tampilan 2D (belum ada versi 3D).
 
 ## Tampilan 3D
 

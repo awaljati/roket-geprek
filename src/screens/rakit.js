@@ -37,10 +37,12 @@ export function rakitScreen(app, el) {
     <label class="card row"><input type="checkbox" id="assist"> <span><b>Bantuan pilot</b> (disarankan untuk pemula)<br><small class="muted">${
       isCubeSat
         ? 'Roket dimiringkan otomatis dan mesin dimatikan tepat waktu. Kamu cukup menekan Gas + saat diminta.'
-        : 'Arah kapsul diatur otomatis (koreksi lintasan, membidik Bulan, pelindung panas). Kamu cukup menekan Gas + dan Ambil foto saat diminta.'
+        : app.level === 3
+          ? 'Pendarat dijaga tetap tegak dan gas dikurangi otomatis kalau berlebihan. Kamu cukup menekan Gas + saat diminta.'
+          : 'Arah kapsul diatur otomatis (koreksi lintasan, membidik Bulan, pelindung panas). Kamu cukup menekan Gas + dan Ambil foto saat diminta.'
     }</small></span></label>
     <div class="card">
-      <b>Bahan bakar ${isCubeSat ? 'roket' : 'kapsul'}: <span id="fuelv"></span></b>
+      <b>Bahan bakar ${isCubeSat ? 'roket' : app.level === 3 ? 'pendarat' : 'kapsul'}: <span id="fuelv"></span></b>
       <input type="range" id="fuel" min="1" max="10" step="1" style="width:100%">
     </div>
     <div class="card" id="fundsCard"></div>
@@ -104,6 +106,7 @@ export function rakitScreen(app, el) {
     if (c.tooManyItems) why.push(`Slot penuh: maksimal ${c.slots} komponen${isCubeSat ? ' (pilih CubeSat yang lebih besar, misalnya 3U)' : ''}.`);
     if (c.overBudget) why.push(`Anggaran terlewati: kurangi komponen atau bahan bakar${maxExtra > 0 ? ', atau tambah dari dana cadangan' : ''}.`);
     if (c.tooHeavy) why.push('Terlalu berat: roket akan gagal (F-HEAVY).');
+    if (c.warn) why.push(c.warn);
     $('#bars').innerHTML += why.length ? `<p class="warn">${why.join('<br>')}</p>` : '';
   }
   update();

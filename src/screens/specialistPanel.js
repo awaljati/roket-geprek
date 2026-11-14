@@ -115,6 +115,46 @@ export function mountSpecialistPanel2(container, send) {
   };
 }
 
+// Panel Spesialis Level 3: membacakan angka pendaratan ke Navigator (belum ada tombol wahana).
+export function mountSpecialistPanel3(container) {
+  container.innerHTML = `
+    <h2>Spesialis</h2>
+    <div class="status" id="sp-status"></div>
+    <div class="card" id="sp-read"></div>
+    <div>Bahan bakar</div><div class="bar"><i id="sp-fuel"></i></div>
+    <small class="muted" id="sp-log"></small>
+  `;
+  const $ = (s) => container.querySelector(s);
+
+  return function update(v) {
+    if (!v) return;
+    const max = v.maxLandingSpeed;
+    const tooFast = v.phase === 'descent' && v.vDown > v.targetDescent + 0.5;
+    $('#sp-status').textContent =
+      v.phase === 'orbit'
+        ? 'Di orbit rendah Bulan. Minta Navigator mengerem (Gas +).'
+        : v.phase === 'descent'
+          ? Math.abs(v.vSide) > 3
+            ? 'Masih bergeser ke samping: rem dulu.'
+            : tooFast
+              ? 'Aba-aba: TERLALU CEPAT, tambah gas!'
+              : 'Aba-aba: kecepatan turun pas.'
+          : v.phase === 'landed'
+            ? 'Mendarat!'
+            : 'Misi selesai.';
+    const ok = (b) => (b ? '✓' : '⚠');
+    $('#sp-read').innerHTML = `
+      <div>Ketinggian: <b>${v.altitude.toFixed(0)} u</b></div>
+      <div>${ok(!tooFast)} Kecepatan turun: <b>${v.vDown.toFixed(1)} u/s</b> <small class="muted">saran ≤ ${v.targetDescent.toFixed(1)}</small></div>
+      <div>${ok(Math.abs(v.vSide) <= max)} Kecepatan menyamping: <b>${Math.abs(v.vSide).toFixed(1)} u/s</b></div>
+      <div>${ok(Math.abs(v.tiltDeg) <= v.maxLandingTiltDeg)} Kemiringan: <b>${Math.round(Math.abs(v.tiltDeg))}°</b></div>
+      <small class="muted">Aman mendarat: ≤ ${max} u/s, miring ≤ ${v.maxLandingTiltDeg}°</small>`;
+    $('#sp-fuel').style.width = Math.max(0, v.fuel * 100) + '%';
+    $('#sp-log').textContent = v.lastLog;
+  };
+}
+
 export function mountPanelFor(level, container, send) {
+  if (level === 3) return mountSpecialistPanel3(container, send);
   return level === 2 ? mountSpecialistPanel2(container, send) : mountSpecialistPanel(container, send);
 }

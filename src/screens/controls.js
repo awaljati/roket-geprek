@@ -52,6 +52,7 @@ export const BUTTON_SETS = {
   manual: ['turnLeft', 'turnRight', 'prograde', 'retrograde'],
   moon: ['turnLeft', 'turnRight', 'prograde', 'left', 'right', 'retrograde', 'pulse', 'warp'],
   moonAssist: ['warp'],
+  lander: ['turnLeft', 'turnRight', 'retrograde', 'pulse'],
 };
 
 // Memasang keyboard + tombol. onAction(action) dipanggil per ketukan.

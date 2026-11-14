@@ -1,6 +1,7 @@
 // Daftar level. Layar memakai ini supaya tidak perlu tahu detail tiap level.
 import * as L1 from './level1.js';
 import * as L2 from './level2.js';
+import * as L3 from './level3.js';
 import { ITEMS } from '../data/items.js';
 
 export const LEVEL_MODULES = {
@@ -26,6 +27,17 @@ export const LEVEL_MODULES = {
     briefing: 'Fly around the Moon and back, like Artemis II. Your path will drift: watch the predicted trajectory and fire short correction burns to stay on course. Correct early: it costs less fuel.',
     realMission: 'Artemis II (April 2026): 4 astronaut memutari Bulan dengan lintasan free return, lalu mendarat di laut.',
   },
+  3: {
+    create: (build, seed) => L3.createLevel3(build, seed),
+    step: L3.stepLevel3,
+    command: L3.command,
+    snapshot: L3.snapshotLevel3,
+    buildCheck: L3.buildCheck,
+    rakitItems: L3.RAKIT_ITEMS,
+    defaultBuild: L3.DEFAULT_BUILD,
+    briefing: 'Land near the lunar south pole, where Artemis plans to explore. There is no air to slow you down: brake your orbital speed with the engine, then descend slowly and stay upright. Touch down at 2 u/s or less.',
+    realMission: 'Artemis III (rencana): pendaratan manusia di dekat kutub selatan Bulan, wilayah yang diduga menyimpan es air di kawah yang selalu gelap. Juga Chandrayaan-3 dari India yang mendarat di dekat kutub selatan pada 2023.',
+  },
 };
 
-export const LAST_LEVEL = 2;
+export const LAST_LEVEL = 3;
