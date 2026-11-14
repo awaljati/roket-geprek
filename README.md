@@ -83,15 +83,6 @@ Vite dan JavaScript, canvas 2D, Firebase Realtime Database untuk room, deploy di
 
 Kode dibangun dengan bantuan asisten AI (Claude Code). Konsep game, desain misi, data, dan aset dikerjakan tim.
 
-## Tim
-
-| Peran | Tugas utama |
-|---|---|
-| Astronomi 1 | Mesin terbang, level, tampilan |
-| Astronomi 2 | Desain misi, data dan angka game, teks sains, uji coba |
-| Sains Data | Room online, lobby, rakit, debrief, balancing |
-| DKV 1 | UI semua layar |
-| DKV 2 | Roket, wahana, ikon, logo, video demo |
 
 ## Lisensi
 
