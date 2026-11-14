@@ -34,11 +34,25 @@ export function mountSpecialistPanel(container, send) {
     }[v.phase];
     $('#sp-status').textContent = phaseText || '';
     $('#sp-info').innerHTML = `<small class="muted">Bahan bakar ${Math.round(f.fuel * 100)}% · ${v.lastLog}</small>`;
-    $('#sp-release').disabled = v.released || v.phase === 'done';
-    $('#sp-panels').disabled = !v.hasFoldPanel || v.panelsOpen || !v.released;
-    $('#sp-antenna').disabled = !v.hasUhf || v.antennaOpen || !v.released;
-    $('#sp-transmit').disabled = !v.released || v.phase === 'done';
-    $('#sp-transmit').textContent = v.transmitting ? 'Berhenti kirim' : 'Kirim sinyal';
+    // Tombol menjelaskan alasannya kalau belum bisa dipakai.
+    // Saat hitung mundur, tombol buka tetap bisa ditekan (dan membuat misi gagal): itu bagian tantangannya.
+    const waiting = v.phase === 'countdown' ? ' ⚠ tunggu hitung mundur' : '';
+    const btn = (id, label, disabled) => {
+      $(id).disabled = disabled;
+      $(id).textContent = label;
+    };
+    btn('#sp-release', v.released ? 'CubeSat sudah dilepas' : v.phase === 'launch' ? 'Lepas CubeSat (setelah orbit tercapai)' : 'Lepas CubeSat', v.released || v.phase === 'done');
+    btn(
+      '#sp-panels',
+      !v.hasFoldPanel ? 'Panel lipat tidak dipasang' : v.panelsOpen ? 'Panel surya terbuka' : !v.released ? 'Buka panel surya (setelah CubeSat dilepas)' : 'Buka panel surya' + waiting,
+      !v.hasFoldPanel || v.panelsOpen || !v.released,
+    );
+    btn(
+      '#sp-antenna',
+      !v.hasUhf ? 'Antena pita tidak dipasang (S-band tidak perlu dibuka)' : v.antennaOpen ? 'Antena terbuka' : !v.released ? 'Buka antena (setelah CubeSat dilepas)' : 'Buka antena' + waiting,
+      !v.hasUhf || v.antennaOpen || !v.released,
+    );
+    btn('#sp-transmit', v.transmitting ? 'Berhenti kirim' : !v.released ? 'Kirim sinyal (setelah CubeSat dilepas)' : 'Kirim sinyal' + waiting, !v.released || v.phase === 'done');
     $('#sp-batt').style.width = Math.max(0, (v.battery / v.batteryMax) * 100) + '%';
     $('#sp-data').style.width = Math.min(100, (v.data / v.dataTarget) * 100) + '%';
   };

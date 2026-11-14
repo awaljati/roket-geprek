@@ -85,7 +85,7 @@ export function stepLevel1(game, ctrl, dt) {
     if (game.flight.failCode) return finish(game, false, game.flight.failCode);
     if (game.phase === 'launch' && game.flight.status === 'orbit') {
       game.phase = 'release';
-      game.log.push('Orbit tercapai. Spesialis: lepaskan CubeSat.');
+      game.log.push(`Orbit tercapai (meleset ${game.flight.orbitErrorPct}%). Spesialis: lepaskan CubeSat.`);
     }
     return game;
   }
@@ -184,9 +184,13 @@ function finish(game, success, failCode) {
   const full = success && !failCode;
   let stars = 0;
   if (success) stars = full ? 2 : 1;
-  if (full && game.passIndex === 0 && fuelLeft >= L.minFuelFor3Stars && !game.check.overBudget) stars = 3;
-  const score = stars * 1000 + Math.round(fuelLeft * 500) + Math.max(0, (L.budget - game.check.price) * 10);
-  game.result = { success, failCode, stars, score: success ? score : 0, fuelLeft, photos: 0 };
+  const orbitErrorPct = game.flight.orbitErrorPct ?? null;
+  const preciseOrbit = orbitErrorPct !== null && orbitErrorPct <= L.orbitAccuracyFor3StarsPct;
+  if (full && game.passIndex === 0 && fuelLeft >= L.minFuelFor3Stars && preciseOrbit && !game.check.overBudget) stars = 3;
+  const orbitBonus = orbitErrorPct === null ? 0 : Math.max(0, Math.round((10 - orbitErrorPct) * 30));
+  const score = stars * 1000 + Math.round(fuelLeft * 500) + orbitBonus + Math.max(0, (L.budget - game.check.price) * 10);
+  // orbitErrorPct = informasi tambahan untuk Debrief (bentuk hasil utama tetap sama)
+  game.result = { success, failCode, stars, score: success ? score : 0, fuelLeft, photos: 0, orbitErrorPct };
   game.phase = 'done';
   return game;
 }

@@ -128,6 +128,8 @@ export function stepFlight(s, ctrl, dt) {
     s.inRingFor = o.ok ? s.inRingFor + dt : 0;
     if (s.inRingFor >= s.orbitHoldSec) {
       s.status = 'orbit';
+      // Catat seberapa tepat pemain masuk orbit (sebelum dirapikan), untuk penilaian bintang.
+      s.orbitErrorPct = +(Math.max(Math.abs(o.r - p.orbitRadius) / p.orbitRadius, Math.abs(o.speed - o.vCirc) / o.vCirc) * 100).toFixed(1);
       circularize(s); // komputer roket merapikan orbit supaya tetap di cincin
     }
   }

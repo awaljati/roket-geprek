@@ -30,6 +30,7 @@ export const LEVELS = {
     body: 'CubeSat',
     orbitHoldSec: 3,
     minFuelFor3Stars: 0.3,
+    orbitAccuracyFor3StarsPct: 4, // bintang 3: saat masuk cincin, ketinggian dan kecepatan meleset maksimal 4%
     launchTimeScale: 0.45, // naik ke orbit diperlambat (1 = normal)
     orbitTimeScale: 0.35, // gerak di orbit diperlambat: satu putaran sekitar 40 detik
     // waktu game (sudah dipercepat dari aslinya)
