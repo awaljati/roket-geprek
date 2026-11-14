@@ -36,6 +36,9 @@ Salin `.env.example` jadi `.env`, isi dari Firebase Console (Realtime Database +
 ## Level 1: CubeSat Transmisi
 Rakit CubeSat (1U/3U) → terbang ke cincin orbit dan tahan 3 detik → Spesialis lepas CubeSat → tunggu hitung mundur → buka panel dan antena → kirim sinyal saat lewat di atas stasiun Bumi.
 
+## Level 2: Memutari Bulan
+Rakit kapsul (wajib kamera dan pelindung panas) → tekan W untuk berangkat → garis putus-putus = prediksi, garis hijau = target free return → di jendela MCC putar ke kiri/kanan jalur (Z/C) dan dorong sampai prediksi pas → dekat Bulan arahkan kapsul ke Bulan, Spesialis memotret (tombol 2) → MCC pulang untuk sudut masuk atmosfer → saat masuk atmosfer tekan E (pelindung panas di depan). Koreksi lebih awal = lebih hemat bahan bakar. T = percepat waktu.
+
 ## Cara kerja tim
 - Branch per orang: `nama/fitur` (misal `andi/level2`), lalu Pull Request ke `main`.
 - `main` selalu bisa dijalankan; Vercel deploy otomatis dari `main`.

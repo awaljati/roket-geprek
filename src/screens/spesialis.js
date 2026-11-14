@@ -1,8 +1,9 @@
 // Perangkat Spesialis: menerima snapshot dari Navigator, menampilkan peta kecil + panel, mengirim perintah.
 import { openRoom } from '../net/room.js';
 import { createRenderer } from '../render/render2d.js';
-import { mountSpecialistPanel } from './specialistPanel.js';
+import { mountPanelFor } from './specialistPanel.js';
 import { FAIL_CODES } from '../data/failcodes.js';
+import { nominalPathPoints } from '../levels/level2.js';
 
 export function spesialisScreen(app, el) {
   el.className = 'flight';
@@ -13,11 +14,19 @@ export function spesialisScreen(app, el) {
   const $ = (s) => el.querySelector(s);
   const renderer = createRenderer($('#cv'));
   let room = null;
-  const update = mountSpecialistPanel($('#side'), (cmd) => room && room.sendCmd(cmd));
+  const send = (cmd) => room && room.sendCmd(cmd);
+  let level = null;
+  let update = () => {};
 
   openRoom(app.code, {
     onState: (v) => {
       $('#wait').style.display = 'none';
+      if (v.level !== level) {
+        level = v.level;
+        update = mountPanelFor(level, $('#side'), send);
+      }
+      // Jalur target Level 2 tidak dikirim lewat room (selalu sama), jadi dihitung di sini.
+      if (v.level === 2 && !(v.nominal && v.nominal.length)) v.nominal = nominalPathPoints();
       renderer.draw(v);
       update(v);
       if (v.result) {

@@ -15,6 +15,9 @@ export const KEYMAP = {
   arrowright: 'turnRight',
   q: 'prograde',
   e: 'retrograde',
+  z: 'left',
+  c: 'right',
+  t: 'warp',
 };
 
 export const HELP = [
@@ -25,6 +28,8 @@ export const HELP = [
   ['A / D', 'putar 15°'],
   ['Q', 'arahkan searah gerak'],
   ['E', 'arahkan lawan arah gerak'],
+  ['Z / C', 'arahkan ke kiri / kanan jalur (koreksi MCC)'],
+  ['T', 'percepat waktu (saat mesin mati)'],
 ];
 
 // Tombol layar untuk HP / mouse.
@@ -33,6 +38,9 @@ export const BUTTONS = [
   ['turnRight', '⟳ 15°'],
   ['prograde', 'Searah gerak'],
   ['retrograde', 'Lawan arah'],
+  ['left', 'Kiri jalur'],
+  ['right', 'Kanan jalur'],
+  ['warp', 'Percepat'],
   ['throttleDown', 'Gas −'],
   ['throttleUp', 'Gas +'],
   ['pulse', 'Dorong pendek'],

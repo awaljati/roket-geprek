@@ -11,7 +11,7 @@ export function createControls() {
     throttle: 0, // 0..1
     lastThrottle: 1,
     targetAngle: 0,
-    mode: 'manual', // manual | prograde | retrograde
+    mode: 'manual', // manual | prograde | retrograde | left | right
     pulseLeft: 0,
   };
 }
@@ -50,7 +50,9 @@ export function controlAction(c, action, craft) {
       if (c.mode === 'manual' && craft) c.targetAngle = craft.angle;
       break;
     case 'retrograde':
-      c.mode = c.mode === 'retrograde' ? 'manual' : 'retrograde';
+    case 'left':
+    case 'right':
+      c.mode = c.mode === action ? 'manual' : action;
       if (c.mode === 'manual' && craft) c.targetAngle = craft.angle;
       break;
   }
@@ -74,7 +76,8 @@ export function applyControls(c, craft, turnRate, dt) {
   const speed = Math.hypot(craft.vx, craft.vy);
   if (c.mode !== 'manual' && speed > 1) {
     const va = velocityAngle(craft.vx, craft.vy);
-    c.targetAngle = c.mode === 'prograde' ? va : va + Math.PI;
+    const offset = { prograde: 0, retrograde: Math.PI, left: -Math.PI / 2, right: Math.PI / 2 }[c.mode];
+    c.targetAngle = va + offset;
   }
   const diff = wrap(c.targetAngle - craft.angle);
   const maxTurn = turnRate * dt;

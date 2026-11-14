@@ -32,5 +32,7 @@ src/
 7. Jangan commit `.env` atau kunci Firebase.
 
 ## Status
-- Sudah: Lobby (solo, buat room, gabung), Rakit Level 1, terbang ke orbit, Level 1 CubeSat lengkap, Debrief.
-- Berikutnya: Level 2 (Memutari Bulan), tampilan 3D, mode battle, aset DKV menggantikan bentuk sementara.
+- Sudah: Lobby (solo, buat room, gabung), Rakit, terbang ke orbit, Level 1 CubeSat, Level 2 Memutari Bulan (MCC, foto, masuk atmosfer), Debrief, kontrol ketuk.
+- Berikutnya: tampilan 3D, mode battle, Level 3, aset DKV menggantikan bentuk sementara.
+- Level baru: buat `src/levels/levelN.js` dengan fungsi yang sama seperti level2.js, lalu daftarkan di `src/levels/index.js`.
+- Level 2 memakai model "jalur nominal + penyimpangan" (bukan fisika penuh Bumi-Bulan, karena terlalu sensitif untuk dimainkan). Lihat komentar di atas `level2.js`.
