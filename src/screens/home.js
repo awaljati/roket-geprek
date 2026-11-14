@@ -1,0 +1,9 @@
+export function homeScreen(app, el) {
+  el.className = 'screen center';
+  el.innerHTML = `
+    <h1>Roket Geprek</h1>
+    <p class="muted">Rakit wahana, terbangkan roket, selesaikan misi seperti NASA.</p>
+    <button class="primary" id="play">Main</button>
+  `;
+  el.querySelector('#play').onclick = () => app.go('lobby');
+}
