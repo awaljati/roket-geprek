@@ -31,10 +31,6 @@ Panduan singkat supaya kerja lima orang di satu repo tetap rapi.
 4. Kalau butuh tampilan baru, tambahkan di `src/render/render2d.js` berdasarkan `view.level`.
 5. Kalau Spesialis butuh tombol baru, tambahkan panelnya di `src/screens/specialistPanel.js`.
 
-## Menambah gambar dari DKV
-
-PNG latar transparan, nama file huruf kecil dengan tanda hubung (misalnya `badan-cubesat-1u.png`), disimpan di `public/assets/`. Daftar aset dan prioritasnya ada di Datasheet, sheet "Aset Visual".
-
 ## Dokumen terkait
 
 - [docs/ARSITEKTUR.md](docs/ARSITEKTUR.md): struktur kode dan cara kerja room
