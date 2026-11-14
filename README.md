@@ -33,6 +33,8 @@ Satu pemain jadi **Navigator** yang menyetir roket, satu lagi jadi **Spesialis**
 4. **Terbang:** Navigator mengatur gas dan arah, Spesialis membuka panel, mengirim sinyal, memotret, dan membaca prediksi lintasan.
 5. **Debrief:** bintang, skor, alasan gagal, dan misi NASA nyata yang mirip.
 
+**Dana misi:** misi yang berhasil dan hemat memberi dana (bintang, sisa anggaran, bonus orbit tepat atau foto lengkap). Dana cadangan bisa ditambahkan ke anggaran misi berikutnya di layar Rakit, maksimal 50% anggaran level, seperti misi sungguhan yang mendapat pendanaan lanjutan.
+
 **Bantuan pilot** (default nyala) mengatur arah roket secara otomatis dan memberi tahu kapan harus menekan tombol, cocok untuk pemula. Bisa dimatikan di layar Rakit.
 
 ### Kontrol Navigator

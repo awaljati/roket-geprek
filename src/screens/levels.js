@@ -1,6 +1,6 @@
 // Layar Pilih Level. Semua level yang sudah dibuat bisa langsung dipilih (tidak perlu membuka berurutan).
 import { LEVEL_MODULES } from '../levels/index.js';
-import { bestStars } from './progress.js';
+import { bestStars, getFunds } from './progress.js';
 
 const CARDS = [
   { level: 1, title: 'CubeSat Transmisi', where: 'Orbit rendah Bumi', what: 'Rakit CubeSat, masuk orbit, kirim sinyal pertama ke stasiun Bumi.', tag: 'Tutorial' },
@@ -13,6 +13,7 @@ export function levelsScreen(app, el) {
   el.className = 'screen';
   el.innerHTML = `
     <h2>Pilih Misi</h2>
+    <p>Dana cadangan: <b>${getFunds()} juta $</b> <small class="muted">· didapat dari misi yang berhasil dan hemat</small></p>
     <p class="muted">${app.code && app.role === 'navigator' ? `Room <b>${app.code}</b> · Spesialis otomatis mengikuti misi yang kamu pilih.` : 'Pilih misi yang ingin dimainkan.'}</p>
     <div class="level-grid">
       ${CARDS.map((c) => {
