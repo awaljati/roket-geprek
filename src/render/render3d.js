@@ -154,88 +154,78 @@ export async function createRenderer(canvas) {
   scene.add(station);
   let localEarthAngle = 0;
 
-  // ---------- Wahana (gambar datar yang selalu menghadap kamera) ----------
-  const craftCanvas = document.createElement('canvas');
-  craftCanvas.width = craftCanvas.height = 128;
-  const craftTex = new THREE.CanvasTexture(craftCanvas);
-  craftTex.colorSpace = THREE.SRGBColorSpace;
-  const craftMat = new THREE.SpriteMaterial({ map: craftTex, depthTest: false, transparent: true });
-  const craft = new THREE.Sprite(craftMat);
-  craft.renderOrder = 10;
-  scene.add(craft);
-  let craftKey = '';
+  // ---------- Wahana (model 3D sederhana) ----------
+  // Model menghadap +Y (hidung ke atas). Posisi = titik fisika; roket berdiri di ekornya.
+  // Karena benda 3D sungguhan, tampilannya ikut berubah saat pandangan kamera diputar.
+  const white = new THREE.MeshPhongMaterial({ color: 0xf2f2f2, shininess: 40 });
+  const orange = new THREE.MeshPhongMaterial({ color: 0xff8a3d });
+  const grey = new THREE.MeshPhongMaterial({ color: 0xb8b8b8, shininess: 30 });
+  const solar = new THREE.MeshPhongMaterial({ color: 0x2f5fc4, shininess: 60, side: THREE.DoubleSide });
+  const shieldMat = new THREE.MeshPhongMaterial({ color: 0x7a4a2a });
+  const flameMat = new THREE.MeshBasicMaterial({ color: 0xffa040, transparent: true, opacity: 0.9 });
+  const glowMat = new THREE.MeshBasicMaterial({ color: 0xff7a20, transparent: true, opacity: 0.7 });
+  const part = (geo, mat, x, y, z = 0) => {
+    const m = new THREE.Mesh(geo, mat);
+    m.position.set(x, y, z);
+    return m;
+  };
+  const flame = (y, r, h) => {
+    const f = part(new THREE.ConeGeometry(r, h, 16), flameMat, 0, y - h / 2);
+    f.rotation.z = Math.PI; // ujung api menghadap ke bawah
+    return f;
+  };
 
-  function drawCraft(kind, v) {
-    const thrust = kind === 'capsule' ? v.craft.thrusting : v.flight && v.flight.thrusting;
-    const flicker = thrust ? Math.floor(performance.now() / 60) % 3 : 0;
-    const key = [kind, thrust, flicker, v.panelsOpen, v.antennaOpen, v.phase].join('|');
-    // Roket berdiri di ekornya (titik posisi = ekor); CubeSat dan kapsul di tengahnya.
-    craft.center.set(0.5, kind === 'rocket' ? 1 - 92 / 128 : 0.5);
-    if (key === craftKey) return;
-    craftKey = key;
-    const c = craftCanvas.getContext('2d');
-    c.clearRect(0, 0, 128, 128);
-    c.save();
-    c.translate(64, 64);
-    const flame = (y) => {
-      c.fillStyle = '#ff8a3d';
-      c.beginPath();
-      c.moveTo(-8, y);
-      c.lineTo(8, y);
-      c.lineTo(0, y + 22 + flicker * 6);
-      c.fill();
-    };
-    if (kind === 'cubesat') {
-      c.fillStyle = '#c9c9c9';
-      c.fillRect(-12, -12, 24, 24);
-      c.strokeStyle = '#777';
-      c.strokeRect(-12, -12, 24, 24);
-      if (v.panelsOpen) {
-        c.fillStyle = '#3a6fd8';
-        c.fillRect(-46, -6, 30, 12);
-        c.fillRect(16, -6, 30, 12);
-      }
-      if (v.antennaOpen) {
-        c.strokeStyle = '#eee';
-        c.lineWidth = 3;
-        c.beginPath();
-        c.moveTo(0, -12);
-        c.lineTo(0, -40);
-        c.stroke();
-      }
-    } else if (kind === 'capsule') {
-      if (thrust) flame(24);
-      if (v.phase === 'entry') {
-        c.fillStyle = 'rgba(255,140,40,0.85)';
-        c.beginPath();
-        c.arc(0, 28, 26, 0, Math.PI);
-        c.fill();
-      }
-      c.fillStyle = '#f2f2f2';
-      c.beginPath();
-      c.moveTo(0, -24);
-      c.lineTo(18, 20);
-      c.lineTo(-18, 20);
-      c.closePath();
-      c.fill();
-      c.fillStyle = '#7a4a2a';
-      c.fillRect(-18, 20, 36, 7);
-    } else {
-      if (thrust) flame(28);
-      c.fillStyle = '#f2f2f2';
-      c.beginPath();
-      c.moveTo(0, -36);
-      c.lineTo(12, -12);
-      c.lineTo(12, 28);
-      c.lineTo(-12, 28);
-      c.lineTo(-12, -12);
-      c.closePath();
-      c.fill();
-      c.fillStyle = '#ff8a3d';
-      c.fillRect(-12, 18, 24, 5);
-    }
-    c.restore();
-    craftTex.needsUpdate = true;
+  // Roket: tinggi sekitar 20 satuan, ekor di y = 0
+  const rocket = new THREE.Group();
+  rocket.add(part(new THREE.CylinderGeometry(2.2, 2.2, 14, 20), white, 0, 7));
+  rocket.add(part(new THREE.ConeGeometry(2.2, 6, 20), white, 0, 17));
+  rocket.add(part(new THREE.CylinderGeometry(2.25, 2.25, 1.2, 20), orange, 0, 11));
+  for (let i = 0; i < 4; i++) {
+    const fin = part(new THREE.BoxGeometry(0.4, 4, 2.6), orange, 0, 2);
+    const a = (i * Math.PI) / 2;
+    fin.position.set(Math.sin(a) * 2.6, 2, Math.cos(a) * 2.6);
+    fin.rotation.y = a;
+    rocket.add(fin);
+  }
+  const rocketFlame = flame(0, 1.8, 8);
+  rocket.add(rocketFlame);
+
+  // Kapsul: kerucut dengan pelindung panas di bawah, pusat di tengah
+  const capsule = new THREE.Group();
+  capsule.add(part(new THREE.CylinderGeometry(1.2, 4.5, 6, 24), white, 0, 1));
+  capsule.add(part(new THREE.CylinderGeometry(4.7, 4.7, 1.2, 24), shieldMat, 0, -2.6));
+  const capsuleFlame = flame(-3.2, 1.6, 6);
+  capsule.add(capsuleFlame);
+  const entryGlow = part(new THREE.SphereGeometry(6, 20, 12, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), glowMat, 0, -3);
+  capsule.add(entryGlow);
+
+  // CubeSat: kubus dengan panel lipat dan antena
+  const cubesat = new THREE.Group();
+  cubesat.add(part(new THREE.BoxGeometry(5, 5, 5), grey, 0, 0));
+  const panels = new THREE.Group();
+  panels.add(part(new THREE.BoxGeometry(8, 0.3, 4.6), solar, -6.6, 0));
+  panels.add(part(new THREE.BoxGeometry(8, 0.3, 4.6), solar, 6.6, 0));
+  cubesat.add(panels);
+  const antenna = part(new THREE.CylinderGeometry(0.2, 0.2, 9, 8), white, 0, 7);
+  cubesat.add(antenna);
+
+  const craft = new THREE.Group();
+  craft.add(rocket, capsule, cubesat);
+  scene.add(craft);
+
+  function showCraft(kind, v, x, y, angle, thrusting) {
+    rocket.visible = kind === 'rocket';
+    capsule.visible = kind === 'capsule';
+    cubesat.visible = kind === 'cubesat';
+    const flicker = 0.8 + Math.random() * 0.4;
+    rocketFlame.visible = capsuleFlame.visible = !!thrusting;
+    rocketFlame.scale.set(1, flicker, 1);
+    capsuleFlame.scale.set(1, flicker, 1);
+    entryGlow.visible = kind === 'capsule' && v.phase === 'entry';
+    panels.visible = !!v.panelsOpen;
+    antenna.visible = !!v.antennaOpen;
+    craft.position.set(x, y, 0);
+    craft.rotation.set(0, 0, -angle); // sudut game searah jarum jam dari atas
   }
 
   // ---------- Kamera ----------
@@ -292,9 +282,7 @@ export async function createRenderer(canvas) {
       trail.set(v.trail);
       prediction.set(v.prediction);
       stationLink.set(null);
-      drawCraft('capsule', v);
-      craft.position.set(v.craft.x, v.craft.y, 0);
-      craftMat.rotation = -v.craft.angle;
+      showCraft('capsule', v, v.craft.x, v.craft.y, v.craft.angle, v.craft.thrusting);
     } else {
       frame('earth', 0, 0, EARTH.orbitRadius * 1.3, EARTH.orbitRadius * 1.3);
       moon.visible = false;
@@ -306,15 +294,13 @@ export async function createRenderer(canvas) {
       station.visible = stationOn;
       stationLink.set(stationOn && v.inPass ? [station.position, v.flight] : null);
       trail.set(v.flight ? v.flight.trail : null);
-      drawCraft(v.released ? 'cubesat' : 'rocket', v);
-      craft.position.set(v.flight.x, v.flight.y, 0);
-      craftMat.rotation = -v.flight.angle;
+      showCraft(v.released ? 'cubesat' : 'rocket', v, v.flight.x, v.flight.y, v.flight.angle, v.flight.thrusting);
     }
 
-    // Ukuran wahana tetap terbaca berapa pun jarak kamera
+    // Model diperbesar saat kamera jauh (Level 2) supaya wahana tetap terlihat. Tidak sesuai skala.
     const d = camera.position.distanceTo(craft.position);
-    const s = d * 0.045;
-    craft.scale.set(s, s, 1);
+    const s = Math.max(1, d / 650);
+    craft.scale.set(s, s, s);
 
     controls.update();
     renderer.render(scene, camera);
