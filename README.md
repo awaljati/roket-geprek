@@ -1,8 +1,5 @@
 # Roket Geprek
 
-Game desain misi luar angkasa untuk NASA Space Apps Challenge 2026, Bandung.
-Satu pemain jadi **Navigator** (menyetir roket), satu jadi **Spesialis** (mengatur wahana), masing-masing di perangkat sendiri dengan kode room.
-
 ## Menjalankan
 
 ```bash
