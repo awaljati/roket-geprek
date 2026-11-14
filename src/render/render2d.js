@@ -51,11 +51,19 @@ export function createRenderer(canvas) {
     ctx.strokeStyle = COLORS.earthEdge;
     ctx.stroke();
 
-    // Stasiun Bumi (Level 1): menyala saat lintasan terbuka
-    if (view.level === 1 && ['countdown', 'deploy', 'transmit'].includes(view.phase)) {
-      const a = Math.PI / 4 + (view.flight.earthAngle || 0); // stasiun ikut berputar bersama Bumi
+    // Stasiun Bumi (Level 1): ikut berputar bersama Bumi, dengan wilayah jangkauan antenanya
+    if (view.level === 1 && view.station && ['countdown', 'deploy', 'transmit'].includes(view.phase)) {
+      const a = view.station.angle;
+      const cov = view.station.coverage;
       const sx = Math.sin(a) * EARTH.radius;
       const sy = Math.cos(a) * EARTH.radius;
+      // wilayah jangkauan: kipas dari stasiun ke cincin orbit
+      ctx.beginPath();
+      ctx.moveTo(sx, sy);
+      ctx.arc(0, 0, EARTH.orbitRadius + 20, Math.PI / 2 - a - cov, Math.PI / 2 - a + cov);
+      ctx.closePath();
+      ctx.fillStyle = view.inPass ? 'rgba(255,213,74,0.22)' : 'rgba(255,213,74,0.10)';
+      ctx.fill();
       ctx.beginPath();
       ctx.arc(sx, sy, 6, 0, Math.PI * 2);
       ctx.fillStyle = COLORS.station;
@@ -64,7 +72,7 @@ export function createRenderer(canvas) {
         ctx.beginPath();
         ctx.moveTo(sx, sy);
         ctx.lineTo(view.flight.x, view.flight.y);
-        ctx.strokeStyle = 'rgba(255,213,74,0.7)';
+        ctx.strokeStyle = 'rgba(255,213,74,0.8)';
         ctx.lineWidth = 2;
         ctx.setLineDash([6, 6]);
         ctx.stroke();

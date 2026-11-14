@@ -2,7 +2,7 @@
 // Fase: launch -> release -> countdown -> deploy -> transmit -> selesai.
 // Semua aturan Level 1 ada di sini; tampilan cukup membaca `game` dan memanggil command().
 
-import { createFlight, stepFlight, EARTH } from '../engine/flight.js';
+import { createFlight, stepFlight, EARTH, positionAngle } from '../engine/flight.js';
 import { createAssist, stepAssist } from '../engine/assist.js';
 import { LEVELS, CUBESAT_SIZES } from '../data/levels.js';
 import { itemById } from '../data/items.js';
@@ -48,8 +48,7 @@ export function createLevel1(build) {
     battery: Math.max(2, items.reduce((s, it) => s + it.storeWh, 0)),
     batteryMax: Math.max(2, items.reduce((s, it) => s + it.storeWh, 0)),
     data: 0,
-    passIndex: 0,
-    passTimer: 0, // detik sejak fase transmit mulai
+    passIndex: 0, // jumlah lintasan stasiun yang sudah lewat sejak antena boleh dibuka
     inPass: false,
     log: [],
     result: null,
@@ -103,18 +102,14 @@ export function stepLevel1(game, ctrl, dt) {
       game.phase = 'deploy';
       game.log.push('Hitung mundur selesai. Buka panel dan antena.');
     }
+    updateStation(game); // supaya Spesialis sudah tahu kapan stasiun terlihat
     return game;
   }
 
   if (game.phase === 'deploy' || game.phase === 'transmit') {
-    // Jadwal lintasan stasiun Bumi dimulai begitu hitung mundur selesai.
-    game.passTimer += dt;
-    const cycle = L.nextPassSec + L.passWindowSec;
-    const tInCycle = game.passTimer % cycle;
-    game.passIndex = Math.floor(game.passTimer / cycle);
-    game.inPass = tInCycle >= L.nextPassSec;
-    game.secondsToPass = game.inPass ? 0 : L.nextPassSec - tInCycle;
-    game.secondsLeftInPass = game.inPass ? cycle - tInCycle : 0;
+    const wasInPass = game.inPass;
+    updateStation(game);
+    if (wasInPass && !game.inPass) game.passIndex++;
 
     if (game.transmitting && game.inPass && antennaReady(game)) {
       game.data = Math.min(L.dataForFullSignal, game.data + game.dataRate * dt);
@@ -128,6 +123,30 @@ export function stepLevel1(game, ctrl, dt) {
     }
   }
   return game;
+}
+
+// Posisi stasiun Bumi vs CubeSat. Stasiun ikut berputar bersama Bumi; CubeSat mengorbit lebih cepat.
+export function stationGeometry(f) {
+  const D = Math.PI / 180;
+  const stationAngle = L.stationOffsetDeg * D + f.earthAngle;
+  const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
+  const ahead = wrap(stationAngle - positionAngle(f)); // + = stasiun masih di depan CubeSat
+  const r = Math.hypot(f.x, f.y);
+  const orbitOmega = Math.abs(f.x * f.vy - f.y * f.vx) / (r * r);
+  // kecepatan sudut relatif dalam detik nyata (gerak di orbit diperlambat)
+  const rel = Math.max(1e-3, (orbitOmega - (f.planet.spin || 0)) * L.orbitTimeScale);
+  const cov = L.stationCoverageDeg * D;
+  const inPass = Math.abs(ahead) <= cov;
+  let toPass = 0;
+  if (!inPass) toPass = (ahead > cov ? ahead - cov : 2 * Math.PI + ahead - cov) / rel;
+  return { stationAngle, coverage: cov, inPass, secondsToPass: toPass, secondsLeftInPass: inPass ? (ahead + cov) / rel : 0 };
+}
+
+function updateStation(game) {
+  const g = stationGeometry(game.flight);
+  game.inPass = g.inPass;
+  game.secondsToPass = g.secondsToPass;
+  game.secondsLeftInPass = g.secondsLeftInPass;
 }
 
 function antennaReady(game) {
@@ -195,6 +214,10 @@ export function snapshotLevel1(game, withTrail = true) {
     data: game.data,
     dataTarget: L.dataForFullSignal,
     inPass: game.inPass,
+    station: (() => {
+      const g = stationGeometry(game.flight);
+      return { angle: g.stationAngle, coverage: g.coverage };
+    })(),
     secondsToPass: game.secondsToPass ?? null,
     secondsLeftInPass: game.secondsLeftInPass ?? null,
     lastLog: game.log[game.log.length - 1] || '',
