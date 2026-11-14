@@ -28,9 +28,10 @@ Satu pemain jadi **Navigator** yang menyetir roket, satu lagi jadi **Spesialis**
 ## Cara main
 
 1. **Lobby:** pilih *Main solo* (satu perangkat), atau *Buat room* (Navigator) lalu bagikan kode 4 huruf ke Spesialis yang menekan *Gabung*.
-2. **Rakit:** pilih komponen. Bar massa, anggaran, dan slot harus hijau.
-3. **Terbang:** Navigator mengatur gas dan arah, Spesialis membuka panel, mengirim sinyal, memotret, dan membaca prediksi lintasan.
-4. **Debrief:** bintang, skor, alasan gagal, dan misi NASA nyata yang mirip.
+2. **Pilih misi:** semua level yang sudah tersedia bisa langsung dipilih, tidak perlu berurutan. Bintang terbaik tersimpan di browser.
+3. **Rakit:** pilih komponen. Bar massa, anggaran, dan slot harus hijau.
+4. **Terbang:** Navigator mengatur gas dan arah, Spesialis membuka panel, mengirim sinyal, memotret, dan membaca prediksi lintasan.
+5. **Debrief:** bintang, skor, alasan gagal, dan misi NASA nyata yang mirip.
 
 **Bantuan pilot** (default nyala) mengatur arah roket secara otomatis dan memberi tahu kapan harus menekan tombol, cocok untuk pemula. Bisa dimatikan di layar Rakit.
 

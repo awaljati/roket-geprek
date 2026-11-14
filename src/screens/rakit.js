@@ -89,6 +89,6 @@ export function rakitScreen(app, el) {
   }
   update();
 
-  $('#back').onclick = () => app.go('lobby');
+  $('#back').onclick = () => app.go('levels');
   $('#launch').onclick = () => app.go('flight');
 }
