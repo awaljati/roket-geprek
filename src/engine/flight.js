@@ -13,9 +13,9 @@ export const ROCKET_TUNING = {
   thrustAccel: 100, // u/s^2 saat roket penuh
   turnRate: 2.2, // rad/s
   fuelBurnPerSec: 0.22, // fraksi bahan bakar per detik saat dorong
-  orbitRadiusTol: 14, // u
-  orbitSpeedTol: 0.08, // 8% dari kecepatan orbit lingkaran
-  orbitRadialTol: 10, // u/s kecepatan naik/turun yang masih dianggap datar
+  orbitRadiusTol: 18, // u
+  orbitSpeedTol: 0.1, // 10% dari kecepatan orbit lingkaran
+  orbitRadialTol: 12, // u/s kecepatan naik/turun yang masih dianggap datar
   escapeRadius: 600,
 };
 
@@ -56,6 +56,11 @@ export function stepFlight(s, ctrl, dt) {
   const thrusting = throttle > 0 && s.fuel > 0 && s.status !== 'orbit';
   s.thrusting = thrusting;
   s.throttle = throttle;
+  // Di landasan: roket baru terangkat kalau dorongan lebih besar dari gravitasi.
+  const surfaceG = p.gm / (p.radius * p.radius);
+  const accel = (T.thrustAccel * throttle) / s.massRatio;
+  s.padTooWeak = s.status === 'pad' && thrusting && accel <= surfaceG;
+  if (s.padTooWeak) return s;
   if (thrusting) {
     const a = (T.thrustAccel * throttle) / s.massRatio;
     ax += Math.sin(s.angle) * a;

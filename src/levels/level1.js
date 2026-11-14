@@ -3,6 +3,7 @@
 // Semua aturan Level 1 ada di sini; tampilan cukup membaca `game` dan memanggil command().
 
 import { createFlight, stepFlight, EARTH } from '../engine/flight.js';
+import { createAssist, stepAssist } from '../engine/assist.js';
 import { LEVELS, CUBESAT_SIZES } from '../data/levels.js';
 import { itemById } from '../data/items.js';
 
@@ -39,6 +40,7 @@ export function createLevel1(build) {
     check,
     phase: 'launch',
     flight: createFlight({ planet: EARTH, fuel: build.fuel, orbitHoldSec: L.orbitHoldSec }),
+    assist: build.assist === false ? null : createAssist(),
     countdown: L.safeCountdownSec,
     panelsOpen: false,
     antennaOpen: false,
@@ -77,7 +79,10 @@ export function stepLevel1(game, ctrl, dt) {
   if (game.result) return game;
 
   if (game.phase === 'launch' || game.phase === 'release') {
-    stepFlight(game.flight, ctrl, dt);
+    // Naik ke orbit diperlambat supaya pemain sempat bereaksi.
+    const flightDt = game.phase === 'launch' ? dt * L.launchTimeScale : dt;
+    if (game.assist && game.phase === 'launch' && ctrl) stepAssist(game.assist, game.flight, ctrl);
+    stepFlight(game.flight, ctrl, flightDt);
     if (game.flight.failCode) return finish(game, false, game.flight.failCode);
     if (game.phase === 'launch' && game.flight.status === 'orbit') {
       game.phase = 'release';
@@ -193,6 +198,8 @@ export function snapshotLevel1(game, withTrail = true) {
     secondsToPass: game.secondsToPass ?? null,
     secondsLeftInPass: game.secondsLeftInPass ?? null,
     lastLog: game.log[game.log.length - 1] || '',
+    coach: game.assist && game.phase === 'launch' ? { msg: game.assist.msg, urgent: game.assist.urgent } : null,
+    padTooWeak: !!game.flight.padTooWeak,
     result: game.result,
   };
 }

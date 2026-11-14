@@ -32,6 +32,11 @@ export function rakitScreen(app, el) {
         )
         .join('')}</div>
     </div>
+    ${
+      isCubeSat
+        ? `<label class="card row"><input type="checkbox" id="assist"> <span><b>Bantuan pilot</b> (disarankan untuk pemula)<br><small class="muted">Roket dimiringkan otomatis dan mesin dimatikan tepat waktu. Kamu cukup menekan Gas + saat diminta.</small></span></label>`
+        : ''
+    }
     <div class="card">
       <b>Bahan bakar ${isCubeSat ? 'roket' : 'kapsul'}: <span id="fuelv"></span></b>
       <input type="range" id="fuel" min="1" max="10" step="1" style="width:100%">
@@ -56,6 +61,10 @@ export function rakitScreen(app, el) {
       update();
     };
   });
+  if ($('#assist')) {
+    $('#assist').checked = b.assist !== false;
+    $('#assist').onchange = () => (b.assist = $('#assist').checked);
+  }
   $('#fuel').value = Math.round(b.fuel * 10);
   $('#fuel').oninput = () => ((b.fuel = $('#fuel').value / 10), update());
 
@@ -72,6 +81,11 @@ export function rakitScreen(app, el) {
       bar('Slot', c.slotsUsed, c.slots, 'slot');
     // Terlalu berat tetap boleh diluncurkan supaya pemain melihat F-HEAVY di Debrief.
     $('#launch').disabled = c.overBudget || c.tooManyItems;
+    const why = [];
+    if (c.tooManyItems) why.push(`Slot penuh: maksimal ${c.slots} komponen${isCubeSat ? ' (pilih CubeSat yang lebih besar, misalnya 3U)' : ''}.`);
+    if (c.overBudget) why.push('Anggaran terlewati: kurangi komponen atau bahan bakar.');
+    if (c.tooHeavy) why.push('Terlalu berat: roket akan gagal (F-HEAVY).');
+    $('#bars').innerHTML += why.length ? `<p class="warn">${why.join('<br>')}</p>` : '';
   }
   update();
 

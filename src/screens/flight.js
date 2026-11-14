@@ -16,6 +16,7 @@ export function flightScreen(app, el) {
     <div class="view">
       <canvas id="cv"></canvas>
       <div class="timeline" id="timeline"></div>
+      <div class="coach" id="coach"></div>
       <div class="hud"><div id="hud"></div>
         <details><summary class="muted">Kontrol</summary><div class="keys">${helpHtml()}</div></details>
       </div>
@@ -40,10 +41,15 @@ export function flightScreen(app, el) {
     updatePanel = (v) => ($('#navst').textContent = v.lastLog);
   }
 
-  const unbind = bindControls($('#pad'), (action) => {
-    if (action === 'warp') warp = warp === 1 ? 3 : 1;
-    else controlAction(ctrl, action, craft());
-  });
+  const padSet = app.level === 2 ? 'moon' : game.assist ? 'basic' : 'manual';
+  const unbind = bindControls(
+    $('#pad'),
+    (action) => {
+      if (action === 'warp') warp = warp === 1 ? 3 : 1;
+      else controlAction(ctrl, action, craft());
+    },
+    padSet,
+  );
 
   let raf = 0;
   let last = performance.now();
@@ -90,7 +96,19 @@ export function flightScreen(app, el) {
     drawHud2(v, speed);
   }
 
+  function drawCoach(v) {
+    const box = $('#coach');
+    if (!v.coach || !v.coach.msg) {
+      box.style.display = 'none';
+      return;
+    }
+    box.style.display = 'block';
+    box.className = 'coach' + (v.coach.urgent ? ' urgent' : '');
+    box.textContent = v.coach.msg;
+  }
+
   function drawHud1(v, speed) {
+    drawCoach(v);
     const f = game.flight;
     const o = orbitCheck(f);
     const p = f.planet;
