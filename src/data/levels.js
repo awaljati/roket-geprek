@@ -103,7 +103,44 @@ export const LEVELS = {
       [7, 190],
       [2.5, 70],
     ],
-    hint: 'Brake your sideways speed first, then keep the lander upright and descend slowly. Gas 50% holds your descent speed; 75% slows you down.',
+    // Matahari di kutub selatan selalu rendah (aslinya ~1,5°), jadi bayangan sangat panjang.
+    sunElevationDeg: 4,
+    shadowLookback: 600, // u ke arah Matahari yang diperiksa untuk bayangan
+    // Titik pendaratan: sepasang (puncak bukit + dekat kawah) berulang setiap sitePeriod u.
+    // Saat mulai turun, pasangan pertama di depan pendarat (minimal siteMinAhead u) diberi penanda.
+    sitePeriod: 300, // semua bentuk satu pasangan harus muat dalam satu periode
+    sitePhase: 180, // posisi puncak bukit pertama
+    siteMinAhead: 70,
+    outsideMaxStars: 2, // mendarat di luar kedua titik: sah, tapi bintang maksimal 2
+    smoothLandingSpeed: 1.5, // u/s, "mulus" untuk bintang 3 di dekat kawah
+    sites: {
+      ridge: {
+        name: 'Puncak bukit',
+        about: 'Medan landai, hampir selalu terang, sedikit es.',
+        ice: 'sedikit',
+        halfWidth: 18, // lebar landasan datar ke tiap sisi (u)
+        ramp: 40, // lereng dari landasan ke medan sekitar (u)
+        raise: 8, // landasan lebih tinggi dari bukit sekitar (u)
+        maxTiltDeg: 10,
+        maxStars: 2,
+      },
+      crater: {
+        name: 'Dekat kawah gelap',
+        about: 'Medan sempit, harus lebih tegak, sering dalam bayangan, banyak es.',
+        ice: 'banyak',
+        offset: 130, // jarak dari puncak bukit (u)
+        halfWidth: 7,
+        ramp: 10,
+        maxTiltDeg: 5,
+        maxStars: 3,
+        craterRadius: 35, // kawah di sebelah kanan landasan (jauh dari Matahari)
+        craterDepth: 30,
+        rimOffset: -50, // bukit di sisi Matahari yang membuat landasan sering dalam bayangan
+        rimHeight: 12,
+        rimWidth: 20,
+      },
+    },
+    hint: 'Pick a landing site early, slide over it while still high, then descend slowly and upright. Gas 50% holds your descent speed; 75% slows you down. Only a smooth landing near the dark crater earns 3 stars.',
   },
   4: { name: 'Level 4: Mendarat di Mars', rocket: 'besar', budget: 260, body: 'Rover', minFuelFor3Stars: 0.15, photoTarget: 1 },
 };

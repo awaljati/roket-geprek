@@ -223,6 +223,7 @@ export function flightScreen(app, el) {
     const tiltBad = Math.abs(v.tiltDeg) > v.maxLandingTiltDeg;
     $('#hud').innerHTML = `${controlLine(v, speed)}
       ${v.hasEngine ? '' : '<span style="color:var(--bad)">Tidak ada mesin pendarat!</span>'}
+      ${v.direction ? `<span${v.target && v.target.over ? ' style="color:var(--ok)"' : ''}>${v.direction}</span>` : ''}
       <span>Ketinggian ${v.altitude.toFixed(0)} u</span>
       <span${warn(lowAndFast)}>Kecepatan turun ${v.vDown.toFixed(1)} u/s${v.vDown < 0 ? ' (naik)' : ''}</span>
       <span${warn(v.altitude < 40 && Math.abs(v.vSide) > max)}>Kecepatan menyamping ${Math.abs(v.vSide).toFixed(1)} u/s${Math.abs(v.vSide) > 0.2 ? (v.vSide > 0 ? ' →' : ' ←') : ''}</span>

@@ -287,17 +287,126 @@ export function createRenderer(canvas) {
       g.addColorStop(1, '#2a2a2a');
       ctx.fillStyle = g;
       ctx.fill();
+      // Bayangan panjang (dihitung di level, p.s = 1 kalau dalam bayangan)
+      // Satu bentuk per bagian yang bersambung, supaya tidak ada garis sambungan.
+      ctx.fillStyle = 'rgba(0,0,0,0.72)';
+      let i = 0;
+      while (i < terrain.length) {
+        if (!terrain[i].s) {
+          i++;
+          continue;
+        }
+        const from = Math.max(0, i - 1);
+        while (i < terrain.length && terrain[i].s) i++;
+        const to = Math.min(terrain.length - 1, i);
+        ctx.beginPath();
+        ctx.moveTo(sx(terrain[from].x), h);
+        for (let j = from; j <= to; j++) ctx.lineTo(sx(terrain[j].x), sy(terrain[j].y));
+        ctx.lineTo(sx(terrain[to].x), h);
+        ctx.closePath();
+        ctx.fill();
+      }
       for (let i = 1; i < terrain.length; i++) {
         const a = terrain[i - 1];
         const b = terrain[i];
-        const lit = b.y < a.y; // lereng turun ke kanan menghadap Matahari di kiri
+        // lereng naik ke kanan menghadap Matahari di kiri
+        const lit = !a.s && !b.s && b.y >= a.y;
         ctx.beginPath();
         ctx.moveTo(sx(a.x), sy(a.y));
         ctx.lineTo(sx(b.x), sy(b.y));
-        ctx.strokeStyle = lit ? '#e8e6df' : '#5e5e5c';
+        ctx.strokeStyle = lit ? '#e8e6df' : a.s || b.s ? '#2b2b2b' : '#77776f';
         ctx.lineWidth = 2 * dpr;
         ctx.stroke();
       }
+    }
+
+    // Ketinggian permukaan di x (dari titik-titik snapshot)
+    const groundY = (x) => {
+      for (let i = 1; i < terrain.length; i++) {
+        const a = terrain[i - 1];
+        const b = terrain[i];
+        if (x >= a.x && x <= b.x) return a.y + ((b.y - a.y) * (x - a.x)) / (b.x - a.x || 1);
+      }
+      return null;
+    };
+
+    // Bayangan pendarat: memanjang di permukaan ke arah menjauhi Matahari
+    if (view.craftShadow && terrain.length > 1) {
+      const { x0, x1 } = view.craftShadow;
+      ctx.beginPath();
+      let started = false;
+      const n = 24;
+      for (let i = 0; i <= n; i++) {
+        const x = x0 + ((x1 - x0) * i) / n;
+        const y = groundY(x);
+        if (y === null) continue;
+        if (!started) ctx.moveTo(sx(x), sy(y));
+        else ctx.lineTo(sx(x), sy(y));
+        started = true;
+      }
+      ctx.strokeStyle = 'rgba(0,0,0,0.85)';
+      ctx.lineWidth = Math.max(3 * dpr, 2 * scale);
+      ctx.lineCap = 'round';
+      ctx.stroke();
+      ctx.lineCap = 'butt';
+    }
+
+    // Penanda titik pendaratan
+    if (view.sites) {
+      ctx.font = `600 ${12 * dpr}px system-ui`;
+      ctx.textAlign = 'center';
+      for (const s of view.sites) {
+        const chosen = view.siteChoice === s.id;
+        const color = chosen ? '#ff8a3d' : '#9cc4ff';
+        const px = sx(s.x);
+        const py = sy(s.y);
+        if (px < -60 * dpr || px > w + 60 * dpr) continue;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = (chosen ? 4 : 2.5) * dpr;
+        ctx.beginPath(); // lebar landasan
+        ctx.moveTo(sx(s.x - s.halfWidth), py);
+        ctx.lineTo(sx(s.x + s.halfWidth), py);
+        ctx.stroke();
+        const pole = 34 * dpr;
+        ctx.lineWidth = 1.5 * dpr;
+        ctx.beginPath();
+        ctx.moveTo(px, py);
+        ctx.lineTo(px, py - pole);
+        ctx.stroke();
+        ctx.fillStyle = color;
+        ctx.beginPath(); // bendera
+        ctx.moveTo(px, py - pole);
+        ctx.lineTo(px + 12 * dpr, py - pole + 5 * dpr);
+        ctx.lineTo(px, py - pole + 10 * dpr);
+        ctx.fill();
+        // Label disembunyikan menjelang mendarat supaya tidak menutupi pendarat.
+        if (view.altitude > 25) {
+          ctx.fillText(`${s.name}${chosen ? ' ✓' : ''}`, px, py - pole - 18 * dpr);
+          ctx.fillStyle = 'rgba(220,230,255,0.8)';
+          ctx.font = `${10.5 * dpr}px system-ui`;
+          ctx.fillText(`es ${s.ice} · miring ≤ ${s.maxTiltDeg}° · ★ maks. ${s.maxStars}`, px, py - pole - 5 * dpr);
+          ctx.font = `600 ${12 * dpr}px system-ui`;
+        }
+      }
+      // Titik terpilih di luar layar: panah di tepi
+      const t = view.sites.find((s) => s.id === view.siteChoice);
+      if (t) {
+        const px = sx(t.x);
+        if (px < 0 || px > w) {
+          const right = px > w;
+          const ex = right ? w - 18 * dpr : 18 * dpr;
+          const ey = h * 0.5;
+          ctx.fillStyle = '#ff8a3d';
+          ctx.beginPath();
+          ctx.moveTo(ex + (right ? 12 : -12) * dpr, ey);
+          ctx.lineTo(ex, ey - 10 * dpr);
+          ctx.lineTo(ex, ey + 10 * dpr);
+          ctx.fill();
+          ctx.textAlign = right ? 'right' : 'left';
+          ctx.fillText(`${t.name} ${Math.round(Math.abs(t.x - c.x))} u`, ex + (right ? -6 : 6) * dpr, ey - 16 * dpr);
+        }
+      }
+      ctx.textAlign = 'start';
     }
 
     // Jejak
