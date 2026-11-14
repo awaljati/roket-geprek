@@ -1,50 +1,98 @@
 # Roket Geprek
 
-## Menjalankan
+**Rancang wahanamu, lalu terbangkan misinya berdua.** Roket Geprek adalah game web tentang desain misi luar angkasa untuk NASA Space Apps Challenge 2026 (challenge *Space Mission Design Game*), dibuat di Bandung.
+
+Satu pemain jadi **Navigator** yang menyetir roket, satu lagi jadi **Spesialis** yang mengoperasikan wahana. Masing-masing memakai perangkatnya sendiri dan bergabung lewat kode room. Setiap pilihan di layar Rakit (massa, daya, bahan bakar, anggaran) langsung terasa saat terbang.
+
+▶ **Main sekarang:** _tambahkan link Vercel di sini_
+
+![Level 2: memutari Bulan](docs/img/level2-bulan.png)
+
+## Level
+
+| Level | Misi | Yang dipelajari | Status |
+|---|---|---|---|
+| 1. CubeSat Transmisi | Rakit CubeSat, bawa ke orbit rendah Bumi, kirim sinyal pertama | Gravity turn, kecepatan orbit, aturan pelepasan CubeSat, jendela stasiun Bumi | Bisa dimainkan |
+| 2. Memutari Bulan | Terbang memutari Bulan dan pulang, terinspirasi Artemis II | Lintasan *free return*, koreksi lintasan (MCC), koridor masuk atmosfer | Bisa dimainkan |
+| 3. Kutub Selatan Bulan | Mendarat di wilayah target pendaratan Artemis | Mendarat tanpa atmosfer, bayangan panjang di kutub | Direncanakan |
+| 4. Mendarat di Mars | Bawa rover ke Mars | Jeda sinyal, pendaratan otomatis | Direncanakan |
+
+<table><tr>
+<td><img src="docs/img/rakit-level1.png" alt="Layar Rakit"></td>
+<td><img src="docs/img/level1-terbang.png" alt="Level 1: menuju orbit"></td>
+</tr><tr>
+<td align="center">Rakit: massa, anggaran, slot</td>
+<td align="center">Level 1: menuju cincin orbit</td>
+</tr></table>
+
+## Cara main
+
+1. **Lobby:** pilih *Main solo* (satu perangkat), atau *Buat room* (Navigator) lalu bagikan kode 4 huruf ke Spesialis yang menekan *Gabung*.
+2. **Rakit:** pilih komponen. Bar massa, anggaran, dan slot harus hijau.
+3. **Terbang:** Navigator mengatur gas dan arah, Spesialis membuka panel, mengirim sinyal, memotret, dan membaca prediksi lintasan.
+4. **Debrief:** bintang, skor, alasan gagal, dan misi NASA nyata yang mirip.
+
+**Bantuan pilot** (default nyala) mengatur arah roket secara otomatis dan memberi tahu kapan harus menekan tombol, cocok untuk pemula. Bisa dimatikan di layar Rakit.
+
+### Kontrol Navigator
+
+Semua tombol cukup diketuk. Di HP tersedia tombol besar di layar.
+
+| Tombol | Fungsi |
+|---|---|
+| W / S | gas naik / turun 25% |
+| Spasi / X | mesin nyala-mati / matikan mesin |
+| F | dorongan pendek (koreksi kecil) |
+| A / D | putar 15° |
+| Q / E | arahkan searah / lawan arah gerak |
+| Z / C | arahkan ke kiri / kanan jalur (Level 2) |
+| T | percepat waktu saat mesin mati |
+| Esc / P | menu jeda |
+
+Spesialis di Level 2: **1** buka panel surya, **2** ambil foto.
+
+## Akurasi sains
+
+Mekanik utama mengikuti cara kerja misi sungguhan, dengan penyederhanaan supaya bisa dimainkan:
+
+- Masuk orbit butuh kecepatan ke samping (gravity turn), bukan sekadar naik tinggi.
+- CubeSat menunggu hitung mundur sebelum membuka antena dan panel, dan hanya bisa mengirim data saat melintas di atas stasiun Bumi.
+- Kesalahan kecil di awal perjalanan ke Bulan membesar seiring jarak, jadi koreksi awal lebih hemat bahan bakar.
+- Kapsul harus masuk atmosfer di koridor sudut yang sempit: terlalu curam terbakar, terlalu landai memantul.
+- Penyederhanaan: tidak sesuai skala, waktu dipercepat, fisika 2D, dan di Level 2 Bulan dibuat diam.
+
+**Sumber:** [NASA Planetary Fact Sheet](https://nssdc.gsfc.nasa.gov/planetary/factsheet/), [CubeSat 101 (NASA CSLI)](https://www3.nasa.gov/sites/default/files/atoms/files/nasa_csli_cubesat_101_508.pdf), informasi misi Artemis II dari NASA, dan resource resmi challenge (Design and Develop Science Missions, Mission Design Lab, NASA Mission Viz).
+
+## Menjalankan di komputer
+
+Butuh Node.js 18 atau lebih baru.
 
 ```bash
 npm install
 npm run dev
 ```
 
-Buka alamat yang muncul (misalnya `http://localhost:5173`). `--host` sudah aktif, jadi HP di Wi-Fi yang sama bisa membuka alamat "Network".
+Buka alamat yang muncul (misalnya `http://localhost:5173`). HP di Wi-Fi yang sama bisa membuka alamat "Network".
 
-### Tes dua peran tanpa Firebase
-1. Tab 1: Main → Buat room → catat kode → Lanjut ke Rakit → Luncurkan.
-2. Tab 2 (browser yang sama): Main → masukkan kode → Gabung.
-3. Tab 1 menyetir, Tab 2 menekan tombol Spesialis.
+- **Tanpa Firebase:** room berjalan lokal. Buka dua tab di browser yang sama, satu jadi Navigator dan satu jadi Spesialis.
+- **Online antar perangkat:** ikuti [docs/SETUP-ONLINE.md](docs/SETUP-ONLINE.md) (Firebase + Vercel).
 
-### Kontrol Navigator (cukup diketuk, tidak perlu ditahan)
-| Tombol | Fungsi |
+## Teknologi
+
+Vite dan JavaScript, canvas 2D, Firebase Realtime Database untuk room, deploy di Vercel. Penjelasan struktur kode ada di [docs/ARSITEKTUR.md](docs/ARSITEKTUR.md), dan cara berkontribusi di [CONTRIBUTING.md](CONTRIBUTING.md).
+
+Kode dibangun dengan bantuan asisten AI (Claude Code). Konsep game, desain misi, data, dan aset dikerjakan tim.
+
+## Tim
+
+| Peran | Tugas utama |
 |---|---|
-| W / S | gas naik / turun 25% |
-| Spasi | mesin nyala / mati |
-| X | matikan mesin |
-| F | dorongan pendek (koreksi kecil) |
-| A / D | putar 15° |
-| Q | arahkan searah gerak |
-| E | arahkan lawan arah gerak |
+| Astronomi 1 | Mesin terbang, level, tampilan |
+| Astronomi 2 | Desain misi, data dan angka game, teks sains, uji coba |
+| Sains Data | Room online, lobby, rakit, debrief, balancing |
+| DKV 1 | UI semua layar |
+| DKV 2 | Roket, wahana, ikon, logo, video demo |
 
-Cara cepat masuk orbit: gas penuh (W 4x), setelah naik sedikit putar D 5x lalu Q, matikan mesin (X) saat "Titik tertinggi" ✓, lalu saat hampir di puncak nyalakan gas lagi sampai kecepatan ✓.
+## Lisensi
 
-### Main lintas perangkat (online)
-Salin `.env.example` jadi `.env`, isi dari Firebase Console (Realtime Database + Anonymous sign-in aktif), lalu `npm run dev` lagi.
-
-## Level 1: CubeSat Transmisi
-Rakit CubeSat (1U/3U) → terbang ke cincin orbit dan tahan 3 detik → Spesialis lepas CubeSat → tunggu hitung mundur → buka panel dan antena → kirim sinyal saat lewat di atas stasiun Bumi.
-
-## Level 2: Memutari Bulan
-Rakit kapsul (wajib kamera dan pelindung panas) → luncurkan dari Bumi ke orbit parkir (seperti Level 1) → Gas + untuk TLI → garis putus-putus = prediksi, garis hijau = target free return → di jendela MCC koreksi lintasan → dekat Bulan Spesialis memotret (tombol 2) → MCC pulang → masuk atmosfer dengan pelindung panas di depan.
-Dengan **Bantuan pilot** (default nyala) arah kapsul diatur otomatis; pemain cukup menekan Gas + dan Ambil foto saat kotak oranye muncul. Koreksi lebih awal = lebih hemat bahan bakar.
-
-## Menu jeda
-Tombol ☰ Menu, Esc/P, atau tombol Back di HP membuka menu: Lanjutkan, Ulangi misi, Ubah rakitan, Keluar ke menu utama. Back di layar lain kembali satu layar, tidak keluar dari web.
-
-## Cara kerja tim
-- Branch per orang: `nama/fitur` (misal `andi/level2`), lalu Pull Request ke `main`.
-- `main` selalu bisa dijalankan; Vercel deploy otomatis dari `main`.
-- Angka game hanya di `src/data/`. Kalau datasheet berubah, ubah di sana.
-- Pakai Claude Code: baca `CLAUDE.md` dulu, minta perubahan kecil per langkah.
-
-## Struktur
-Lihat `CLAUDE.md`.
+[MIT](LICENSE)
