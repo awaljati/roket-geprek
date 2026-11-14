@@ -156,6 +156,15 @@ export async function createRenderer(canvas) {
   // Stasiun Bumi Level 1
   const station = new THREE.Mesh(new THREE.SphereGeometry(5, 12, 8), new THREE.MeshBasicMaterial({ color: COLORS.station }));
   scene.add(station);
+  let coverage = null; // wilayah jangkauan antena stasiun, dibuat saat pertama dibutuhkan
+  function coverageMesh(cov) {
+    const m = new THREE.Mesh(
+      new THREE.RingGeometry(EARTH.radius, EARTH.orbitRadius + 20, 48, 1, Math.PI / 2 - cov, 2 * cov),
+      new THREE.MeshBasicMaterial({ color: COLORS.station, transparent: true, opacity: 0.12, side: THREE.DoubleSide, depthWrite: false }),
+    );
+    scene.add(m);
+    return m;
+  }
   let localEarthAngle = 0;
 
   // ---------- Wahana (model 3D sederhana) ----------
@@ -271,12 +280,13 @@ export async function createRenderer(canvas) {
     if (ea !== undefined) localEarthAngle = ea;
     else localEarthAngle += EARTH.spin / 60;
     earthSpin.rotation.z = -localEarthAngle;
-    const stationAngle = Math.PI / 4 + localEarthAngle;
+    const stationAngle = v.station ? v.station.angle : Math.PI / 4 + localEarthAngle;
     station.position.set(Math.sin(stationAngle) * EARTH.radius, Math.cos(stationAngle) * EARTH.radius, 0);
 
     if (cislunar) {
       frame('moon', -112, 535, 400, 820);
       ringBand.visible = ringLine.visible = station.visible = false;
+      if (coverage) coverage.visible = false;
       moon.visible = true;
       if (!nominalSet && v.nominal && v.nominal.length) {
         nominal.set(v.nominal);
@@ -296,6 +306,12 @@ export async function createRenderer(canvas) {
       ringBand.material.color.set(v.flight && v.flight.inRing ? COLORS.ringOk : COLORS.ring);
       const stationOn = v.level === 1 && ['countdown', 'deploy', 'transmit'].includes(v.phase);
       station.visible = stationOn;
+      if (stationOn && v.station && !coverage) coverage = coverageMesh(v.station.coverage);
+      if (coverage) {
+        coverage.visible = stationOn;
+        coverage.rotation.z = -stationAngle;
+        coverage.material.opacity = v.inPass ? 0.25 : 0.1;
+      }
       stationLink.set(stationOn && v.inPass ? [station.position, v.flight] : null);
       trail.set(v.flight ? v.flight.trail : null);
       showCraft(v.released ? 'cubesat' : 'rocket', v, v.flight.x, v.flight.y, v.flight.angle, v.flight.thrusting);
