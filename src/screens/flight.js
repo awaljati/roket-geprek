@@ -56,7 +56,8 @@ export function flightScreen(app, el) {
     updatePanel = (v) => ($('#navst').textContent = v.lastLog);
   }
 
-  const padSet = app.level === 2 ? (game.assist ? 'moonAssist' : 'moon') : game.assist ? 'basic' : 'manual';
+  const padSet =
+    app.level === 2 ? (game.assist ? 'moonAssist' : 'moon') : app.level === 3 ? (game.assist ? 'basic' : 'lander') : game.assist ? 'basic' : 'manual';
   const unbind = bindControls(
     $('#pad'),
     (action) => {
@@ -114,7 +115,7 @@ export function flightScreen(app, el) {
       return;
     }
     // Percepat waktu hanya saat mesin mati dan tidak di fase genting.
-    const calm = ctrl.throttle === 0 && ctrl.pulseLeft === 0 && !['flyby', 'entry', 'launch'].includes(game.phase);
+    const calm = ctrl.throttle === 0 && ctrl.pulseLeft === 0 && !['flyby', 'entry', 'launch', 'descent'].includes(game.phase);
     const speed = calm ? warp : 1;
     acc += Math.min(0.1, (now - last) / 1000) * speed;
     last = now;
@@ -149,6 +150,7 @@ export function flightScreen(app, el) {
   }
 
   function drawHud(v, speed) {
+    if (app.level === 3) return drawHud3(v, speed);
     if (app.level === 1 || v.phase === 'launch') return drawHud1(v, speed);
     drawHud2(v, speed);
   }
@@ -203,6 +205,29 @@ export function flightScreen(app, el) {
     const adv = app.role === 'solo' && !game.assist && v.advice && v.mcc ? `<span>Saran Spesialis: dorong ke <b>${v.advice === 'left' ? 'KIRI (Z)' : 'KANAN (C)'}</b> jalur</span>` : '';
     $('#hud').innerHTML = `${controlLine(v, speed)}<span>${status}</span>${adv}
       ${v.phase === 'flyby' ? `<span>${aimText(v.aimOff)} · Kualitas foto ${Math.round(v.photoQuality * 100)}%</span>` : ''}`;
+  }
+
+  // Level 3: ketinggian, kecepatan turun, kecepatan menyamping, bahan bakar (di controlLine), kemiringan.
+  function drawHud3(v, speed) {
+    drawCoach(v);
+    const steps = [
+      ['Orbit', v.phase === 'orbit'],
+      ['Turun', v.phase === 'descent'],
+      ['Mendarat', v.phase === 'landed' || (v.phase === 'done' && v.result && v.result.success)],
+    ];
+    $('#timeline').innerHTML = steps.map(([n, on]) => `<span class="${on ? 'on' : ''}">${n}</span>`).join('');
+    const max = v.maxLandingSpeed;
+    const speedNow = Math.hypot(v.vDown, v.vSide);
+    const warn = (bad) => (bad ? ' style="color:var(--bad)"' : '');
+    const lowAndFast = v.altitude < 40 && speedNow > max;
+    const tiltBad = Math.abs(v.tiltDeg) > v.maxLandingTiltDeg;
+    $('#hud').innerHTML = `${controlLine(v, speed)}
+      ${v.hasEngine ? '' : '<span style="color:var(--bad)">Tidak ada mesin pendarat!</span>'}
+      <span>Ketinggian ${v.altitude.toFixed(0)} u</span>
+      <span${warn(lowAndFast)}>Kecepatan turun ${v.vDown.toFixed(1)} u/s${v.vDown < 0 ? ' (naik)' : ''}</span>
+      <span${warn(v.altitude < 40 && Math.abs(v.vSide) > max)}>Kecepatan menyamping ${Math.abs(v.vSide).toFixed(1)} u/s${Math.abs(v.vSide) > 0.2 ? (v.vSide > 0 ? ' →' : ' ←') : ''}</span>
+      <span${warn(tiltBad && v.altitude < 40)}>Kemiringan ${Math.round(Math.abs(v.tiltDeg))}° ${tiltBad ? '' : '✓'}</span>
+      <small class="muted">Aman mendarat: kecepatan ≤ ${max} u/s, miring ≤ ${v.maxLandingTiltDeg}° · gas ${Math.round(v.hoverThrottle * 100)}% = melayang</small>`;
   }
 
   function aimText(off) {

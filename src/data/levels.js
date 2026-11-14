@@ -77,6 +77,33 @@ export const LEVELS = {
     uPerKm: 1 / 51, // 1 u = 51 km (radius Bulan 34 u = 1.737 km)
     hint: 'Correct early: small burns at MCC-1 save fuel. Point the capsule toward the Moon for photos, and keep the heat shield forward (E) during entry.',
   },
-  3: { name: 'Level 3: Kutub Selatan Bulan', rocket: 'sedang', budget: 160, body: 'Pendarat', orbitHoldSec: 3, minFuelFor3Stars: 0.2, maxLandingSpeed: 2 },
+  3: {
+    name: 'Level 3: Kutub Selatan Bulan',
+    rocket: 'sedang',
+    budget: 160,
+    body: 'Pendarat',
+    orbitHoldSec: 3,
+    minFuelFor3Stars: 0.2,
+    maxLandingSpeed: 2, // u/s, kecepatan total saat menyentuh permukaan
+    // Nilai game (bukan skala asli), perlu balancing:
+    requiredItem: 'lander-engine', // tanpa mesin pendarat: F-CRASH
+    moonGravityShare: 1 / 6, // gravitasi Bulan = 1/6 gravitasi Bumi game
+    timeScale: 0.5, // pendaratan diperlambat (1 = normal)
+    startAltitude: 300, // u di atas permukaan rata-rata
+    orbitSpeed: 40, // u/s menyamping: pada kecepatan ini pendarat "mengorbit" (tidak jatuh)
+    thrustToWeight: 2, // gas penuh = 2x berat di Bulan, jadi gas 50% = melayang (untuk massa acuan)
+    refMassKg: 800, // massa acuan; lebih berat = dorongan terasa lebih lemah
+    fuelBurnPerSec: 0.035, // fraksi bahan bakar per detik game saat gas penuh
+    turnRate: 1.6, // rad/s
+    maxLandingTiltDeg: 10, // "hampir tegak"
+    landedHoldSec: 1.5, // jeda setelah mendarat sebelum Debrief
+    terrain: [
+      // bukit: amplitudo (u) dan panjang gelombang (u)
+      [16, 520],
+      [7, 190],
+      [2.5, 70],
+    ],
+    hint: 'Brake your sideways speed first, then keep the lander upright and descend slowly. Gas 50% holds your descent speed; 75% slows you down.',
+  },
   4: { name: 'Level 4: Mendarat di Mars', rocket: 'besar', budget: 260, body: 'Rover', minFuelFor3Stars: 0.15, photoTarget: 1 },
 };

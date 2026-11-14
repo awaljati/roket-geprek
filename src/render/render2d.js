@@ -34,6 +34,7 @@ export function createRenderer(canvas) {
   }
 
   function draw(view) {
+    if (view.level === 3) return drawLander(view);
     if (view.level === 2 && view.phase !== 'launch') return drawCislunar(view);
     const [w, h] = background();
 
@@ -235,6 +236,128 @@ export function createRenderer(canvas) {
       ctx.fillStyle = 'rgba(255,93,93,0.9)';
       ctx.font = `${14 * devicePixelRatio}px system-ui`;
       ctx.fillText('SIGNAL LOST', 16 * devicePixelRatio, h - 16 * devicePixelRatio);
+    }
+  }
+
+  // Level 3: tampilan samping. Langit hitam, permukaan Bulan berbukit, Matahari rendah di cakrawala
+  // (di kutub selatan Matahari selalu dekat cakrawala, jadi bayangan panjang dan kawah dalam selalu gelap).
+  function drawLander(view) {
+    const dpr = devicePixelRatio;
+    const w = (canvas.width = canvas.clientWidth * dpr);
+    const h = (canvas.height = canvas.clientHeight * dpr);
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, w, h);
+
+    const c = view.craft;
+    const terrain = view.terrain || [];
+    const mid = terrain[Math.floor(terrain.length / 2)] || { y: 0 };
+    // Kamera mengikuti pendarat; makin rendah, makin dekat.
+    const viewH = Math.max(60, view.altitude * 1.35 + 40);
+    const scale = h / viewH;
+    const bottomY = mid.y - 0.2 * viewH;
+    const sx = (x) => w / 2 + (x - c.x) * scale;
+    const sy = (y) => h - (y - bottomY) * scale;
+    const horizon = sy(mid.y);
+
+    // Matahari rendah, sebagian tertutup bukit
+    const sunX = w * 0.1;
+    // Matahari separuh terlihat di atas bukit pada posisi x-nya.
+    const sunWorldX = c.x + (sunX - w / 2) / scale;
+    const under = terrain.reduce((best, p) => (Math.abs(p.x - sunWorldX) < Math.abs(best.x - sunWorldX) ? p : best), mid);
+    const sunY = Math.min(h * 0.9, sy(under.y) - 4 * dpr);
+    const glow = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, 90 * dpr);
+    glow.addColorStop(0, 'rgba(255,244,214,0.55)');
+    glow.addColorStop(1, 'rgba(255,244,214,0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, w, h);
+    ctx.beginPath();
+    ctx.arc(sunX, sunY, 14 * dpr, 0, Math.PI * 2);
+    ctx.fillStyle = '#fff8e1';
+    ctx.fill();
+
+    // Permukaan: sisi yang menghadap Matahari (kiri) lebih terang
+    if (terrain.length > 1) {
+      ctx.beginPath();
+      ctx.moveTo(sx(terrain[0].x), h);
+      for (const p of terrain) ctx.lineTo(sx(p.x), sy(p.y));
+      ctx.lineTo(sx(terrain[terrain.length - 1].x), h);
+      ctx.closePath();
+      const g = ctx.createLinearGradient(0, horizon - 40 * dpr, 0, h);
+      g.addColorStop(0, '#9b9b98');
+      g.addColorStop(1, '#2a2a2a');
+      ctx.fillStyle = g;
+      ctx.fill();
+      for (let i = 1; i < terrain.length; i++) {
+        const a = terrain[i - 1];
+        const b = terrain[i];
+        const lit = b.y < a.y; // lereng turun ke kanan menghadap Matahari di kiri
+        ctx.beginPath();
+        ctx.moveTo(sx(a.x), sy(a.y));
+        ctx.lineTo(sx(b.x), sy(b.y));
+        ctx.strokeStyle = lit ? '#e8e6df' : '#5e5e5c';
+        ctx.lineWidth = 2 * dpr;
+        ctx.stroke();
+      }
+    }
+
+    // Jejak
+    const trail = view.trail || [];
+    if (trail.length > 1) {
+      ctx.beginPath();
+      ctx.moveTo(sx(trail[0].x), sy(trail[0].y));
+      for (const p of trail) ctx.lineTo(sx(p.x), sy(p.y));
+      ctx.lineTo(sx(c.x), sy(c.y));
+      ctx.strokeStyle = COLORS.trail;
+      ctx.lineWidth = 1.5 * dpr;
+      ctx.setLineDash([4 * dpr, 6 * dpr]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // Pendarat: titik posisi = kaki. Ukuran asli 6 u, tapi minimal 28 px supaya tetap terlihat.
+    const size = Math.max(28 * dpr, 6 * scale);
+    const k = size / 6;
+    ctx.save();
+    ctx.translate(sx(c.x), sy(c.y));
+    ctx.rotate(c.angle);
+    if (c.crashed) ctx.rotate(0.9);
+    if (c.thrusting) {
+      ctx.fillStyle = COLORS.flame;
+      ctx.beginPath();
+      ctx.moveTo(-0.8 * k, -1.2 * k);
+      ctx.lineTo(0.8 * k, -1.2 * k);
+      ctx.lineTo(0, (0.6 + Math.random() * 1.6) * k);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.strokeStyle = '#d9d9d9';
+    ctx.lineWidth = Math.max(1.5 * dpr, 0.3 * k);
+    ctx.beginPath(); // kaki
+    ctx.moveTo(-1.6 * k, -2.2 * k);
+    ctx.lineTo(-3 * k, 0);
+    ctx.moveTo(1.6 * k, -2.2 * k);
+    ctx.lineTo(3 * k, 0);
+    ctx.stroke();
+    ctx.fillStyle = '#d4a017'; // badan berlapis emas (foil)
+    ctx.fillRect(-2 * k, -3.6 * k, 4 * k, 1.8 * k);
+    ctx.fillStyle = '#e6e6e6'; // kabin
+    ctx.fillRect(-1.4 * k, -5.6 * k, 2.8 * k, 2 * k);
+    ctx.fillStyle = '#7a7a7a'; // nosel
+    ctx.fillRect(-0.6 * k, -1.8 * k, 1.2 * k, 0.6 * k);
+    ctx.restore();
+
+    if (c.crashed) {
+      ctx.fillStyle = 'rgba(255,93,93,0.95)';
+      ctx.font = `bold ${16 * dpr}px system-ui`;
+      ctx.textAlign = 'center';
+      ctx.fillText('PENDARAT HANCUR', w / 2, h * 0.35);
+      ctx.textAlign = 'start';
+    } else if (view.phase === 'landed' || (view.result && view.result.success)) {
+      ctx.fillStyle = 'rgba(63,209,122,0.95)';
+      ctx.font = `bold ${16 * dpr}px system-ui`;
+      ctx.textAlign = 'center';
+      ctx.fillText('MENDARAT', w / 2, h * 0.35);
+      ctx.textAlign = 'start';
     }
   }
 

@@ -54,7 +54,13 @@ export function createView(stage, want3D = prefers3D()) {
       return mode;
     },
     draw(view) {
-      if (mode === '3d') {
+      // Level 3 (tampilan samping pendaratan) baru ada di 2D.
+      const only2D = view.level === 3;
+      if (c3) {
+        c3.style.display = mode === '3d' && !only2D ? 'block' : 'none';
+        c2.style.display = mode === '3d' && !only2D ? 'none' : 'block';
+      }
+      if (mode === '3d' && !only2D) {
         try {
           r3.draw(view);
           return;

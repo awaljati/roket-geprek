@@ -33,6 +33,11 @@ export function debriefScreen(app, el) {
           }</p>`
         : ''
     }
+    ${
+      app.level === 3 && r.landingSpeed != null
+        ? `<p class="muted">Saat menyentuh permukaan: ${String(r.landingSpeed).replace('.', ',')} u/s (maks. ${L.maxLandingSpeed}) · miring ${r.landingTiltDeg}° (maks. ${L.maxLandingTiltDeg}°)</p>`
+        : ''
+    }
     <p class="card">${
       r.reward ? `Dana misi diterima: <b>+${r.reward} juta $</b>` : 'Misi gagal: tidak ada dana misi.'
     } · Dana cadangan sekarang <b>${getFunds()} juta $</b><br><small class="muted">Bisa ditambahkan ke anggaran misi berikutnya di layar Rakit.</small></p>
