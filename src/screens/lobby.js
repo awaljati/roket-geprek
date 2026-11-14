@@ -25,7 +25,7 @@ export function lobbyScreen(app, el) {
 
   $('#solo').onclick = () => {
     app.role = 'solo';
-    app.go('rakit');
+    app.go('levels');
   };
 
   $('#create').onclick = async () => {
@@ -37,9 +37,9 @@ export function lobbyScreen(app, el) {
       $('#msg').textContent = 'Gagal membuat room: ' + e.message;
       return;
     }
-    $('#msg').innerHTML = `Kode room: <span class="code">${app.code}</span><br>Bagikan ke Spesialis, lalu lanjut ke Rakit.`;
-    $('#create').textContent = 'Lanjut ke Rakit';
-    $('#create').onclick = () => app.go('rakit');
+    $('#msg').innerHTML = `Kode room: <span class="code">${app.code}</span><br>Bagikan ke Spesialis, lalu pilih misi.`;
+    $('#create').textContent = 'Pilih misi';
+    $('#create').onclick = () => app.go('levels');
   };
 
   $('#join').onclick = async () => {

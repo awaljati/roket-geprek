@@ -1,16 +1,19 @@
 import { FAIL_CODES } from '../data/failcodes.js';
 import { LEVELS } from '../data/levels.js';
 import { LEVEL_MODULES, LAST_LEVEL } from '../levels/index.js';
+import { saveStars } from './progress.js';
 
 export function debriefScreen(app, el) {
   const r = app.result || { success: false, failCode: null, stars: 0, score: 0, fuelLeft: 0, photos: 0 };
   const L = LEVELS[app.level];
   const M = LEVEL_MODULES[app.level];
+  if (r.success) saveStars(app.level, r.stars);
   app.fails = app.fails || {};
   if (!r.success) app.fails[app.level] = (app.fails[app.level] || 0) + 1;
   // Petunjuk muncul setelah 1 kali gagal di Level 1, setelah 2 kali di level lain (Game Design Final).
   const showHint = !r.success && L.hint && app.fails[app.level] >= (app.level === 1 ? 1 : 2);
-  const hasNext = r.stars >= 1 && app.level < LAST_LEVEL;
+  // Semua level bebas dipilih; Lanjut hanya jalan pintas ke level berikutnya.
+  const hasNext = app.level < LAST_LEVEL;
   el.className = 'screen center';
   el.innerHTML = `
     <h2>Debrief: ${L.name}</h2>
@@ -25,11 +28,12 @@ export function debriefScreen(app, el) {
       <button id="retry">Ubah rakitan</button>
       <button class="primary" id="next" ${hasNext ? '' : 'disabled'}>${app.level >= LAST_LEVEL && r.success ? 'Level berikutnya belum dibuat' : 'Lanjut'}</button>
     </div>
-    <button id="home">Menu utama</button>
+    <div class="row"><button id="levels">Pilih misi lain</button><button id="home">Menu utama</button></div>
   `;
   el.querySelector('#again').onclick = () => app.go('flight');
   el.querySelector('#retry').onclick = () => app.go('rakit');
   el.querySelector('#home').onclick = () => app.go('home');
+  el.querySelector('#levels').onclick = () => app.go('levels');
   el.querySelector('#next').onclick = () => {
     app.level += 1;
     app.go('rakit');

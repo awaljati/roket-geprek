@@ -2,6 +2,7 @@
 import { homeScreen } from './screens/home.js';
 import { lobbyScreen } from './screens/lobby.js';
 import { rakitScreen } from './screens/rakit.js';
+import { levelsScreen } from './screens/levels.js';
 import { flightScreen } from './screens/flight.js';
 import { spesialisScreen } from './screens/spesialis.js';
 import { debriefScreen } from './screens/debrief.js';
@@ -9,6 +10,7 @@ import { debriefScreen } from './screens/debrief.js';
 const SCREENS = {
   home: homeScreen,
   lobby: lobbyScreen,
+  levels: levelsScreen,
   rakit: rakitScreen,
   flight: flightScreen,
   spesialis: spesialisScreen,
@@ -19,7 +21,7 @@ const root = document.getElementById('app');
 let cleanup = null;
 
 // Layar "induk" untuk tombol Back: Back tidak menutup web, tapi kembali satu layar.
-const PARENT = { lobby: 'home', rakit: 'lobby', flight: 'rakit', debrief: 'rakit', spesialis: 'lobby' };
+const PARENT = { lobby: 'home', levels: 'lobby', rakit: 'levels', flight: 'rakit', debrief: 'rakit', spesialis: 'lobby' };
 let current = null;
 
 export const app = {
