@@ -12,7 +12,8 @@ import { applyControls } from '../engine/attitude.js';
 import { createFlight, stepFlight, EARTH, positionAngle } from '../engine/flight.js';
 import { createAssist, stepAssist } from '../engine/assist.js';
 import { makeRng } from '../engine/rng.js';
-import { LEVELS, ROCKETS, BODIES } from '../data/levels.js';
+import { LEVELS, ROCKETS, BODIES, REWARD } from '../data/levels.js';
+import { missionReward } from './reward.js';
 import { itemById, ITEMS } from '../data/items.js';
 
 const L = LEVELS[2];
@@ -131,11 +132,12 @@ export function buildCheck(build) {
     mass,
     massLimit: cap,
     price,
-    budget: L.budget,
+    budget: L.budget + (build.extraBudget || 0), // + dana cadangan yang dipakai
+    extraBudget: build.extraBudget || 0,
     slotsUsed: items.length,
     slots: 6,
     tooHeavy: mass > cap,
-    overBudget: price > L.budget,
+    overBudget: price > L.budget + (build.extraBudget || 0),
     tooManyItems: items.length > 6,
   };
 }
@@ -456,7 +458,8 @@ function finish(game, success, failCode) {
   if (success) stars = failCode ? 1 : 2;
   if (success && !failCode && fuelLeft >= L.minFuelFor3Stars && !game.check.overBudget) stars = 3;
   const score = success ? stars * 1000 + Math.round(fuelLeft * 500) + game.photos * 50 + Math.max(0, (L.budget - game.check.price) * 5) : 0;
-  game.result = { success, failCode, stars, score, fuelLeft, photos: game.photos };
+  const reward = missionReward({ success, stars, budget: game.check.budget, price: game.check.price, bonus: game.photos >= L.photoTarget ? REWARD.photoBonus : 0 });
+  game.result = { success, failCode, stars, score, fuelLeft, photos: game.photos, reward };
   game.phase = 'done';
   return game;
 }

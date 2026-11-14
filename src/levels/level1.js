@@ -4,7 +4,8 @@
 
 import { createFlight, stepFlight, EARTH, positionAngle } from '../engine/flight.js';
 import { createAssist, stepAssist } from '../engine/assist.js';
-import { LEVELS, CUBESAT_SIZES } from '../data/levels.js';
+import { LEVELS, CUBESAT_SIZES, REWARD } from '../data/levels.js';
+import { missionReward } from './reward.js';
 import { itemById } from '../data/items.js';
 
 const L = LEVELS[1];
@@ -21,9 +22,10 @@ export function buildCheck(build) {
     slotsUsed: items.length,
     slots: size.slots,
     price,
-    budget: L.budget,
+    budget: L.budget + (build.extraBudget || 0), // + dana cadangan yang dipakai
+    extraBudget: build.extraBudget || 0,
     tooHeavy: mass > size.massLimit,
-    overBudget: price > L.budget,
+    overBudget: price > L.budget + (build.extraBudget || 0),
     tooManyItems: items.length > size.slots,
   };
 }
@@ -190,7 +192,9 @@ function finish(game, success, failCode) {
   const orbitBonus = orbitErrorPct === null ? 0 : Math.max(0, Math.round((10 - orbitErrorPct) * 30));
   const score = stars * 1000 + Math.round(fuelLeft * 500) + orbitBonus + Math.max(0, (L.budget - game.check.price) * 10);
   // orbitErrorPct = informasi tambahan untuk Debrief (bentuk hasil utama tetap sama)
-  game.result = { success, failCode, stars, score: success ? score : 0, fuelLeft, photos: 0, orbitErrorPct };
+  const reward = missionReward({ success, stars, budget: game.check.budget, price: game.check.price, bonus: preciseOrbit ? REWARD.orbitBonus : 0 });
+  // orbitErrorPct dan reward = informasi tambahan untuk Debrief (bentuk hasil utama tetap sama)
+  game.result = { success, failCode, stars, score: success ? score : 0, fuelLeft, photos: 0, orbitErrorPct, reward };
   game.phase = 'done';
   return game;
 }

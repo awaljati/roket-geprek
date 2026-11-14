@@ -1,5 +1,7 @@
 import { LEVELS, CUBESAT_SIZES, ROCKETS } from '../data/levels.js';
 import { LEVEL_MODULES } from '../levels/index.js';
+import { REWARD } from '../data/levels.js';
+import { getFunds } from './progress.js';
 
 export function rakitScreen(app, el) {
   const L = LEVELS[app.level];
@@ -41,6 +43,7 @@ export function rakitScreen(app, el) {
       <b>Bahan bakar ${isCubeSat ? 'roket' : 'kapsul'}: <span id="fuelv"></span></b>
       <input type="range" id="fuel" min="1" max="10" step="1" style="width:100%">
     </div>
+    <div class="card" id="fundsCard"></div>
     <div class="card" id="bars"></div>
     <div class="row">
       <button id="back">Kembali</button>
@@ -65,6 +68,21 @@ export function rakitScreen(app, el) {
     $('#assist').checked = b.assist !== false;
     $('#assist').onchange = () => (b.assist = $('#assist').checked);
   }
+  // Dana cadangan: maksimal 50% anggaran level, dan tidak lebih dari dana yang dimiliki.
+  const funds = getFunds();
+  const maxExtra = Math.min(funds, Math.floor(L.budget * REWARD.maxExtraShare));
+  b.extraBudget = Math.min(b.extraBudget || 0, maxExtra);
+  $('#fundsCard').innerHTML =
+    maxExtra > 0
+      ? `<b>Dana cadangan: ${funds} juta $</b> <span class="muted">(dari misi sebelumnya)</span>
+         <div>Tambah ke anggaran: <b id="extraV"></b> juta $ <small class="muted">(maks. ${maxExtra})</small></div>
+         <input type="range" id="extra" min="0" max="${maxExtra}" step="1" style="width:100%">
+         <small class="muted">Dana yang dipakai langsung terpotong saat meluncur, walaupun misi gagal.</small>`
+      : `<b>Dana cadangan: ${funds} juta $</b><br><small class="muted">Selesaikan misi dengan hemat untuk mendapat dana tambahan anggaran.</small>`;
+  if ($('#extra')) {
+    $('#extra').value = b.extraBudget;
+    $('#extra').oninput = () => ((b.extraBudget = Number($('#extra').value)), update());
+  }
   $('#fuel').value = Math.round(b.fuel * 10);
   $('#fuel').oninput = () => ((b.fuel = $('#fuel').value / 10), update());
 
@@ -75,6 +93,7 @@ export function rakitScreen(app, el) {
   function update() {
     const c = M.buildCheck(b);
     $('#fuelv').textContent = Math.round(b.fuel * 100) + '%';
+    if ($('#extraV')) $('#extraV').textContent = b.extraBudget || 0;
     $('#bars').innerHTML =
       bar(isCubeSat ? 'Massa CubeSat' : 'Massa (wahana + item + bahan bakar)', c.mass, c.massLimit, 'kg') +
       bar('Anggaran', c.price, c.budget, 'juta $') +
@@ -83,7 +102,7 @@ export function rakitScreen(app, el) {
     $('#launch').disabled = c.overBudget || c.tooManyItems;
     const why = [];
     if (c.tooManyItems) why.push(`Slot penuh: maksimal ${c.slots} komponen${isCubeSat ? ' (pilih CubeSat yang lebih besar, misalnya 3U)' : ''}.`);
-    if (c.overBudget) why.push('Anggaran terlewati: kurangi komponen atau bahan bakar.');
+    if (c.overBudget) why.push(`Anggaran terlewati: kurangi komponen atau bahan bakar${maxExtra > 0 ? ', atau tambah dari dana cadangan' : ''}.`);
     if (c.tooHeavy) why.push('Terlalu berat: roket akan gagal (F-HEAVY).');
     $('#bars').innerHTML += why.length ? `<p class="warn">${why.join('<br>')}</p>` : '';
   }

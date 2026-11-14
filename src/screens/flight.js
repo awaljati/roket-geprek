@@ -6,6 +6,7 @@ import { createView, prefers3D, setPrefer3D } from '../render/view.js';
 import { mountPanelFor } from './specialistPanel.js';
 import { createControls, controlAction } from '../engine/attitude.js';
 import { bindControls, helpHtml } from './controls.js';
+import { spendFunds } from './progress.js';
 
 const DT = 1 / 60;
 const MODE_NAME = { manual: 'manual', prograde: 'searah gerak', retrograde: 'lawan arah', left: 'kiri jalur', right: 'kanan jalur' };
@@ -38,6 +39,8 @@ export function flightScreen(app, el) {
   `;
   const $ = (s) => el.querySelector(s);
   const renderer = createView($('#stage'));
+  // Dana cadangan yang dipakai terpotong setiap kali misi dimulai (termasuk Ulangi misi).
+  if (app.build.extraBudget) app.build.extraBudget = spendFunds(app.build.extraBudget);
   const game = M.create(app.build, app.code || 'solo');
   const craft = () => game.flight || game.craft;
   const ctrl = createControls();

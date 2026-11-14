@@ -22,6 +22,16 @@ export const CUBESAT_SIZES = {
 // Lokasi landasan peluncuran. Biak dekat khatulistiwa dan pernah direncanakan LAPAN/BRIN sebagai bandar antariksa.
 export const LAUNCH_SITE = { name: 'Biak, Papua', lat: -1.17, lon: 136.08 };
 
+// Dana misi: misi yang sukses dan hemat mendapat dana, yang bisa ditambahkan ke anggaran misi berikutnya.
+// Nilai game (juta $), perlu balancing.
+export const REWARD = {
+  perStar: 6, // dana per bintang
+  savingsShare: 0.5, // setengah sisa anggaran ikut jadi dana
+  orbitBonus: 3, // Level 1: orbit tepat (sesuai syarat bintang 3)
+  photoBonus: 5, // Level 2: foto berguna mencapai target
+  maxExtraShare: 0.5, // dana cadangan yang boleh dipakai maksimal 50% dari anggaran level
+};
+
 export const LEVELS = {
   1: {
     name: 'Level 1: CubeSat Transmisi',
