@@ -1,5 +1,6 @@
 // Layar terbang (perangkat Navigator / solo). Menjalankan fisika, menggambar, dan mengirim snapshot ke Spesialis.
 import { LEVEL_MODULES } from '../levels/index.js';
+import { LAUNCH_SITE } from '../data/levels.js';
 import { orbitCheck, orbitExtremes } from '../engine/flight.js';
 import { createView, prefers3D, setPrefer3D } from '../render/view.js';
 import { mountPanelFor } from './specialistPanel.js';
@@ -171,6 +172,7 @@ export function flightScreen(app, el) {
     const near = (r) => r !== null && Math.abs(r - p.orbitRadius) < 14;
     $('#timeline').innerHTML = '';
     $('#hud').innerHTML = `${controlLine(v, speed)}
+      ${v.flight.status === 'pad' ? `<span>Landasan: ${LAUNCH_SITE.name} (dekat khatulistiwa)</span>` : ''}
       <span>Titik tertinggi ${fmt(apo)}${near(apo) ? ' ✓' : ''} · terendah ${peri === null ? '-' : fmt(peri)}${near(peri) ? ' ✓' : ''} (target ${p.orbitRadius - p.radius})</span>
       <span>${mark(o.altOk)} Ketinggian ${Math.round(o.r - p.radius)} / ${p.orbitRadius - p.radius}</span>
       <span>${mark(o.speedOk)} Kecepatan ${o.speed.toFixed(0)} / ${o.vCirc.toFixed(0)}</span>

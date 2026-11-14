@@ -19,6 +19,9 @@ export const CUBESAT_SIZES = {
   '6U': { bodyMass: 5, massLimit: 12, slots: 6, basePower: -6, optional: true },
 };
 
+// Lokasi landasan peluncuran. Biak dekat khatulistiwa dan pernah direncanakan LAPAN/BRIN sebagai bandar antariksa.
+export const LAUNCH_SITE = { name: 'Biak, Papua', lat: -1.17, lon: 136.08 };
+
 export const LEVELS = {
   1: {
     name: 'Level 1: CubeSat Transmisi',
