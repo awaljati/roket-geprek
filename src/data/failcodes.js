@@ -13,6 +13,7 @@ export const FAIL_CODES = {
   'F-ATMO': 'Masuk atmosfer Mars di luar rentang aman.',
   'F-CHUTE': 'Parasut dibuka di ketinggian yang salah.',
   'F-HARD': 'Mendarat terlalu cepat.',
+  'F-TIME': 'Waktu battle habis sebelum misi selesai.',
   'P-SIGNAL': 'Sinyal hanya terkirim sebagian.',
   'P-PHOTO': 'Foto berguna kurang dari target.',
   'P-STORM': 'Instrumen terkena badai matahari.',

@@ -3,6 +3,12 @@
     "room": {
       "$code": {
         ".read": "auth != null",
+        ".write": "auth != null && $code.length <= 8"
+      }
+    },
+    "battle": {
+      "$code": {
+        ".read": "auth != null",
         ".write": "auth != null && $code.length === 4"
       }
     }
