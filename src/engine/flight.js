@@ -126,7 +126,10 @@ export function stepFlight(s, ctrl, dt) {
   s.inRing = o.ok;
   if (s.status === 'flying') {
     s.inRingFor = o.ok ? s.inRingFor + dt : 0;
-    if (s.inRingFor >= s.orbitHoldSec) s.status = 'orbit';
+    if (s.inRingFor >= s.orbitHoldSec) {
+      s.status = 'orbit';
+      circularize(s); // komputer roket merapikan orbit supaya tetap di cincin
+    }
   }
   return s;
 }
@@ -160,4 +163,16 @@ export function orbitExtremes(s) {
   const h = s.x * s.vy - s.y * s.vx;
   const e = Math.sqrt(Math.max(0, 1 + (2 * eps * h * h) / (p.gm * p.gm)));
   return { apo: a * (1 + e), peri: a * (1 - e) };
+}
+
+// Mengubah kecepatan jadi kecepatan orbit lingkaran di ketinggian sekarang (arah gerak tetap).
+// Dipakai saat orbit tercapai, supaya wahana tidak keluar cincin karena orbit sedikit lonjong.
+export function circularize(s) {
+  const p = s.planet;
+  const r = Math.hypot(s.x, s.y);
+  const v = Math.sqrt(p.gm / r);
+  // arah searah jarum jam (sama dengan arah orbit game), tegak lurus garis ke pusat Bumi
+  const dir = Math.sign(s.x * s.vy - s.y * s.vx) || -1;
+  s.vx = (dir < 0 ? s.y / r : -s.y / r) * v;
+  s.vy = (dir < 0 ? -s.x / r : s.x / r) * v;
 }

@@ -30,7 +30,8 @@ export const LEVELS = {
     body: 'CubeSat',
     orbitHoldSec: 3,
     minFuelFor3Stars: 0.3,
-    launchTimeScale: 0.6, // naik ke orbit diperlambat (1 = normal)
+    launchTimeScale: 0.45, // naik ke orbit diperlambat (1 = normal)
+    orbitTimeScale: 0.35, // gerak di orbit diperlambat: satu putaran sekitar 40 detik
     // waktu game (sudah dipercepat dari aslinya)
     safeCountdownSec: 10, // asli ~30 menit
     passWindowSec: 20, // asli ~5-10 menit
