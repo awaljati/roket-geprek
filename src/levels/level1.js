@@ -73,11 +73,11 @@ function netPower(game) {
   return w;
 }
 
-export function stepLevel1(game, input, dt) {
+export function stepLevel1(game, ctrl, dt) {
   if (game.result) return game;
 
   if (game.phase === 'launch' || game.phase === 'release') {
-    stepFlight(game.flight, input, dt);
+    stepFlight(game.flight, ctrl, dt);
     if (game.flight.failCode) return finish(game, false, game.flight.failCode);
     if (game.phase === 'launch' && game.flight.status === 'orbit') {
       game.phase = 'release';
@@ -87,7 +87,7 @@ export function stepLevel1(game, input, dt) {
   }
 
   // Setelah dilepas, CubeSat tetap mengorbit (tanpa dorongan).
-  stepFlight(game.flight, { thrust: false, turn: 0 }, dt);
+  stepFlight(game.flight, null, dt);
 
   game.battery = Math.min(game.batteryMax, game.battery + netPower(game) * WH_PER_WATT_SECOND * dt);
   if (game.battery <= 0) return finish(game, false, 'F-POWER');

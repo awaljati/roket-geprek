@@ -3,6 +3,7 @@
 // `view` = snapshot dari snapshotLevel1(): data saja, jadi bisa dikirim lewat room.
 
 import { EARTH, ROCKET_TUNING } from '../engine/flight.js';
+import { CISLUNAR } from '../engine/cislunar.js';
 
 const COLORS = {
   space: '#05070f',
@@ -20,7 +21,7 @@ export function createRenderer(canvas) {
   const ctx = canvas.getContext('2d');
   const stars = Array.from({ length: 140 }, () => [Math.random(), Math.random(), Math.random() * 1.4]);
 
-  function draw(view) {
+  function background() {
     const w = (canvas.width = canvas.clientWidth * devicePixelRatio);
     const h = (canvas.height = canvas.clientHeight * devicePixelRatio);
     ctx.fillStyle = COLORS.space;
@@ -29,6 +30,12 @@ export function createRenderer(canvas) {
       ctx.fillStyle = 'rgba(255,255,255,0.7)';
       ctx.fillRect(sx * w, sy * h, sr * devicePixelRatio, sr * devicePixelRatio);
     }
+    return [w, h];
+  }
+
+  function draw(view) {
+    if (view.level === 2) return drawCislunar(view);
+    const [w, h] = background();
 
     const scale = Math.min(w, h) / (EARTH.orbitRadius * 2.6);
     ctx.save();
@@ -45,7 +52,7 @@ export function createRenderer(canvas) {
     ctx.stroke();
 
     // Stasiun Bumi (Level 1): menyala saat lintasan terbuka
-    if (view.level === 1 && view.phase !== 'launch' && view.phase !== 'release') {
+    if (view.level === 1 && ['countdown', 'deploy', 'transmit'].includes(view.phase)) {
       const a = Math.PI / 4;
       const sx = Math.sin(a) * EARTH.radius;
       const sy = Math.cos(a) * EARTH.radius;
@@ -130,6 +137,96 @@ export function createRenderer(canvas) {
     }
     ctx.restore();
     ctx.restore();
+  }
+
+  function polyline(points, color, width, dash) {
+    if (!points || points.length < 2) return;
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
+    for (const p of points) ctx.lineTo(p.x, p.y);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    ctx.setLineDash(dash || []);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  function body(b, fill, edge) {
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+    ctx.fillStyle = fill;
+    ctx.fill();
+    ctx.lineWidth = 2 / scaleNow;
+    ctx.strokeStyle = edge;
+    ctx.stroke();
+  }
+
+  let scaleNow = 1;
+  // Level 2: Bumi di bawah, Bulan di atas. Tidak sesuai skala.
+  function drawCislunar(view) {
+    const [w, h] = background();
+    const E = CISLUNAR.earth;
+    const Mo = CISLUNAR.moon;
+    const minY = -260; // bawah Bumi
+    const maxY = 1330; // puncak lintasan di atas Bulan
+    const spanY = maxY - minY;
+    const spanX = 760;
+    const centerX = -112; // lintasan condong ke kiri
+    scaleNow = Math.min(h / spanY, w / spanX) * 0.95;
+    ctx.save();
+    ctx.translate(w / 2 - centerX * scaleNow, h / 2 + ((minY + maxY) / 2) * scaleNow);
+    ctx.scale(scaleNow, -scaleNow);
+
+    // atmosfer, Bumi, Bulan
+    ctx.beginPath();
+    ctx.arc(0, 0, CISLUNAR.atmosphere, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(127,182,255,0.18)';
+    ctx.fill();
+    body(E, COLORS.earth, COLORS.earthEdge);
+    body(Mo, '#9a9a9a', '#d8d8d8');
+
+    // jalur target (hijau), jejak (oranye), prediksi (putus-putus)
+    polyline(view.nominal, 'rgba(63,209,122,0.55)', 6 / scaleNow);
+    polyline(view.trail, COLORS.trail, 2 / scaleNow);
+    polyline(view.prediction, '#ffffff', 2 / scaleNow, [8 / scaleNow, 8 / scaleNow]);
+
+    // kapsul
+    const c = view.craft;
+    ctx.save();
+    ctx.translate(c.x, c.y);
+    ctx.rotate(-c.angle);
+    const k = 1 / scaleNow;
+    if (c.thrusting) {
+      ctx.fillStyle = COLORS.flame;
+      ctx.beginPath();
+      ctx.moveTo(-3 * k, -7 * k);
+      ctx.lineTo(3 * k, -7 * k);
+      ctx.lineTo(0, (-14 - Math.random() * 5) * k);
+      ctx.fill();
+    }
+    ctx.fillStyle = COLORS.rocket;
+    ctx.beginPath();
+    ctx.moveTo(0, 8 * k);
+    ctx.lineTo(6 * k, -6 * k);
+    ctx.lineTo(-6 * k, -6 * k);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#7a4a2a'; // pelindung panas di bagian belakang
+    ctx.fillRect(-6 * k, -8 * k, 12 * k, 2.5 * k);
+    if (view.phase === 'entry') {
+      ctx.fillStyle = 'rgba(255,140,40,0.8)';
+      ctx.beginPath();
+      ctx.arc(0, -10 * k, 8 * k, Math.PI, 2 * Math.PI);
+      ctx.fill();
+    }
+    ctx.restore();
+    ctx.restore();
+
+    if (view.signalLost) {
+      ctx.fillStyle = 'rgba(255,93,93,0.9)';
+      ctx.font = `${14 * devicePixelRatio}px system-ui`;
+      ctx.fillText('SIGNAL LOST', 16 * devicePixelRatio, h - 16 * devicePixelRatio);
+    }
   }
 
   return { draw };

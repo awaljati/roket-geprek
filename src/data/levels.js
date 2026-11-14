@@ -5,6 +5,13 @@ export const ROCKETS = {
   besar: { capacityKg: 2500 },
 };
 
+// Badan wahana dasar (sheet "Roket dan Wahana").
+export const BODIES = {
+  Kapsul: { mass: 600, basePower: -80 },
+  Pendarat: { mass: 350, basePower: -60 },
+  Rover: { mass: 900, basePower: -100 },
+};
+
 // Ukuran CubeSat (Level 1). Batas massa = batas bar Massa di layar Rakit.
 export const CUBESAT_SIZES = {
   '1U': { bodyMass: 0.8, massLimit: 2, slots: 2, basePower: -1 },
@@ -27,7 +34,31 @@ export const LEVELS = {
     dataForFullSignal: 10,
     hint: 'Wait for the countdown before opening anything, then transmit only while you are over the ground station.',
   },
-  2: { name: 'Level 2: Memutari Bulan', rocket: 'sedang', budget: 90, body: 'Kapsul', minFuelFor3Stars: 0.25, photoTarget: 6 },
+  2: {
+    name: 'Level 2: Memutari Bulan',
+    rocket: 'sedang',
+    budget: 90,
+    body: 'Kapsul',
+    minFuelFor3Stars: 0.25,
+    photoTarget: 6,
+    // Nilai game (bukan skala asli), perlu balancing:
+    capsuleAccel: 2, // u/s^2 saat gas penuh (mesin modul servis)
+    fuelBurnPerSec: 0.2, // fraksi bahan bakar per detik saat gas penuh
+    driftOut: [0.9, 1.4], // penyimpangan awal (u/s), arah acak dari seed
+    driftBack: [0.45, 0.75], // penyimpangan baru setelah melewati Bulan
+    mccWindows: [
+      { id: 'MCC-1', from: 3, to: 16 },
+      { id: 'MCC-2', from: 24, to: 34 },
+      { id: 'MCC pulang', from: 52, to: 78 },
+    ],
+    flybyTarget: [15, 70], // jarak terdekat ke permukaan Bulan (u) yang aman dan bagus untuk foto
+    photoRange: 140, // jarak (u dari permukaan) mulai bisa memotret
+    photoPointTolDeg: 25,
+    entryCorridorDeg: [-10.5, -5.5], // sudut masuk atmosfer yang aman
+    shieldPointTolDeg: 35, // pelindung panas harus menghadap arah gerak
+    uPerKm: 1 / 51, // 1 u = 51 km (radius Bulan 34 u = 1.737 km)
+    hint: 'Correct early: small burns at MCC-1 save fuel. Point the capsule toward the Moon for photos, and keep the heat shield forward (E) during entry.',
+  },
   3: { name: 'Level 3: Kutub Selatan Bulan', rocket: 'sedang', budget: 160, body: 'Pendarat', orbitHoldSec: 3, minFuelFor3Stars: 0.2, maxLandingSpeed: 2 },
   4: { name: 'Level 4: Mendarat di Mars', rocket: 'besar', budget: 260, body: 'Rover', minFuelFor3Stars: 0.15, photoTarget: 1 },
 };

@@ -1,6 +1,8 @@
 // Engine terbang 2D. Murni hitungan: tidak menyentuh DOM, tidak tahu soal tampilan 2D/3D.
 // Satuan "u" = satuan game. Planet di (0,0). Sudut 0 = mengarah ke atas (sumbu +y), searah jarum jam positif.
 
+import { applyControls } from './attitude.js';
+
 export const EARTH = {
   radius: 120, // u
   gm: 1.2e6, // u^3/s^2 -> gravitasi permukaan ~83 u/s^2
@@ -41,23 +43,24 @@ export function createFlight({ planet = EARTH, fuel = 1, massRatio = 1, orbitHol
   };
 }
 
-// input: { thrust: bool, turn: -1|0|1 }
-export function stepFlight(s, input, dt) {
+// ctrl = objek dari createControls() (engine/attitude.js), atau null untuk tanpa kendali.
+export function stepFlight(s, ctrl, dt) {
   if (s.status === 'crashed' || s.status === 'lost') return s;
   const T = ROCKET_TUNING;
   const p = s.planet;
 
-  s.angle += (input.turn || 0) * T.turnRate * dt;
+  const throttle = ctrl ? applyControls(ctrl, s, T.turnRate, dt) : 0;
 
   let ax = 0;
   let ay = 0;
-  const thrusting = input.thrust && s.fuel > 0 && s.status !== 'orbit';
+  const thrusting = throttle > 0 && s.fuel > 0 && s.status !== 'orbit';
   s.thrusting = thrusting;
+  s.throttle = throttle;
   if (thrusting) {
-    const a = T.thrustAccel / s.massRatio;
+    const a = (T.thrustAccel * throttle) / s.massRatio;
     ax += Math.sin(s.angle) * a;
     ay += Math.cos(s.angle) * a;
-    s.fuel = Math.max(0, s.fuel - T.fuelBurnPerSec * dt);
+    s.fuel = Math.max(0, s.fuel - T.fuelBurnPerSec * throttle * dt);
     s.launched = true;
     if (s.status === 'pad') s.status = 'flying';
   }
@@ -118,4 +121,17 @@ export function orbitCheck(s) {
 // Sudut posisi wahana di sekitar planet (untuk cek lintasan di atas stasiun Bumi).
 export function positionAngle(s) {
   return Math.atan2(s.x, s.y);
+}
+
+// Titik tertinggi (apoapsis) dan terendah (periapsis) lintasan saat ini, kalau mesin dimatikan sekarang.
+export function orbitExtremes(s) {
+  const p = s.planet;
+  const r = Math.hypot(s.x, s.y);
+  const v2 = s.vx * s.vx + s.vy * s.vy;
+  const eps = v2 / 2 - p.gm / r;
+  if (eps >= 0) return { apo: Infinity, peri: null };
+  const a = -p.gm / (2 * eps);
+  const h = s.x * s.vy - s.y * s.vx;
+  const e = Math.sqrt(Math.max(0, 1 + (2 * eps * h * h) / (p.gm * p.gm)));
+  return { apo: a * (1 + e), peri: a * (1 - e) };
 }
