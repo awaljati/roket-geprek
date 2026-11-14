@@ -78,8 +78,10 @@ export function mountSpecialistPanel2(container, send) {
     const eaOk = ea >= elo && ea <= ehi;
     $('#sp-status').textContent = v.signalLost
       ? 'Signal lost: kapsul di balik Bulan.'
-      : v.phase === 'tli'
-        ? 'Menunggu Navigator berangkat.'
+      : v.phase === 'launch'
+        ? 'Navigator meluncurkan roket ke orbit parkir. Tunggu.'
+        : v.phase === 'tli'
+        ? 'Di orbit parkir. Buka panel surya, lalu tunggu TLI.'
         : v.phase === 'done'
           ? 'Misi selesai.'
           : v.lastLog;
@@ -87,8 +89,8 @@ export function mountSpecialistPanel2(container, send) {
     $('#sp-pred').innerHTML = `
       ${isFinite(ca) ? `<div>${caOk ? '✓' : '⚠'} Jarak terdekat ke Bulan: <b>${ca <= 0 ? 'MENABRAK' : km(ca) + ' km'}</b><br><small class="muted">target ${km(lo)}–${km(hi)} km</small></div>` : ''}
       <div>${eaOk ? '✓' : '⚠'} Sudut masuk atmosfer: <b>${ea.toFixed(1)}°</b><br><small class="muted">aman ${elo}° sampai ${ehi}°</small></div>
-      <div>${['tli', 'done', 'entry', 'splash'].includes(v.phase) ? '' : adviceText}</div>`;
-    $('#sp-panels').disabled = v.panelsOpen || v.phase === 'tli' || !v.panelPower;
+      <div>${['launch', 'tli', 'done', 'entry', 'splash'].includes(v.phase) ? '' : adviceText}</div>`;
+    $('#sp-panels').disabled = v.panelsOpen || v.phase === 'launch' || !v.panelPower;
     $('#sp-panels').textContent = v.panelsOpen ? 'Panel surya terbuka' : 'Buka panel surya (1)';
     $('#sp-photo').disabled = !v.hasCamera || v.phase !== 'flyby';
     $('#sp-photo').textContent = 'Ambil foto (2)';

@@ -20,7 +20,8 @@ export function spesialisScreen(app, el) {
 
   openRoom(app.code, {
     onState: (v) => {
-      $('#wait').style.display = 'none';
+      $('#wait').style.display = v.paused ? 'block' : 'none';
+      if (v.paused) $('#wait').innerHTML = '<b>Dijeda oleh Navigator</b>';
       if (v.level !== level) {
         level = v.level;
         update = mountPanelFor(level, $('#side'), send);

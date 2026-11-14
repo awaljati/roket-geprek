@@ -34,7 +34,7 @@ export function createRenderer(canvas) {
   }
 
   function draw(view) {
-    if (view.level === 2) return drawCislunar(view);
+    if (view.level === 2 && view.phase !== 'launch') return drawCislunar(view);
     const [w, h] = background();
 
     const scale = Math.min(w, h) / (EARTH.orbitRadius * 2.6);

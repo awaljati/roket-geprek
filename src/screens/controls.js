@@ -50,7 +50,8 @@ const MAIN = ['throttleDown', 'throttleUp', 'engineCut'];
 export const BUTTON_SETS = {
   basic: [],
   manual: ['turnLeft', 'turnRight', 'prograde', 'retrograde'],
-  moon: ['turnLeft', 'turnRight', 'left', 'right', 'retrograde', 'pulse', 'warp'],
+  moon: ['turnLeft', 'turnRight', 'prograde', 'left', 'right', 'retrograde', 'pulse', 'warp'],
+  moonAssist: ['warp'],
 };
 
 // Memasang keyboard + tombol. onAction(action) dipanggil per ketukan.

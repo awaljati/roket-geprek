@@ -60,9 +60,11 @@ h2 { margin: 0; }
 .pad-extra { display: flex; flex-wrap: wrap; gap: 6px; }
 .pad-extra button { flex: 1 1 auto; }
 button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
-.coach { pointer-events: none; position: absolute; left: 50%; top: 56px; transform: translateX(-50%); max-width: min(90%, 520px); text-align: center; background: rgba(17,24,41,0.92); border: 1px solid var(--line); border-radius: 12px; padding: 10px 16px; font-weight: 600; display: none; }
-.coach.urgent { background: var(--accent); color: #1a0d03; border-color: var(--accent); animation: pulse 0.6s ease-in-out infinite alternate; }
-@keyframes pulse { from { transform: translateX(-50%) scale(1); } to { transform: translateX(-50%) scale(1.05); } }
+.coach { pointer-events: none; text-align: center; background: rgba(17,24,41,0.92); border: 1px solid var(--line); border-radius: 12px; padding: 10px 16px; font-weight: 600; display: none; }
+.coach { border-radius: 0; border-width: 1px 0 0; font-size: 1.05rem; }
+.coach.urgent { background: var(--accent); color: #1a0d03; border-color: var(--accent); animation: blink 0.7s ease-in-out infinite alternate; }
+@keyframes blink { from { opacity: 1; } to { opacity: 0.75; } }
+.view { grid-template-rows: 1fr auto auto; }
 @media (max-width: 720px) {
   .flight { grid-template-rows: auto auto; }
   .view { height: 72vh; height: 72svh; }
@@ -74,3 +76,13 @@ button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
   .coach, .coach.urgent { position: static; transform: none; max-width: none; border-radius: 0; animation: none; padding: 8px 12px; }
 }
 .warn { color: var(--warn); margin: 6px 0 0; }
+/* Menu jeda */
+.menu-btn { position: absolute; top: 10px; right: 10px; z-index: 3; padding: 6px 12px; font-size: 0.85rem; }
+.timeline { right: 110px; }
+.overlay { position: absolute; inset: 0; background: rgba(5,7,15,0.75); display: none; align-items: center; justify-content: center; z-index: 5; }
+.pause-card { display: flex; flex-direction: column; gap: 10px; min-width: 240px; text-align: center; }
+@media (max-width: 720px) { .timeline { right: 90px; } }
+@media (max-width: 720px) {
+  .timeline span:not(.on) { display: none; }
+  .coach { font-size: 0.95rem; }
+}

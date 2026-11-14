@@ -18,6 +18,10 @@ const SCREENS = {
 const root = document.getElementById('app');
 let cleanup = null;
 
+// Layar "induk" untuk tombol Back: Back tidak menutup web, tapi kembali satu layar.
+const PARENT = { lobby: 'home', rakit: 'lobby', flight: 'rakit', debrief: 'rakit', spesialis: 'lobby' };
+let current = null;
+
 export const app = {
   role: 'solo', // solo | navigator | spesialis
   code: null,
@@ -25,7 +29,10 @@ export const app = {
   level: 1,
   build: { size: '1U', items: ['cs-battery', 'cs-antenna-uhf'], fuel: 0.7 },
   result: null,
-  go(name) {
+  onBack: null,
+  go(name, { fromBack = false } = {}) {
+    if (!fromBack) history.pushState({ screen: name }, '');
+    current = name;
     if (cleanup) cleanup();
     root.innerHTML = '';
     const el = document.createElement('div');
@@ -34,5 +41,19 @@ export const app = {
   },
 };
 
+window.addEventListener('popstate', () => {
+  // Layar terbang menangani Back sendiri (membuka menu jeda).
+  if (app.onBack && app.onBack()) {
+    history.pushState({ screen: current }, '');
+    return;
+  }
+  const parent = PARENT[current];
+  if (parent) {
+    history.pushState({ screen: parent }, '');
+    app.go(parent, { fromBack: true });
+  }
+});
+
 window.roketGeprek = app; // memudahkan cek dari console
-app.go('home');
+history.replaceState({ screen: 'home' }, '');
+app.go('home', { fromBack: true });

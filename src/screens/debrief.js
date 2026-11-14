@@ -21,11 +21,15 @@ export function debriefScreen(app, el) {
     ${showHint ? `<p class="card">Hint: ${L.hint}</p>` : ''}
     <p class="card">Misi nyata yang mirip: ${M.realMission}</p>
     <div class="row">
-      <button id="retry">Coba lagi</button>
+      <button id="again">Main lagi</button>
+      <button id="retry">Ubah rakitan</button>
       <button class="primary" id="next" ${hasNext ? '' : 'disabled'}>${app.level >= LAST_LEVEL && r.success ? 'Level berikutnya belum dibuat' : 'Lanjut'}</button>
     </div>
+    <button id="home">Menu utama</button>
   `;
+  el.querySelector('#again').onclick = () => app.go('flight');
   el.querySelector('#retry').onclick = () => app.go('rakit');
+  el.querySelector('#home').onclick = () => app.go('home');
   el.querySelector('#next').onclick = () => {
     app.level += 1;
     app.go('rakit');
