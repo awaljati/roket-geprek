@@ -53,7 +53,7 @@ export const LEVELS = {
       { id: 'MCC pulang', from: 52, to: 78 },
     ],
     flybyTarget: [15, 70], // jarak terdekat ke permukaan Bulan (u) yang aman dan bagus untuk foto
-    photoRange: 140, // jarak (u dari permukaan) mulai bisa memotret
+    photoRange: 180, // jarak (u dari permukaan) mulai bisa memotret
     photoPointTolDeg: 25,
     entryCorridorDeg: [-10.5, -5.5], // sudut masuk atmosfer yang aman
     shieldPointTolDeg: 35, // pelindung panas harus menghadap arah gerak

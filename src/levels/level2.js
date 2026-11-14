@@ -9,6 +9,8 @@
 
 import { CISLUNAR, stepBody, predict } from '../engine/cislunar.js';
 import { applyControls } from '../engine/attitude.js';
+import { createFlight, stepFlight, EARTH, positionAngle } from '../engine/flight.js';
+import { createAssist, stepAssist } from '../engine/assist.js';
 import { makeRng } from '../engine/rng.js';
 import { LEVELS, ROCKETS, BODIES } from '../data/levels.js';
 import { itemById, ITEMS } from '../data/items.js';
@@ -93,11 +95,11 @@ function forecast(game, devNow = game.dev, rateNow = game.devRate, extraBack = 0
   return { closest, entryAngle, devAtEntry: devAt(n.entryT) };
 }
 const NOMINAL_ENTRY_DEG = -8;
-const FLYBY_AIM = 40; // jarak terdekat ideal (u dari permukaan)
+const FLYBY_AIM = 35; // jarak terdekat ideal (u dari permukaan)
 
 // Saran arah dorongan untuk Spesialis: 'left' | 'right' | null (sudah pas).
 // Dorong ke kiri jalur menaikkan devRate, ke kanan menurunkannya.
-export function advice(game) {
+export function advice(game, tight = false) {
   if (!['outbound', 'flyby', 'return'].includes(game.phase)) return { dir: null, ok: true };
   const n = nominal();
   const before = game.t < n.flybyT - 1;
@@ -107,8 +109,10 @@ export function advice(game) {
   };
   const f = forecast(game);
   const ok = before
-    ? Math.abs(f.closest - FLYBY_AIM) <= 15
-    : f.entryAngle >= L.entryCorridorDeg[0] + 1 && f.entryAngle <= L.entryCorridorDeg[1] - 1;
+    ? Math.abs(f.closest - FLYBY_AIM) <= (tight ? 6 : 15)
+    : tight
+      ? Math.abs(f.entryAngle - NOMINAL_ENTRY_DEG) <= 0.8
+      : f.entryAngle >= L.entryCorridorDeg[0] + 1 && f.entryAngle <= L.entryCorridorDeg[1] - 1;
   if (ok) return { dir: null, ok: true };
   const up = metric(game.devRate + 0.05);
   const down = metric(game.devRate - 0.05);
@@ -137,7 +141,7 @@ export function buildCheck(build) {
 }
 
 export const RAKIT_ITEMS = ITEMS.filter((it) => !it.cubesat && it.id !== 'fuel' && it.level <= 2);
-export const DEFAULT_BUILD = { items: ['battery', 'panel-s', 'antenna-s', 'camera', 'heatshield'], fuel: 0.6 };
+export const DEFAULT_BUILD = { items: ['battery', 'panel-s', 'antenna-s', 'camera', 'heatshield'], fuel: 0.6, assist: true };
 
 // ---------- Mulai ----------
 export function createLevel2(build, seed = 'solo') {
@@ -153,7 +157,15 @@ export function createLevel2(build, seed = 'solo') {
     level: 2,
     build,
     check,
-    phase: 'tli',
+    phase: 'launch',
+    // Peluncuran dari Bumi ke orbit parkir memakai engine yang sama dengan Level 1.
+    // Bahan bakar roket terpisah dari bahan bakar kapsul (slider di Rakit = bahan bakar kapsul untuk MCC).
+    flight: createFlight({ planet: EARTH, fuel: 1, orbitHoldSec: 3 }),
+    assist: build.assist !== false,
+    launchAssist: build.assist !== false ? createAssist() : null,
+    tliArmed: false,
+    coach: null,
+    holdThrust: false,
     t: 0,
     dev: 0,
     devRate: sign() * between(L.driftOut),
@@ -178,7 +190,7 @@ export function createLevel2(build, seed = 'solo') {
     signalLost: false,
     entry: null,
     splashT: 0,
-    log: ['Kapsul di orbit parkir. Navigator: nyalakan mesin (W) untuk berangkat ke Bulan (TLI).'],
+    log: ['Luncurkan roket dari Bumi ke orbit parkir.'],
     result: null,
     trail: [],
   };
@@ -195,18 +207,51 @@ export function stepLevel2(game, ctrl, dt) {
   if (game.result) return game;
   const n = nominal();
 
+  if (game.phase === 'launch') {
+    const fdt = dt * LEVELS[1].launchTimeScale;
+    if (game.launchAssist && ctrl) {
+      stepAssist(game.launchAssist, game.flight, ctrl);
+      game.coach = { msg: game.launchAssist.msg, urgent: game.launchAssist.urgent };
+    }
+    stepFlight(game.flight, ctrl, fdt);
+    syncCraftFromFlight(game);
+    if (game.flight.failCode) return finish(game, false, game.flight.failCode);
+    if (game.flight.status === 'orbit') {
+      game.phase = 'tli';
+      if (ctrl) {
+        ctrl.throttle = 0;
+        ctrl.mode = 'prograde';
+      }
+      game.log.push('Orbit parkir tercapai. Tekan Gas + untuk berangkat ke Bulan (TLI).');
+    }
+    return game;
+  }
+
   if (game.phase === 'tli') {
-    // Kapsul berputar di orbit parkir sampai Navigator menyalakan mesin.
-    game.parkingAngle += (dt * 105) / CISLUNAR.parkingRadius / 1.6;
-    const r = CISLUNAR.parkingRadius;
-    game.craft.x = Math.sin(game.parkingAngle) * r;
-    game.craft.y = Math.cos(game.parkingAngle) * r;
-    game.craft.angle = game.parkingAngle + Math.PI / 2;
-    if (ctrl && (ctrl.throttle > 0 || ctrl.pulseLeft > 0)) {
+    // Kapsul mengorbit Bumi. TLI dijalankan saat kapsul tiba di titik berangkat yang tepat.
+    stepFlight(game.flight, null, dt);
+    syncCraftFromFlight(game);
+    if (ctrl && (ctrl.throttle > 0 || ctrl.pulseLeft > 0) && !game.tliArmed) {
+      game.tliArmed = true;
+      game.log.push('TLI dijadwalkan: menunggu kapsul tiba di titik berangkat.');
+    }
+    if (ctrl) {
       ctrl.throttle = 0;
       ctrl.pulseLeft = 0;
-      ctrl.mode = 'prograde';
+    }
+    const f = game.flight;
+    const omega = Math.hypot(f.vx, f.vy) / Math.hypot(f.x, f.y);
+    let diff = START.theta - positionAngle(f);
+    diff = ((diff % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+    game.secondsToTli = diff / omega;
+    game.coach = game.assist
+      ? game.tliArmed
+        ? { msg: `TLI dijadwalkan. Mesin menyala otomatis dalam ${Math.ceil(game.secondsToTli)} detik…`, urgent: false }
+        : { msg: 'Orbit parkir tercapai! Tekan Gas + untuk berangkat ke Bulan (TLI).', urgent: true }
+      : null;
+    if (game.tliArmed && (diff < 0.05 || diff > 2 * Math.PI - 0.01)) {
       game.phase = 'outbound';
+      if (ctrl) ctrl.mode = 'prograde';
       game.log.push('TLI selesai, menuju Bulan. Lintasan sedikit menyimpang: lihat garis prediksi.');
     }
     return game;
@@ -224,9 +269,11 @@ export function stepLevel2(game, ctrl, dt) {
   const s = sampleAt(game.t);
   game.craft.vx = s.vx;
   game.craft.vy = s.vy;
-  let throttle = ctrl ? applyControls(ctrl, game.craft, TURN_RATE, dt) : 0;
   const win = mccWindow(game.t);
+  if (game.assist && ctrl) assistStep(game, ctrl, win);
+  let throttle = ctrl ? applyControls(ctrl, game.craft, TURN_RATE, dt) : 0;
   if (!win) throttle = 0; // mesin hanya boleh dinyalakan di jendela MCC
+  if (game.holdThrust) throttle = 0; // bantuan pilot menunggu kapsul selesai berputar
   game.mcc = win ? win.id : null;
   game.thrusting = throttle > 0 && game.fuel > 0 && game.phase !== 'entry';
   if (game.thrusting) {
@@ -257,11 +304,11 @@ export function stepLevel2(game, ctrl, dt) {
   game.photoCooldown = Math.max(0, game.photoCooldown - dt);
   game.photoQuality = photoQuality(game, p, dMoon);
 
-  if (game.phase === 'outbound' && game.t > n.flybyT - 8) {
+  if (game.phase === 'outbound' && game.t > n.flybyT - 10) {
     game.phase = 'flyby';
     game.log.push('Mendekati Bulan. Navigator arahkan kapsul ke Bulan, Spesialis ambil foto.');
   }
-  if (game.phase === 'flyby' && game.t > n.flybyT + 8) {
+  if (game.phase === 'flyby' && game.t > n.flybyT + 10) {
     game.phase = 'return';
     game.devRate += game.driftBack;
     if (game.closestMoon > L.flybyTarget[1] && game.photos < L.photoTarget) game.log.push('Terlalu jauh dari Bulan, foto kurang tajam.');
@@ -287,6 +334,68 @@ export function stepLevel2(game, ctrl, dt) {
   return game;
 }
 
+function syncCraftFromFlight(game) {
+  const f = game.flight;
+  game.craft.x = f.x;
+  game.craft.y = f.y;
+  game.craft.vx = f.vx;
+  game.craft.vy = f.vy;
+  game.craft.angle = f.angle;
+}
+
+function angleDiff(a, b) {
+  return Math.atan2(Math.sin(a - b), Math.cos(a - b));
+}
+
+// Bantuan pilot Level 2: mengatur arah kapsul, mematikan mesin saat lintasan sudah pas,
+// dan memberi tahu pemain apa yang harus ditekan. Pemain tetap menekan Gas + dan Ambil foto.
+function assistStep(game, ctrl, win) {
+  const n = nominal();
+  game.holdThrust = false;
+  let msg = '';
+  let urgent = false;
+
+  if (game.phase === 'entry') {
+    ctrl.mode = 'retrograde';
+    ctrl.throttle = 0;
+    msg = 'Masuk atmosfer. Pelindung panas diarahkan ke depan otomatis.';
+  } else if (game.phase === 'flyby') {
+    ctrl.mode = 'manual';
+    ctrl.targetAngle = Math.atan2(CISLUNAR.moon.x - game.craft.x, CISLUNAR.moon.y - game.craft.y);
+    ctrl.throttle = 0;
+    if (!game.hasCamera) msg = 'Melewati Bulan (tanpa kamera, tidak bisa memotret).';
+    else if ((game.photoQuality || 0) >= 0.6) {
+      msg = `FOTO SEKARANG! Spesialis tekan Ambil foto (${game.photos}/${L.photoTarget})`;
+      urgent = true;
+    } else msg = 'Mendekati Bulan. Kamera diarahkan otomatis, tunggu sampai cukup dekat…';
+  } else if (win) {
+    // Bantuan pilot membidik lebih tepat (ke tengah target) supaya foto dan sudut masuk aman.
+    const adv = advice(game, true);
+    if (adv.dir) {
+      ctrl.mode = adv.dir;
+      const target = Math.atan2(game.craft.vx, game.craft.vy) + (adv.dir === 'left' ? -Math.PI / 2 : Math.PI / 2);
+      game.holdThrust = Math.abs(angleDiff(game.craft.angle, target)) > 0.35;
+      const what = game.t < n.flybyT ? 'jarak ke Bulan' : 'sudut masuk atmosfer';
+      if (ctrl.throttle > 0) msg = `${win.id}: mengoreksi ${what}… garis putus-putus mendekati jalur hijau.`;
+      else {
+        msg = `${win.id}: lintasan menyimpang! Tekan Gas + untuk koreksi.`;
+        urgent = true;
+      }
+    } else {
+      if (ctrl.throttle > 0) ctrl.throttle = 0;
+      ctrl.mode = 'prograde';
+      msg = `${win.id}: lintasan sudah pas ✓ Mesin dimatikan.`;
+    }
+  } else {
+    ctrl.mode = 'prograde';
+    ctrl.throttle = 0;
+    const next = L.mccWindows.find((w) => w.from > game.t);
+    msg = next ? `Meluncur. ${next.id} dalam ${Math.ceil(next.from - game.t)} detik (Percepat ⏩ untuk mempercepat).` : 'Meluncur pulang ke Bumi.';
+  }
+  if (!game.panelsOpen && game.panelPower > 0 && game.phase === 'outbound' && !urgent) msg += ' Spesialis: buka panel surya.';
+  game.coach = { msg, urgent };
+}
+
 function behindMoon(p) {
   // Garis dari Bumi ke kapsul terhalang piringan Bulan?
   const m = CISLUNAR.moon;
@@ -307,14 +416,14 @@ function photoQuality(game, p, dMoon) {
   game.aimOff = signed; // + = Bulan di kanan (putar D), - = di kiri (putar A)
   const off = Math.abs(signed);
   const aim = off <= L.photoPointTolDeg ? 1 - (off / L.photoPointTolDeg) * 0.4 : 0;
-  const near = dMoon <= L.flybyTarget[0] + 15 ? 1 : Math.max(0, 1 - (dMoon - 30) / (L.photoRange - 30));
+  const near = dMoon <= 40 ? 1 : Math.max(0, 1 - (dMoon - 40) / 160);
   return +(aim * near).toFixed(2);
 }
 
 // ---------- Perintah Spesialis ----------
 export function command(game, cmd) {
   if (game.result) return game;
-  if (cmd === 'deployPanels' && game.phase !== 'tli' && game.panelPower > 0) {
+  if (cmd === 'deployPanels' && game.phase !== 'launch' && game.panelPower > 0) {
     game.panelsOpen = true;
     game.log.push('Panel surya terbuka.');
   }
@@ -355,9 +464,10 @@ function finish(game, success, failCode) {
 // ---------- Untuk tampilan dan Spesialis ----------
 export function snapshotLevel2(game, withPaths = true) {
   const n = nominal();
-  const f = game.phase === 'tli' ? forecast({ ...game, t: 0 }) : forecast(game);
+  const before = game.phase === 'launch' || game.phase === 'tli';
+  const f = before ? forecast({ ...game, t: 0 }) : forecast(game);
   let prediction = [];
-  if (game.phase !== 'tli' && game.phase !== 'done') {
+  if (!before && game.phase !== 'done') {
     // Snapshot untuk Spesialis lebih jarang titiknya supaya ringan dikirim lewat room.
     for (let t = game.t; t <= n.entryT; t += withPaths ? 0.5 : 1.5) {
       const d = game.dev + game.devRate * (t - game.t);
@@ -393,6 +503,25 @@ export function snapshotLevel2(game, withPaths = true) {
     batteryMax: game.batteryMax,
     signalLost: game.signalLost,
     lastLog: game.log[game.log.length - 1] || '',
+    coach: game.assist ? game.coach : null,
+    secondsToTli: game.phase === 'tli' ? game.secondsToTli : null,
+    // Saat peluncuran, tampilan memakai gambar orbit Bumi seperti Level 1.
+    flight:
+      game.phase === 'launch'
+        ? {
+            x: game.flight.x,
+            y: game.flight.y,
+            vx: game.flight.vx,
+            vy: game.flight.vy,
+            angle: game.flight.angle,
+            fuel: game.flight.fuel,
+            status: game.flight.status,
+            thrusting: !!game.flight.thrusting,
+            inRing: !!game.flight.inRing,
+            inRingFor: game.flight.inRingFor,
+            trail: withPaths ? game.flight.trail : [],
+          }
+        : null,
     result: game.result,
     nominal: withPaths ? nominalPathPoints() : [],
     prediction,

@@ -34,7 +34,11 @@ Salin `.env.example` jadi `.env`, isi dari Firebase Console (Realtime Database +
 Rakit CubeSat (1U/3U) → terbang ke cincin orbit dan tahan 3 detik → Spesialis lepas CubeSat → tunggu hitung mundur → buka panel dan antena → kirim sinyal saat lewat di atas stasiun Bumi.
 
 ## Level 2: Memutari Bulan
-Rakit kapsul (wajib kamera dan pelindung panas) → tekan W untuk berangkat → garis putus-putus = prediksi, garis hijau = target free return → di jendela MCC putar ke kiri/kanan jalur (Z/C) dan dorong sampai prediksi pas → dekat Bulan arahkan kapsul ke Bulan, Spesialis memotret (tombol 2) → MCC pulang untuk sudut masuk atmosfer → saat masuk atmosfer tekan E (pelindung panas di depan). Koreksi lebih awal = lebih hemat bahan bakar. T = percepat waktu.
+Rakit kapsul (wajib kamera dan pelindung panas) → luncurkan dari Bumi ke orbit parkir (seperti Level 1) → Gas + untuk TLI → garis putus-putus = prediksi, garis hijau = target free return → di jendela MCC koreksi lintasan → dekat Bulan Spesialis memotret (tombol 2) → MCC pulang → masuk atmosfer dengan pelindung panas di depan.
+Dengan **Bantuan pilot** (default nyala) arah kapsul diatur otomatis; pemain cukup menekan Gas + dan Ambil foto saat kotak oranye muncul. Koreksi lebih awal = lebih hemat bahan bakar.
+
+## Menu jeda
+Tombol ☰ Menu, Esc/P, atau tombol Back di HP membuka menu: Lanjutkan, Ulangi misi, Ubah rakitan, Keluar ke menu utama. Back di layar lain kembali satu layar, tidak keluar dari web.
 
 ## Cara kerja tim
 - Branch per orang: `nama/fitur` (misal `andi/level2`), lalu Pull Request ke `main`.

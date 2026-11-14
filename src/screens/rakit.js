@@ -32,11 +32,11 @@ export function rakitScreen(app, el) {
         )
         .join('')}</div>
     </div>
-    ${
+    <label class="card row"><input type="checkbox" id="assist"> <span><b>Bantuan pilot</b> (disarankan untuk pemula)<br><small class="muted">${
       isCubeSat
-        ? `<label class="card row"><input type="checkbox" id="assist"> <span><b>Bantuan pilot</b> (disarankan untuk pemula)<br><small class="muted">Roket dimiringkan otomatis dan mesin dimatikan tepat waktu. Kamu cukup menekan Gas + saat diminta.</small></span></label>`
-        : ''
-    }
+        ? 'Roket dimiringkan otomatis dan mesin dimatikan tepat waktu. Kamu cukup menekan Gas + saat diminta.'
+        : 'Arah kapsul diatur otomatis (koreksi lintasan, membidik Bulan, pelindung panas). Kamu cukup menekan Gas + dan Ambil foto saat diminta.'
+    }</small></span></label>
     <div class="card">
       <b>Bahan bakar ${isCubeSat ? 'roket' : 'kapsul'}: <span id="fuelv"></span></b>
       <input type="range" id="fuel" min="1" max="10" step="1" style="width:100%">

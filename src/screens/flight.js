@@ -20,7 +20,17 @@ export function flightScreen(app, el) {
       <div class="hud"><div id="hud"></div>
         <details><summary class="muted">Kontrol</summary><div class="keys">${helpHtml()}</div></details>
       </div>
+      <button class="menu-btn" id="menuBtn">☰ Menu</button>
       <div class="touch" id="pad"></div>
+      <div class="overlay" id="pause">
+        <div class="card pause-card">
+          <h2>Misi dijeda</h2>
+          <button class="primary" id="pResume">Lanjutkan</button>
+          <button id="pRestart">Ulangi misi</button>
+          <button id="pRakit">Ubah rakitan</button>
+          <button id="pHome">Keluar ke menu utama</button>
+        </div>
+      </div>
     </div>
     <div class="side" id="side"></div>
   `;
@@ -41,21 +51,57 @@ export function flightScreen(app, el) {
     updatePanel = (v) => ($('#navst').textContent = v.lastLog);
   }
 
-  const padSet = app.level === 2 ? 'moon' : game.assist ? 'basic' : 'manual';
+  const padSet = app.level === 2 ? (game.assist ? 'moonAssist' : 'moon') : game.assist ? 'basic' : 'manual';
   const unbind = bindControls(
     $('#pad'),
     (action) => {
+      if (paused) return;
       if (action === 'warp') warp = warp === 1 ? 3 : 1;
       else controlAction(ctrl, action, craft());
     },
     padSet,
   );
 
+  // ---------- Menu jeda ----------
+  let paused = false;
+  const setPaused = (on) => {
+    paused = on;
+    $('#pause').style.display = on ? 'flex' : 'none';
+  };
+  $('#menuBtn').onclick = () => setPaused(true);
+  $('#pResume').onclick = () => setPaused(false);
+  $('#pRestart').onclick = () => app.go('flight');
+  $('#pRakit').onclick = () => app.go('rakit');
+  $('#pHome').onclick = () => app.go('home');
+  const onEsc = (e) => {
+    if (e.key === 'Escape' || e.key.toLowerCase() === 'p') setPaused(!paused);
+  };
+  window.addEventListener('keydown', onEsc);
+  // Tombol Back di HP / browser membuka menu jeda, bukan keluar dari web.
+  app.onBack = () => {
+    setPaused(!paused);
+    return true;
+  };
+  const onUnload = (e) => {
+    e.preventDefault();
+    e.returnValue = '';
+  };
+  window.addEventListener('beforeunload', onUnload);
+
   let raf = 0;
   let last = performance.now();
   let acc = 0;
   let lastSend = 0;
   function frame(now) {
+    if (paused) {
+      last = now;
+      if (app.room && now - lastSend > 500) {
+        app.room.sendState({ ...M.snapshot(game, false), paused: true });
+        lastSend = now;
+      }
+      raf = requestAnimationFrame(frame);
+      return;
+    }
     // Percepat waktu hanya saat mesin mati dan tidak di fase genting.
     const calm = ctrl.throttle === 0 && ctrl.pulseLeft === 0 && !['flyby', 'entry', 'launch'].includes(game.phase);
     const speed = calm ? warp : 1;
@@ -92,7 +138,7 @@ export function flightScreen(app, el) {
   }
 
   function drawHud(v, speed) {
-    if (app.level === 1) return drawHud1(v, speed);
+    if (app.level === 1 || v.phase === 'launch') return drawHud1(v, speed);
     drawHud2(v, speed);
   }
 
@@ -126,8 +172,10 @@ export function flightScreen(app, el) {
   }
 
   function drawHud2(v, speed) {
+    drawCoach(v);
     const steps = [
-      ['Berangkat', v.phase === 'tli'],
+      ['Peluncuran', v.phase === 'launch'],
+      ['TLI', v.phase === 'tli'],
       ...v.mccWindows.slice(0, 2).map((w) => [w.id, v.mcc === w.id]),
       ['Bulan', v.phase === 'flyby'],
       [v.mccWindows[2].id, v.mcc === v.mccWindows[2].id],
@@ -135,12 +183,12 @@ export function flightScreen(app, el) {
     ];
     $('#timeline').innerHTML = steps.map(([n, on]) => `<span class="${on ? 'on' : ''}">${n}</span>`).join('');
     let status;
-    if (v.phase === 'tli') status = 'Tekan W untuk menyalakan mesin dan berangkat ke Bulan.';
+    if (v.phase === 'tli') status = v.secondsToTli !== null && game.tliArmed ? `TLI dalam ${Math.ceil(v.secondsToTli)} detik` : 'Tekan Gas + (W) untuk berangkat ke Bulan (TLI).';
     else if (v.phase === 'entry') status = 'Masuk atmosfer: tekan E supaya pelindung panas menghadap depan.';
     else if (v.mcc) status = `<span style="color:var(--ok)">${v.mcc}: mesin boleh dinyalakan</span>`;
     else if (v.nextMcc) status = `Mesin terkunci. ${v.nextMcc.id} dalam ${Math.ceil(v.nextMcc.from - v.t)} s${speed === 1 ? ' (T = percepat)' : ''}`;
     else status = 'Mesin terkunci.';
-    const adv = app.role === 'solo' && v.advice && v.mcc ? `<span>Saran Spesialis: dorong ke <b>${v.advice === 'left' ? 'KIRI (Z)' : 'KANAN (C)'}</b> jalur</span>` : '';
+    const adv = app.role === 'solo' && !game.assist && v.advice && v.mcc ? `<span>Saran Spesialis: dorong ke <b>${v.advice === 'left' ? 'KIRI (Z)' : 'KANAN (C)'}</b> jalur</span>` : '';
     $('#hud').innerHTML = `${controlLine(v, speed)}<span>${status}</span>${adv}
       ${v.phase === 'flyby' ? `<span>${aimText(v.aimOff)} · Kualitas foto ${Math.round(v.photoQuality * 100)}%</span>` : ''}`;
   }
@@ -155,6 +203,9 @@ export function flightScreen(app, el) {
   return () => {
     cancelAnimationFrame(raf);
     unbind();
+    window.removeEventListener('keydown', onEsc);
+    window.removeEventListener('beforeunload', onUnload);
     app.onCmd = null;
+    app.onBack = null;
   };
 }
