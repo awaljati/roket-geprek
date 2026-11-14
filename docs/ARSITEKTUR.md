@@ -13,7 +13,10 @@ src/
                 rng.js       angka acak dengan seed (kejadian sama untuk semua tim battle)
   levels/     aturan tiap level dan daftar level (index.js)
   net/        room dengan kode: Firebase atau lokal (BroadcastChannel)
-  render/     menggambar dari snapshot (render2d sekarang, render3d nanti)
+  render/     menggambar dari snapshot:
+                view.js      memilih 3D atau 2D, otomatis kembali ke 2D kalau 3D gagal
+                render3d.js  Three.js: planet bertekstur NASA, kamera bisa diputar
+                render2d.js  canvas 2D (cadangan, lebih ringan)
   screens/    layar: home, lobby, rakit, flight, spesialis, debrief, kontrol
   main.js     perpindahan layar dan tombol Back
 ```
@@ -49,3 +52,10 @@ Fisika penuh Bumi-Bulan terlalu sensitif untuk dimainkan: dorongan sangat kecil 
 3. **Koreksi (MCC):** dorongan ke kiri atau kanan jalur mengubah laju penyimpangan. Koreksi awal butuh sedikit bahan bakar, koreksi terlambat butuh jauh lebih banyak.
 
 Jarak terdekat ke Bulan dan sudut masuk atmosfer dihitung dari penyimpangan itu dan ditampilkan ke Spesialis sebagai prediksi.
+
+## Tampilan 3D
+
+- Fisika tetap 2D. `render3d.js` menaruh semua benda di bidang XY dan menampilkannya dengan kamera yang sedikit miring, jadi planet terlihat bulat.
+- Tekstur dibaca dari `public/assets/textures/bumi.jpg` dan `bulan.jpg`. Kalau belum ada, planet berwarna polos.
+- Roket, CubeSat, dan kapsul adalah gambar datar (sprite) yang selalu menghadap kamera.
+- Pemain bisa memutar pandangan dengan mouse atau dua jari di HP. Pilihan 2D/3D ada di menu jeda dan disimpan di browser.

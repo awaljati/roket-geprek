@@ -86,3 +86,6 @@ button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
   .timeline span:not(.on) { display: none; }
   .coach { font-size: 0.95rem; }
 }
+/* Panggung tampilan: kanvas 2D dan 3D bertumpuk di tempat yang sama */
+.stage { position: relative; min-height: 0; overflow: hidden; }
+.stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }

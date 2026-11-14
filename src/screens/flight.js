@@ -1,7 +1,7 @@
 // Layar terbang (perangkat Navigator / solo). Menjalankan fisika, menggambar, dan mengirim snapshot ke Spesialis.
 import { LEVEL_MODULES } from '../levels/index.js';
 import { orbitCheck, orbitExtremes } from '../engine/flight.js';
-import { createRenderer } from '../render/render2d.js';
+import { createView, prefers3D, setPrefer3D } from '../render/view.js';
 import { mountPanelFor } from './specialistPanel.js';
 import { createControls, controlAction } from '../engine/attitude.js';
 import { bindControls, helpHtml } from './controls.js';
@@ -14,7 +14,7 @@ export function flightScreen(app, el) {
   el.className = 'flight';
   el.innerHTML = `
     <div class="view">
-      <canvas id="cv"></canvas>
+      <div class="stage" id="stage"><canvas id="cv"></canvas></div>
       <div class="timeline" id="timeline"></div>
       <div class="coach" id="coach"></div>
       <div class="hud"><div id="hud"></div>
@@ -28,6 +28,7 @@ export function flightScreen(app, el) {
           <button class="primary" id="pResume">Lanjutkan</button>
           <button id="pRestart">Ulangi misi</button>
           <button id="pRakit">Ubah rakitan</button>
+          <button id="pView"></button>
           <button id="pHome">Keluar ke menu utama</button>
         </div>
       </div>
@@ -35,7 +36,7 @@ export function flightScreen(app, el) {
     <div class="side" id="side"></div>
   `;
   const $ = (s) => el.querySelector(s);
-  const renderer = createRenderer($('#cv'));
+  const renderer = createView($('#stage'));
   const game = M.create(app.build, app.code || 'solo');
   const craft = () => game.flight || game.craft;
   const ctrl = createControls();
@@ -73,6 +74,12 @@ export function flightScreen(app, el) {
   $('#pRestart').onclick = () => app.go('flight');
   $('#pRakit').onclick = () => app.go('rakit');
   $('#pHome').onclick = () => app.go('home');
+  // Ganti tampilan 2D/3D: misi diulang dengan tampilan baru.
+  $('#pView').textContent = prefers3D() ? 'Pakai tampilan 2D (lebih ringan)' : 'Pakai tampilan 3D';
+  $('#pView').onclick = () => {
+    setPrefer3D(!prefers3D());
+    app.go('flight');
+  };
   const onEsc = (e) => {
     if (e.key === 'Escape' || e.key.toLowerCase() === 'p') setPaused(!paused);
   };
@@ -207,5 +214,6 @@ export function flightScreen(app, el) {
     window.removeEventListener('beforeunload', onUnload);
     app.onCmd = null;
     app.onBack = null;
+    renderer.dispose();
   };
 }
