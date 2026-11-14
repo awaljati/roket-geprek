@@ -6,6 +6,7 @@
 
 import { EARTH, ROCKET_TUNING } from '../engine/flight.js';
 import { CISLUNAR } from '../engine/cislunar.js';
+import { LAUNCH_SITE } from '../data/levels.js';
 
 const TEXTURES = { earth: '/assets/textures/bumi.jpg', moon: '/assets/textures/bulan.jpg' };
 const COLORS = {
@@ -84,7 +85,10 @@ export async function createRenderer(canvas) {
   // Bumi dilihat dari atas kutub selatan: bidang orbit = bidang ekuator, dan Bumi berputar searah jarum jam,
   // sama dengan arah orbit di game (peluncuran ke timur memanfaatkan rotasi Bumi).
   const earth = planet(EARTH.radius, COLORS.earth, TEXTURES.earth);
-  earth.rotation.set(-Math.PI / 2, 0, 0);
+  // Ekuator ada di tepi bola. Putar tekstur pada porosnya supaya bujur landasan (Biak) tepat di puncak
+  // saat misi mulai. Peta equirectangular: bujur λ ada di sudut (λ + 180°) pada bola Three.js,
+  // dan puncak layar ada di sudut 90°, jadi putarannya 90° − (λ + 180°).
+  earth.rotation.set(-Math.PI / 2, ((-90 - LAUNCH_SITE.lon) * Math.PI) / 180, 0);
   const earthSpin = new THREE.Group();
   earthSpin.add(earth);
   scene.add(earthSpin);
