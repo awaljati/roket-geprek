@@ -52,3 +52,25 @@ h2 { margin: 0; }
 .timeline span { font-size: 0.75rem; padding: 4px 8px; border-radius: 999px; background: rgba(17,24,41,0.85); border: 1px solid var(--line); color: var(--muted); }
 .timeline span.on { background: var(--accent); color: #1a0d03; border-color: var(--accent); font-weight: 700; }
 #hud { display: flex; flex-direction: column; gap: 4px; }
+
+/* Kontrol layar: tombol utama besar untuk HP */
+.touch { flex-direction: column; align-items: stretch; gap: 6px; touch-action: manipulation; user-select: none; }
+.pad-main { display: grid; grid-template-columns: 1fr 1.4fr 1fr; gap: 8px; }
+.pad-main button.big { padding: 14px 8px; font-size: 1.05rem; font-weight: 700; }
+.pad-extra { display: flex; flex-wrap: wrap; gap: 6px; }
+.pad-extra button { flex: 1 1 auto; }
+button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.coach { pointer-events: none; position: absolute; left: 50%; top: 56px; transform: translateX(-50%); max-width: min(90%, 520px); text-align: center; background: rgba(17,24,41,0.92); border: 1px solid var(--line); border-radius: 12px; padding: 10px 16px; font-weight: 600; display: none; }
+.coach.urgent { background: var(--accent); color: #1a0d03; border-color: var(--accent); animation: pulse 0.6s ease-in-out infinite alternate; }
+@keyframes pulse { from { transform: translateX(-50%) scale(1); } to { transform: translateX(-50%) scale(1.05); } }
+@media (max-width: 720px) {
+  .flight { grid-template-rows: auto auto; }
+  .view { height: 72vh; height: 72svh; }
+  .flight canvas { min-height: 40vh; }
+  .hud { font-size: 0.78rem; padding: 6px 8px; max-width: 62%; }
+  .hud details { display: none; }
+  .timeline { top: 6px; right: 6px; max-width: 40%; }
+  .view { grid-template-rows: 1fr auto auto; }
+  .coach, .coach.urgent { position: static; transform: none; max-width: none; border-radius: 0; animation: none; padding: 8px 12px; }
+}
+.warn { color: var(--warn); margin: 6px 0 0; }
