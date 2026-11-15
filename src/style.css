@@ -53,20 +53,25 @@ input[type='text'] { font: inherit; padding: 10px; border-radius: 10px; border: 
   z-index: -1;         
 }
 
-.home-bg {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  z-index: -1;   
-  pointer-events: none;
-}
-
 .home-screen .floating-icon,
 .home-screen button.primary {
   position: relative;  
   z-index: 1;
+}
+
+
+.screen.lobby-screen {
+  max-width: none;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100svh;
+  margin: 0;
+  background-image: url('/assets/l-lobby-screen.svg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  gap: 20px;
+  z-index: -1;         
 }
 
 .center { align-items: center; text-align: center; justify-content: center; min-height: 80vh; }
