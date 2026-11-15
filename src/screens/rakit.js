@@ -7,7 +7,7 @@ import '@fontsource/londrina-solid/400.css';
 import '@fontsource/londrina-solid/900.css';
 import '../styles/rakit.css';
 
-// Tampilan Rakit mengikuti desain DKV (public/assets/layout-rakit-wahana).
+// Tampilan Rakit mengikuti desain DKV (docs/desain/layout-rakit-wahana.png).
 // Ikon Level 1 dari DKV (versi WebP ringan); ikon Level 2-4 digambar sendiri dengan gaya yang sama (rakit/ikon/*.svg).
 const A = '/assets/rakit/';
 const ITEM_ICON = {

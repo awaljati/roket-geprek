@@ -1,4 +1,4 @@
-/* Layar Debrief (desain DKV: public/layout screenshoot/). Dua kolom di atas latar ungu:
+/* Layar Debrief (desain DKV: docs/desain/layout-debrief-*.png). Dua kolom di atas latar ungu:
    kiri = bintang, Pok-Pok, status; kanan = skor dan rincian. Class berawalan .db- */
 .debrief-screen {
   --db-yel: #f2e45a;

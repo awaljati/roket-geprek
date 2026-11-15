@@ -1,4 +1,4 @@
-/* Bingkai layar terbang (desain DKV: public/assets/frame.svg).
+/* Bingkai layar terbang (desain DKV: docs/desain/aset-asli/frame.svg).
    Gambar dipotong dua supaya bisa menyesuaikan ukuran layar apa pun:
    - frame/jendela.webp (1920×885): jendela di atas kanvas, 9-slice supaya sudut miring tidak gepeng.
    - frame/dok.webp (1920×195): ruang di bawah jendela, tempat tombol Gas dan lainnya menempel.

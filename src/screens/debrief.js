@@ -5,7 +5,7 @@ import { saveStars, addFunds, getFunds } from './progress.js';
 import '@fontsource/londrina-solid/900.css';
 import '../styles/debrief.css';
 
-// Tampilan Debrief mengikuti desain DKV (public/layout screenshoot/): kiri = bintang, Pok-Pok, status menang/kalah;
+// Tampilan Debrief mengikuti desain DKV (docs/desain/layout-debrief-*.png): kiri = bintang, Pok-Pok, status menang/kalah;
 // kanan = skor, bahan bakar, rincian tiap level, fakta.
 const A = '/assets/debrief/';
 const num = (x) => String(x).replace('.', ',');
