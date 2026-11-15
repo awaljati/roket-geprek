@@ -248,3 +248,9 @@ button.big { padding: 14px 16px; font-size: 1.1rem; font-weight: 700; }
 
 /* Balon Pok-Pok: status Spesialis di baris kedua (main solo) */
 .coach-extra { display: block; margin-top: 4px; font-weight: 500; font-size: 0.85em; opacity: 0.85; }
+
+/* HP: kotak info kiri atas lebih ringkas supaya tidak menutupi layar terbang */
+@media (max-width: 720px) {
+  .hud small.muted { display: none; }
+  .hud { gap: 2px; max-width: 58%; }
+}
