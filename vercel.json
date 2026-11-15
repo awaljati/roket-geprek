@@ -1,0 +1,26 @@
+{
+  "git": {
+    "deploymentEnabled": {
+      "aset/*": false,
+      "aset/**": false,
+      "astro2/*": false,
+      "astro2/**": false,
+      "claude/*": false,
+      "claude/**": false,
+      "docs/*": false,
+      "docs/**": false,
+      "fitur/*": false,
+      "fitur/**": false,
+      "fix/*": false,
+      "fix/**": false,
+      "level/*": false,
+      "level/**": false,
+      "setup/*": false,
+      "setup/**": false,
+      "dkv/*": false,
+      "dkv/**": false,
+      "ui/*": false,
+      "ui/**": false
+    }
+  }
+}
