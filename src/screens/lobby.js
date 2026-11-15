@@ -25,8 +25,13 @@ export function lobbyScreen(app, el) {
       </a>
     </div>
   </div>
-
+  
+<div class="contentlobby">
+  <div class="contentlobby-left">
     <img src="/assets/netral.svg" alt="Roket Geprek" class="floating-icon" />
+  </div>
+  
+  <div class="contentlobby-right">
     <div class="card row">
       <div style="flex:1"><b>Solo</b><br><span class="muted">Satu perangkat memegang Navigator dan Spesialis.</span></div>
       <button class="primary" id="solo">Main solo</button>
@@ -43,6 +48,8 @@ export function lobbyScreen(app, el) {
     <div id="msg" class="status"></div>
     <button id="back">Kembali</button>
     <p class="muted">Mode koneksi: ${hasFirebase ? 'online (Firebase)' : 'lokal: buka 2 tab di browser yang sama untuk tes'}</p>
+  </div>
+  </div>
   `;
   const $ = (s) => el.querySelector(s);
 
