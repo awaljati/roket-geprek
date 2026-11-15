@@ -348,13 +348,9 @@ export async function createRenderer(canvas) {
   const intro = { mode: 'intro', t0: 0, fromPos: new THREE.Vector3(), fromTarget: new THREE.Vector3(), fromUp: new THREE.Vector3() };
   const lookTarget = new THREE.Vector3();
   const WORLD_UP = new THREE.Vector3(0, 1, 0);
-  // Pemain memutar/zoom kamera: animasi berhenti, kamera tetap di tempatnya dan dikendalikan pemain.
-  controls.addEventListener('start', () => {
-    if (intro.mode === 'done') return;
-    intro.mode = 'done';
-    camera.up.copy(WORLD_UP);
-    controls.target.copy(lookTarget);
-  });
+  // Selama adegan pembuka dan perpindahan, kontrol kamera mati: klik/geser/zoom pemain tidak boleh
+  // membuat kamera tertinggal menghadap Indonesia. Kontrol aktif lagi setelah tiba di tampilan atas.
+  controls.enabled = false;
   // Arah dari pusat Bumi ke (lintang, bujur). Bidang orbit = ekuator, selatan = +z (kamera atas melihat kutub
   // selatan), timur searah jarum jam. Bujur Biak ada di sudut putar Bumi (landasan).
   function surfaceDir(latDeg, lonDeg, earthAngle) {
@@ -410,6 +406,7 @@ export async function createRenderer(canvas) {
   }
   function finishIntro() {
     intro.mode = 'done';
+    controls.enabled = true;
     camera.up.copy(WORLD_UP);
     camera.position.copy(home.pos);
     controls.target.copy(home.target);
@@ -451,6 +448,7 @@ export async function createRenderer(canvas) {
     let introCam = false;
     if (cislunar && intro.mode !== 'done') {
       intro.mode = 'done'; // adegan pembuka hanya untuk peluncuran
+      controls.enabled = true;
       camera.up.copy(WORLD_UP);
       frameKey = '';
     }
