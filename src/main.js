@@ -41,6 +41,10 @@ export const app = {
     root.appendChild(el);
     cleanup = SCREENS[name](app, el) || null;
   },
+  // Gambar ulang layar yang sedang tampil (mis. setelah progres dihapus di Pengaturan).
+  refresh() {
+    if (current) app.go(current, { fromBack: true });
+  },
 };
 
 window.addEventListener('popstate', () => {
