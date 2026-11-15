@@ -6,10 +6,10 @@ export function homeScreen(app, el) {
     <button class="primary" id="play">Main</button>
   `;
 */
-  el.className = 'screen center home-container';
+  el.className = 'screen center home-screen';
   el.innerHTML = `
     <img src="/assets/judul.svg" alt="Roket Geprek" class="floating-icon" />
-    <button class="btn-mulai" id="btn-mulai">
+    <button class="primary" id="play">
       <img src="/assets/button-mulai.svg" alt="Mulai" />
     </button>
   `;
