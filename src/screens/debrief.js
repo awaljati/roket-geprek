@@ -46,9 +46,12 @@ export function debriefScreen(app, el) {
                     : ''
                 }`
               : `di luar kedua titik · bintang maks. ${L.outsideMaxStars}`
-          }</p>`
+          }</p>
+          ${r.success ? `<p class="muted">Data ke Bumi: ${Math.round((r.dataSent / r.dataTarget) * 100)}% · Es air: ${r.iceFound ? 'terdeteksi ✓' : 'tidak terdeteksi'}</p>` : ''}`
         : ''
     }
+    ${r.advice && r.advice.length ? `<div class="card"><b>${r.success ? 'Supaya lebih baik' : 'Cara memperbaiki'}</b><ul>${r.advice.map((a) => `<li>${a}</li>`).join('')}</ul></div>` : ''}
+    ${M.fact ? `<p class="card">Fakta: ${M.fact}</p>` : ''}
     <p class="card">${
       r.reward ? `Dana misi diterima: <b>+${r.reward} juta $</b>` : 'Misi gagal: tidak ada dana misi.'
     } · Dana cadangan sekarang <b>${getFunds()} juta $</b><br><small class="muted">Bisa ditambahkan ke anggaran misi berikutnya di layar Rakit.</small></p>

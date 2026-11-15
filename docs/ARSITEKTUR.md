@@ -68,6 +68,8 @@ Tampilan samping: permukaan Bulan berbukit di bawah, pendarat bergerak di bidang
 7. **Dekat landasan kawah:** di bawah `slowAltitude` u, waktu diperlambat (`slowFactor`) dan tampilan menggambar garis panduan tegak ke tanah.
 8. **Bayangan:** Matahari rendah di kiri (`sunElevationDeg`). Level menghitung titik permukaan yang dalam bayangan dan bayangan pendarat, lalu mengirimnya di snapshot (`terrain[i].s`, `craftShadow`); tampilan menggambarnya miring dan memanjang dengan tepi lembut. Bumi kecil di cakrawala (posisi di `LEVELS[3].earth`) ada di sisi berlawanan dengan Matahari.
 
+9. **Di permukaan** (fase `landed`, `surface.timeSec` detik layar): dekat kawah selalu bayangan (panel 0 W, perlu RTG atau baterai); di puncak bukit panel bekerja kecuali saat bayangan bukit lain lewat (`shadowPasses`, waktunya dari seed). Spesialis menyalakan/mematikan spektrometer dan antena, menekan Pindai (`scanSec`, peluang es `iceChance` per titik), dan memutar antena ke Bumi (`antennaStepDeg`, Bumi di `earth.elevationDeg`). Data terkirim hanya saat antena menyala, mengarah ke Bumi, dan baterai di atas `lowPowerShare`. Baterai habis: F-POWER. Selesai saat data penuh atau waktu habis (data sebagian: P-ANTENNA). Bintang: 1 = mendarat dan bertahan, 2 = data penuh, 3 = mulus dekat kawah + es + data penuh. `result.advice` berisi sebab dan cara memperbaiki untuk Debrief. Perintah: `spectrometerToggle`, `scan`, `antennaToggle`, `antennaLeft`, `antennaRight` (tombol 3–7).
+
 Semua angka ada di `LEVELS[3]` (`src/data/levels.js`). Level 3 selalu memakai tampilan 2D (belum ada versi 3D).
 
 ## Tampilan 3D

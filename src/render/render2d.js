@@ -324,7 +324,8 @@ export function createRenderer(canvas) {
     ctx.fill();
 
     // Bumi kecil biru-putih, rendah di cakrawala, di sisi berlawanan dengan Matahari
-    if (view.earth) drawEarth(view.earth, w, skyline, dpr);
+    // Di permukaan Bumi harus selalu di atas pendarat (elevasi positif), jadi juga dibatasi oleh posisi pendarat.
+    const earthPos = view.earth ? drawEarth(view.earth, w, skyline, dpr, view.surface ? sy(c.y) - 7 * (Math.max(28 * dpr, 6 * scale) / 6) : null) : null;
 
     if (terrain.length > 1) {
       const surface = new Path2D();
@@ -612,6 +613,7 @@ export function createRenderer(canvas) {
     ctx.fillStyle = '#7a7a7a'; // nosel
     ctx.fillRect(-0.6 * k, -1.8 * k, 1.2 * k, 0.6 * k);
     ctx.restore();
+    if (view.surface && !c.crashed) drawSurfaceGear(view.surface, sx(c.x), sy(c.y), k, earthPos, dpr);
 
     if (c.crashed) {
       ctx.fillStyle = 'rgba(255,93,93,0.95)';
@@ -629,10 +631,27 @@ export function createRenderer(canvas) {
   }
 
   // Bumi dilihat dari Bulan: bola kecil biru dengan awan putih, sisi yang menghadap Matahari (kiri) terang.
-  function drawEarth(e, w, skyline, dpr) {
+  // aboveY: kalau diisi, Bumi digambar di atas titik layar ini (puncak pendarat di permukaan).
+  function drawEarth(e, w, skyline, dpr, aboveY = null) {
     const r = e.radiusPx * dpr;
     const ex = w * e.xFrac;
-    const ey = Math.max(r * 3, skyline(ex) - r - e.elevationDeg * 3 * dpr);
+    const lift = r + e.elevationDeg * 3 * dpr;
+    let ey = skyline(ex) - lift;
+    if (aboveY !== null) ey = Math.min(ey, aboveY - lift);
+    if (ey < r * 1.5) {
+      // Di luar layar (atas): panah di tepi atas dengan label.
+      ctx.fillStyle = '#9fd0ff';
+      ctx.beginPath();
+      ctx.moveTo(ex, 6 * dpr);
+      ctx.lineTo(ex - 8 * dpr, 18 * dpr);
+      ctx.lineTo(ex + 8 * dpr, 18 * dpr);
+      ctx.fill();
+      ctx.font = `600 ${12 * dpr}px system-ui`;
+      ctx.textAlign = 'center';
+      ctx.fillText('Bumi', ex, 32 * dpr);
+      ctx.textAlign = 'start';
+      return { x: ex, y: ey };
+    }
     const halo = ctx.createRadialGradient(ex, ey, r * 0.8, ex, ey, r * 3);
     halo.addColorStop(0, 'rgba(120,180,255,0.3)');
     halo.addColorStop(1, 'rgba(120,180,255,0)');
@@ -664,6 +683,77 @@ export function createRenderer(canvas) {
     ctx.fillStyle = night;
     ctx.fillRect(ex - r, ey - r, r * 2, r * 2);
     ctx.restore();
+    ctx.fillStyle = 'rgba(200,225,255,0.9)';
+    ctx.font = `600 ${11 * dpr}px system-ui`;
+    ctx.textAlign = 'center';
+    ctx.fillText('Bumi', ex, ey - r - 6 * dpr);
+    ctx.textAlign = 'start';
+    return { x: ex, y: ey };
+  }
+
+  // Di permukaan: antena (0° = cakrawala kanan, 90° = tegak), garis sinyal ke Bumi saat mengirim, sinar pindai.
+  function drawSurfaceGear(sf, px, py, k, earthPos, dpr) {
+    const an = sf.antenna;
+    if (an.has) {
+      const bx = px + 1.4 * k;
+      const by = py - 5.6 * k;
+      // Sudut di layar: arah ke Bumi di layar + selisih antena terhadap Bumi di model.
+      // Jadi saat antena tepat ke Bumi, piringan menghadap gambar Bumi. y layar ke bawah: naik = by - sin.
+      const earthScreen = earthPos ? Math.atan2(by - earthPos.y, earthPos.x - bx) : (sf.earthDeg * Math.PI) / 180;
+      const a = earthScreen + ((an.deg - sf.earthDeg) * Math.PI) / 180;
+      const ux = Math.cos(a);
+      const uy = -Math.sin(a);
+      const len = 1.8 * k;
+      const tx = bx + ux * len;
+      const ty = by + uy * len;
+      // Kerucut sinyal tipis ke arah hadap
+      if (an.on) {
+        const reach = 14 * k;
+        const spread = 0.09;
+        const cone = ctx.createLinearGradient(tx, ty, tx + ux * reach, ty + uy * reach);
+        cone.addColorStop(0, `rgba(120,200,255,${0.15 + 0.35 * an.signal})`);
+        cone.addColorStop(1, 'rgba(120,200,255,0)');
+        ctx.fillStyle = cone;
+        ctx.beginPath();
+        ctx.moveTo(tx, ty);
+        ctx.lineTo(tx + Math.cos(a + spread) * reach, ty - Math.sin(a + spread) * reach);
+        ctx.lineTo(tx + Math.cos(a - spread) * reach, ty - Math.sin(a - spread) * reach);
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.strokeStyle = an.on ? '#e6e6e6' : '#8a8a8a';
+      ctx.lineWidth = Math.max(1.5 * dpr, 0.25 * k);
+      ctx.beginPath(); // tiang
+      ctx.moveTo(bx, by);
+      ctx.lineTo(tx, ty);
+      ctx.stroke();
+      ctx.beginPath(); // piringan: busur cekung menghadap arah antena
+      ctx.arc(tx - ux * 0.9 * k, ty - uy * 0.9 * k, 1.3 * k, -a - 0.8, -a + 0.8);
+      ctx.fillStyle = an.on ? '#f2f2f2' : '#9a9a9a';
+      ctx.fill();
+      ctx.stroke();
+      if (an.sending && earthPos) {
+        ctx.strokeStyle = 'rgba(120,200,255,0.8)';
+        ctx.lineWidth = 1.5 * dpr;
+        ctx.setLineDash([6 * dpr, 6 * dpr]);
+        ctx.lineDashOffset = -(performance.now() / 40) % (12 * dpr);
+        ctx.beginPath();
+        ctx.moveTo(tx, ty);
+        ctx.lineTo(earthPos.x, earthPos.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.lineDashOffset = 0;
+      }
+    }
+    if (sf.scan) {
+      const g = ctx.createRadialGradient(px, py, 0, px, py, 10 * k);
+      g.addColorStop(0, 'rgba(143,227,255,0.35)');
+      g.addColorStop(1, 'rgba(143,227,255,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(px, py, 10 * k * sf.scan.progress + k, Math.PI, 2 * Math.PI);
+      ctx.fill();
+    }
   }
 
   function drawCrater(s, { sx, sy, groundY, scale, dpr, w }) {

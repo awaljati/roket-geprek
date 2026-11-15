@@ -215,6 +215,8 @@ export function flightScreen(app, el) {
       ['Keluar orbit', v.stage === 'deorbit'],
       ['Turun', v.stage === 'descent'],
       ['Mendarat', v.stage === 'landed'],
+      ['Pindai es', v.stage === 'scan'],
+      ['Kirim data', v.stage === 'send'],
     ];
     $('#timeline').innerHTML = steps.map(([n, on]) => `<span class="${on ? 'on' : ''}">${n}</span>`).join('');
     const max = v.maxLandingSpeed;
@@ -222,6 +224,17 @@ export function flightScreen(app, el) {
     const warn = (bad) => (bad ? ' style="color:var(--bad)"' : '');
     const lowAndFast = v.altitude < 40 && speedNow > max;
     const tiltBad = Math.abs(v.tiltDeg) > v.maxLandingTiltDeg;
+    const sf = v.surface;
+    if (sf) {
+      const pct = (a, b) => Math.round((a / b) * 100);
+      $('#hud').innerHTML = `<b>Di permukaan · sisa ${Math.ceil(sf.timeLeft)} detik${speed > 1 ? ' · Waktu ×' + speed : ''}</b>
+        <span${warn(sf.battery / sf.batteryMax < sf.lowPowerShare)}>Baterai ${pct(sf.battery, sf.batteryMax)}% · daya ${sf.powerNet > 0 ? '+' : ''}${sf.powerNet} W</span>
+        <span>Matahari: ${sf.alwaysDark ? 'selalu bayangan' : sf.sunlit ? 'terang' : 'bayangan bukit lewat'}</span>
+        <span>Spektrometer ${sf.spectrometer.has ? (sf.spectrometer.on ? 'menyala' : 'mati') : '-'} · Es ${sf.iceFound ? '✓ terdeteksi' : sf.scan ? 'memindai…' : 'belum'}</span>
+        <span${sf.antenna.sending ? ' style="color:var(--ok)"' : ''}>Antena ${sf.antenna.has ? `${sf.antenna.deg}° (Bumi ${sf.earthDeg}°)${sf.antenna.sending ? ' mengirim' : ''}` : '-'} · Data ${pct(sf.data, sf.dataTarget)}%</span>
+        <small class="muted">Tombol permukaan dipegang Spesialis</small>`;
+      return;
+    }
     $('#hud').innerHTML = `${controlLine(v, speed)}
       ${v.hasEngine ? '' : '<span style="color:var(--bad)">Tidak ada mesin pendarat!</span>'}
       ${v.engineLocked ? '<span style="color:var(--bad)">Mesin terkunci: Spesialis, pilih titik pendaratan dulu</span>' : ''}

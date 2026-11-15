@@ -126,17 +126,50 @@ export function mountSpecialistPanel3(container, send) {
       <small class="muted" id="sp-site"></small>
     </div>
     <div class="card" id="sp-read"></div>
-    <div>Bahan bakar</div><div class="bar"><i id="sp-fuel"></i></div>
+    <div class="card" id="sp-surface" style="display:none"><b>Di permukaan</b> <small class="muted" id="sp-time"></small>
+      <div id="sp-power"></div>
+      <div>Baterai</div><div class="bar"><i id="sp-batt"></i></div>
+      <button id="sp-spec">Spektrometer (3)</button>
+      <button id="sp-scan">Pindai (4)</button>
+      <div id="sp-ice"></div>
+      <button id="sp-ant">Antena (5)</button>
+      <div class="row"><button id="sp-antL">◀ Putar kiri (6)</button><button id="sp-antR">Putar kanan ▶ (7)</button></div>
+      <div>Kekuatan sinyal <small class="muted" id="sp-aim"></small></div><div class="bar"><i id="sp-signal"></i></div>
+      <div>Data ke Bumi</div><div class="bar"><i id="sp-data"></i></div>
+    </div>
+    <div id="sp-fuelbox"><div>Bahan bakar</div><div class="bar"><i id="sp-fuel"></i></div></div>
     <small class="muted" id="sp-log"></small>
   `;
   const $ = (s) => container.querySelector(s);
   $('#sp-ridge').onclick = () => send('siteRidge');
   $('#sp-crater').onclick = () => send('siteCrater');
+  const SURFACE_KEYS = { 3: 'spectrometerToggle', 4: 'scan', 5: 'antennaToggle', 6: 'antennaLeft', 7: 'antennaRight' };
+  $('#sp-spec').onclick = () => send('spectrometerToggle');
+  $('#sp-scan').onclick = () => send('scan');
+  $('#sp-ant').onclick = () => send('antennaToggle');
+  // Putar kiri/kanan: ditahan = berputar terus (perintah dikirim berulang).
+  for (const [id, cmd] of [['#sp-antL', 'antennaLeft'], ['#sp-antR', 'antennaRight']]) {
+    const b = $(id);
+    let timer = 0;
+    const stop = () => {
+      clearInterval(timer);
+      timer = 0;
+    };
+    b.onpointerdown = (e) => {
+      e.preventDefault();
+      if (b.disabled) return;
+      stop();
+      send(cmd);
+      timer = setInterval(() => (b.disabled || !container.isConnected ? stop() : send(cmd)), 80);
+    };
+    b.onpointerup = b.onpointerleave = b.onpointercancel = stop;
+  }
   window.addEventListener('keydown', onKey);
   function onKey(e) {
     if (!container.isConnected) return window.removeEventListener('keydown', onKey);
     if (e.key === '1') send('siteRidge');
     if (e.key === '2') send('siteCrater');
+    if (SURFACE_KEYS[e.key]) send(SURFACE_KEYS[e.key]);
   }
 
   return function update(v) {
@@ -155,7 +188,9 @@ export function mountSpecialistPanel3(container, send) {
               ? 'Aba-aba: TERLALU CEPAT, tambah gas!'
               : `Aba-aba: ${v.direction}`
           : v.phase === 'landed'
-            ? 'Mendarat!'
+            ? v.coach && v.coach.msg
+              ? v.coach.msg
+              : 'Mendarat! Pindai es, lalu arahkan antena ke Bumi.'
             : 'Misi selesai.';
     const canPick = (v.phase === 'orbit' || v.phase === 'descent') && v.sites;
     for (const [id, btn] of [['ridge', '#sp-ridge'], ['crater', '#sp-crater']]) {
@@ -176,7 +211,44 @@ export function mountSpecialistPanel3(container, send) {
       <small class="muted">Aman mendarat: ≤ ${max} u/s, miring ≤ ${v.maxLandingTiltDeg}°</small>`;
     $('#sp-fuel').style.width = Math.max(0, v.fuel * 100) + '%';
     $('#sp-log').textContent = v.lastLog;
+    updateSurface(v.surface, v.phase === 'landed');
   };
+
+  // Di permukaan: daya, spektrometer, antena, data.
+  function updateSurface(sf, active) {
+    $('#sp-surface').style.display = sf ? '' : 'none';
+    $('#sp-read').style.display = sf ? 'none' : '';
+    $('#sp-fuelbox').style.display = sf ? 'none' : '';
+    if (!sf) return;
+    $('#sp-time').textContent = `· sisa waktu ${Math.ceil(sf.timeLeft)} detik`;
+    const light = sf.alwaysDark ? 'selalu bayangan' : sf.sunlit ? 'terang' : 'bayangan bukit lewat';
+    const soon = sf.sunlit && sf.shadowInSec !== null && sf.shadowInSec < 6 ? ` · ⚠ bayangan dalam ${Math.ceil(sf.shadowInSec)} detik` : '';
+    $('#sp-power').innerHTML = `<small>Matahari: <b>${light}</b>${soon}<br>Panel ${sf.solar} W · RTG ${sf.rtg} W · daya bersih <b style="color:var(${sf.powerNet < 0 ? '--bad' : '--ok'})">${sf.powerNet > 0 ? '+' : ''}${sf.powerNet} W</b></small>`;
+    const share = sf.battery / sf.batteryMax;
+    $('#sp-batt').style.width = Math.max(0, share * 100) + '%';
+    $('#sp-batt').style.background = share < sf.lowPowerShare ? 'var(--bad)' : '';
+    const sp = sf.spectrometer;
+    $('#sp-spec').disabled = !active || !sp.has;
+    $('#sp-spec').className = sp.on ? 'primary' : '';
+    $('#sp-spec').textContent = !sp.has ? 'Spektrometer tidak dipasang' : `Spektrometer: ${sp.on ? 'MENYALA (matikan)' : 'mati (nyalakan)'} (3)`;
+    $('#sp-scan').disabled = !active || !sp.has || !sp.on || !!sf.scan || sf.iceFound;
+    $('#sp-scan').textContent = sf.scan ? `Memindai… ${Math.round(sf.scan.progress * 100)}%` : sf.iceFound ? 'Es sudah terdeteksi' : sp.has && !sp.on ? 'Pindai (nyalakan spektrometer dulu)' : 'Pindai (4)';
+    $('#sp-ice').innerHTML = sf.iceFound ? '<b style="color:var(--ok)">✓ Es air terdeteksi</b>' : sf.scans ? `<small class="muted">Belum ada es (${sf.scans}× pindai)</small>` : '';
+    const an = sf.antenna;
+    $('#sp-ant').disabled = !active || !an.has;
+    $('#sp-ant').className = an.on ? 'primary' : '';
+    $('#sp-ant').textContent = !an.has ? 'Antena tidak dipasang' : `Antena: ${an.on ? 'MENYALA (matikan)' : 'mati (nyalakan)'} (5)`;
+    $('#sp-antL').disabled = $('#sp-antR').disabled = !active || !an.has;
+    const sig = Math.round(an.signal * 100);
+    $('#sp-aim').innerHTML = an.has
+      ? `<b>${sig}%</b> ${an.pointed ? '✓ cukup (≥ ' + Math.round(sf.minSignal * 100) + '%)' : '· perlu ≥ ' + Math.round(sf.minSignal * 100) + '%'}${
+          an.sending ? ' · <b>mengirim</b>' : !an.on ? ' · antena mati' : an.pointed ? ' · daya kurang' : ''
+        }`
+      : '';
+    $('#sp-signal').style.width = (an.has ? sig : 0) + '%';
+    $('#sp-signal').style.background = an.pointed ? 'var(--ok)' : '';
+    $('#sp-data').style.width = Math.min(100, (sf.data / sf.dataTarget) * 100) + '%';
+  }
 }
 
 export function mountPanelFor(level, container, send) {

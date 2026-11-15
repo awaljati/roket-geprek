@@ -1,5 +1,6 @@
 // Level 3: Kutub Selatan Bulan (terinspirasi Artemis III).
 // Tahap 1: inti pendaratan. Tahap 2: pilihan titik pendaratan dan bayangan panjang dari Matahari rendah.
+// Tahap 3: di permukaan (daya, pindai es, kirim data ke Bumi).
 //
 // Tampilan samping: permukaan Bulan berupa garis berbukit (y = ketinggian, x = jarak menyamping).
 // Misi dimulai di orbit rendah Bulan, tanpa peluncuran dari Bumi.
@@ -15,8 +16,15 @@
 // Kedua penanda sudah terlihat sejak di orbit. Mesin terkunci sampai Spesialis memilih titik. Setelah itu
 // pelatih menghitung kapan mulai mengerem (simulasi pendaratan berbantuan) dan memberi aba-aba "SEKARANG!".
 //
-// Fase: orbit -> descent -> landed -> done
-// Tahap (untuk timeline): pick (pilih titik) -> deorbit (keluar orbit) -> descent (turun) -> landed
+// Di permukaan (fase landed, selama surface.timeSec):
+//   - Daya: dekat kawah selalu bayangan (panel surya 0 W, perlu RTG/baterai). Di puncak bukit panel bekerja,
+//     kecuali saat bayangan bukit lain lewat (waktunya dari seed). Instrumen memakai daya. Baterai habis: F-POWER.
+//   - Pindai es: spektrometer menyala selama scanSec. Peluang es tergantung titik.
+//   - Kirim data: antena menyala, mengarah ke Bumi (rendah di cakrawala kanan), dan daya cukup.
+//     Selesai saat data penuh atau waktu habis; data sebagian: P-ANTENNA.
+//
+// Fase: orbit -> descent -> landed (permukaan) -> done
+// Tahap (untuk timeline): pick (pilih titik) -> deorbit (keluar orbit) -> descent (turun) -> landed -> scan / send
 
 import { applyControls, createControls } from '../engine/attitude.js';
 import { stepLanderAssist, targetDescent, directionText } from '../engine/landerAssist.js';
@@ -28,6 +36,7 @@ import { itemById, ITEMS } from '../data/items.js';
 
 const L = LEVELS[3];
 const S = L.sites;
+const SF = L.surface;
 const DEG = Math.PI / 180;
 const SUN_SLOPE = Math.tan(L.sunElevationDeg * DEG);
 const LANDER_HEIGHT = 6; // u, untuk bayangan pendarat
@@ -36,7 +45,7 @@ export const MOON_G = (EARTH.gm / (EARTH.radius * EARTH.radius)) * L.moonGravity
 
 // ---------- Rakit ----------
 export const RAKIT_ITEMS = ITEMS.filter((it) => !it.cubesat && it.id !== 'fuel' && it.level <= 3);
-export const DEFAULT_BUILD = { items: ['lander-engine', 'battery', 'panel-s', 'antenna-s'], fuel: 0.7, assist: true };
+export const DEFAULT_BUILD = { items: ['lander-engine', 'battery', 'panel-s', 'antenna-s', 'spectrometer'], fuel: 0.7, assist: true };
 
 export function buildCheck(build) {
   const body = BODIES[L.body];
@@ -173,7 +182,8 @@ export function createLevel3(build, seed = 'solo') {
     siteChoice: null, // 'ridge' | 'crater' (dipilih Spesialis)
     precision: false, // dekat landasan kawah dan rendah: waktu diperlambat, garis panduan
     touchdown: null,
-    landedT: 0,
+    surface: null, // keadaan di permukaan setelah mendarat (lihat startSurface)
+    surfaceRng: makeRng(seed + '-L3-surface'), // terpisah supaya permukaan dan bentuk medan tidak saling memengaruhi
     log: ['Pendarat di orbit rendah Bulan, di atas wilayah kutub selatan. Spesialis: pilih titik pendaratan.'],
     result: null,
     trail: [],
@@ -270,7 +280,12 @@ function altitude(game) {
 function stage(game) {
   if (game.phase === 'orbit') return game.siteChoice ? 'deorbit' : 'pick';
   if (game.phase === 'descent') return Math.abs(game.craft.vx) > L.orbitSpeed * L.deorbitDoneShare ? 'deorbit' : 'descent';
-  if (game.phase === 'landed' || (game.result && game.result.success)) return 'landed';
+  if (game.phase === 'landed') {
+    const sf = game.surface;
+    if (sf.t < L.landedHoldSec) return 'landed';
+    return sf.spectrometer.has && !sf.iceFound && !sf.antenna.sending ? 'scan' : 'send';
+  }
+  if (game.result && game.result.success) return 'send';
   return game.phase;
 }
 
@@ -291,9 +306,8 @@ export function stepLevel3(game, ctrl, rawDt) {
   if (game.result) return game;
 
   if (game.phase === 'landed') {
-    game.landedT += rawDt;
-    if (game.landedT >= L.landedHoldSec) finish(game, true, null);
-    return game;
+    if (ctrl) ctrl.throttle = 0;
+    return surfaceStep(game, rawDt);
   }
 
   const c = game.craft;
@@ -346,6 +360,7 @@ export function stepLevel3(game, ctrl, rawDt) {
     const where = site ? `di ${S[site].name} (es ${S[site].ice})` : 'di luar titik pendaratan';
     game.coach = { msg: `Mendarat ${where}!`, urgent: false };
     game.log.push(`Mendarat ${where}: ${speed.toFixed(1)} u/s, miring ${Math.round(tilt)}°.`);
+    startSurface(game);
   }
   return game;
 }
@@ -387,11 +402,270 @@ function startDescent(game) {
   game.log.push(`Mesin menyala: keluar dari orbit (${when}).`);
 }
 
+// ---------- Di permukaan (fase 5–6) ----------
+const SURFACE_COMMANDS = ['spectrometerToggle', 'scan', 'antennaToggle', 'antennaLeft', 'antennaRight'];
+const angleTo = (a, b) => Math.abs(a - b);
+
+// Titik permukaan di x dalam bayangan bukit di sebelah kiri (arah Matahari)?
+function inShadowAt(game, x) {
+  const H = game.ground.height;
+  const y = H(x);
+  for (let d = 4; d <= L.shadowLookback; d += 4) if (H(x - d) > y + SUN_SLOPE * d + 0.05) return true;
+  return false;
+}
+
+function startSurface(game) {
+  const items = game.build.items.map(itemById);
+  const has = (id) => game.build.items.includes(id);
+  const site = game.touchdown.site;
+  const rng = game.surfaceRng;
+  const between = ([a, b]) => a + rng() * (b - a);
+  const store = SF.landerBatteryWh + items.reduce((s, it) => s + it.storeWh, 0);
+  // Bayangan bukit lain di puncak bukit: waktunya dari seed (sama untuk semua tim battle).
+  // Rentang waktu mulai dibagi rata, satu bagian untuk tiap bayangan, supaya bayangan tidak bertumpuk.
+  const passes = [];
+  const [s0, s1] = SF.shadowStartSec;
+  const slot = (s1 - s0) / SF.shadowPasses;
+  for (let i = 0; i < SF.shadowPasses; i++) {
+    const from = between([s0 + i * slot, s0 + (i + 0.5) * slot]);
+    passes.push({ from, to: from + between(SF.shadowSec) });
+  }
+  const antennas = items.filter((it) => it.id.startsWith('antenna'));
+  game.surface = {
+    t: 0,
+    site,
+    // Dekat kawah: selalu bayangan. Puncak bukit: terang. Di luar titik: tergantung medan.
+    alwaysDark: site === 'crater' || (site === null && inShadowAt(game, game.craft.x)),
+    passes: site === 'ridge' ? passes : [],
+    battery: store,
+    batteryMax: store,
+    panelPower: items.reduce((s, it) => s + (it.deployable && it.power > 0 ? it.power : 0), 0),
+    rtgPower: items.reduce((s, it) => s + (!it.deployable && it.power > 0 ? it.power : 0), 0),
+    basePower: BODIES[L.body].basePower,
+    spectrometer: { has: has('spectrometer'), on: false, power: has('spectrometer') ? itemById('spectrometer').power : 0 },
+    antenna: {
+      has: antennas.length > 0,
+      on: false,
+      deg: SF.antennaStartDeg,
+      power: antennas.reduce((s, it) => s + it.power, 0),
+      rate: antennas.reduce((s, it) => s + it.data, 0), // unit data per detik
+      sending: false,
+    },
+    scan: null, // { t } selama memindai
+    scans: 0,
+    iceFound: false,
+    data: 0,
+    pointedSec: 0,
+    sunlit: false,
+    powerNet: 0,
+  };
+  game.log.push(
+    site === 'crater'
+      ? 'Dekat kawah: selalu dalam bayangan, panel surya tidak menghasilkan daya.'
+      : 'Di permukaan. Pindai es dan kirim data ke Bumi sebelum waktu habis.',
+  );
+}
+
+const earthDeg = () => L.earth.elevationDeg;
+// Kekuatan sinyal 0..1: 1 tepat ke Bumi, 0 kalau selisih > signalZeroDeg.
+const signal = (sf) => Math.max(0, 1 - angleTo(sf.antenna.deg, earthDeg()) / SF.signalZeroDeg);
+const pointed = (sf) => signal(sf) >= SF.minSignal;
+const inPass = (sf, t) => sf.passes.find((p) => t >= p.from && t < p.to);
+const nextPass = (sf, t) => sf.passes.find((p) => p.from > t);
+
+function surfaceStep(game, rawDt) {
+  const sf = game.surface;
+  const dt = rawDt; // detik layar
+  sf.t += dt;
+  const sp = sf.spectrometer;
+  const an = sf.antenna;
+
+  // Daya
+  sf.sunlit = !sf.alwaysDark && !inPass(sf, sf.t);
+  const solar = sf.sunlit ? sf.panelPower : 0;
+  const load = sf.basePower + (sp.on ? sp.power : 0) + (an.on ? an.power : 0);
+  sf.powerNet = solar + sf.rtgPower + load;
+  const wasSunlit = sf.prevSunlit;
+  if (wasSunlit !== undefined && wasSunlit !== sf.sunlit && sf.passes.length) {
+    game.log.push(sf.sunlit ? 'Bayangan bukit lewat. Panel surya kembali menghasilkan daya.' : 'Bayangan bukit lain menutupi pendarat: panel surya 0 W.');
+  }
+  sf.prevSunlit = sf.sunlit;
+  sf.battery = Math.min(sf.batteryMax, sf.battery + sf.powerNet * SF.whPerWattSec * dt);
+  if (sf.battery <= 0) {
+    sf.battery = 0;
+    game.log.push('Baterai habis! Pendarat mati.');
+    return finish(game, false, 'F-POWER');
+  }
+
+  // Pindai es
+  if (sf.scan) {
+    if (!sp.on) {
+      sf.scan = null;
+      game.log.push('Pindai dibatalkan: spektrometer dimatikan.');
+    } else if ((sf.scan.t += dt) >= SF.scanSec) {
+      sf.scan = null;
+      sf.scans++;
+      const chance = SF.iceChance[sf.site || 'outside'];
+      sf.iceFound = game.surfaceRng() < chance;
+      game.log.push(sf.iceFound ? 'ES AIR TERDETEKSI di tanah sekitar pendarat!' : 'Pindai selesai: tidak ada tanda es di sini.');
+    }
+  }
+
+  // Kirim data
+  const powerOk = sf.battery > SF.lowPowerShare * sf.batteryMax;
+  an.sending = an.has && an.on && pointed(sf) && powerOk && sf.data < SF.dataTarget;
+  if (an.on && pointed(sf)) sf.pointedSec += dt;
+  if (an.sending) {
+    sf.data = Math.min(SF.dataTarget, sf.data + an.rate * signal(sf) * dt);
+    if (sf.data >= SF.dataTarget) {
+      game.log.push('Data terkirim penuh ke Bumi!');
+      return finish(game, true, null);
+    }
+  }
+  if (sf.t >= SF.timeSec) {
+    game.log.push('Waktu di permukaan habis.');
+    return finish(game, true, sf.data >= SF.dataTarget ? null : 'P-ANTENNA');
+  }
+  if (game.assist) game.coach = surfaceCoach(game);
+  return game;
+}
+
+// Pelatih di permukaan: kapan mematikan instrumen, kapan memindai, ke mana antena diputar.
+function surfaceCoach(game) {
+  const sf = game.surface;
+  const sp = sf.spectrometer;
+  const an = sf.antenna;
+  const t = sf.t;
+  if (t < L.landedHoldSec) return game.coach;
+  const share = sf.battery / sf.batteryMax;
+  const draining = sf.powerNet < 0;
+  const secLeft = draining ? sf.battery / (-sf.powerNet * SF.whPerWattSec) : Infinity;
+  const pass = nextPass(sf, t);
+  if (draining && secLeft < SF.timeSec - t && sp.on && !sf.scan)
+    return { msg: `Daya tinggal ${Math.round(share * 100)}%: matikan spektrometer!`, urgent: true };
+  if (pass && pass.from - t <= SF.shadowWarnSec && sp.on && !sf.scan)
+    return { msg: `Bayangan bukit lewat dalam ${Math.ceil(pass.from - t)} detik: matikan spektrometer.`, urgent: true };
+  if (draining && secLeft < SF.timeSec - t && an.on && !an.sending)
+    return { msg: 'Daya menipis: matikan antena sampai siap mengirim.', urgent: true };
+  if (inPass(sf, t)) {
+    const p = inPass(sf, t);
+    if (sp.on && !sf.scan) return { msg: 'Dalam bayangan: matikan spektrometer, hemat baterai.', urgent: true };
+    if (!an.sending) return { msg: `Dalam bayangan, panel 0 W. Tunggu ${Math.ceil(p.to - t)} detik.`, urgent: false };
+  }
+  if (sf.scan) return { msg: `Memindai… ${Math.ceil(SF.scanSec - sf.scan.t)} detik. Jangan matikan spektrometer.`, urgent: false };
+  if (sp.has && !sf.iceFound && sf.scans === 0) {
+    return sp.on ? { msg: 'Spesialis: tekan Pindai sekarang.', urgent: true } : { msg: 'Spesialis: nyalakan spektrometer, lalu tekan Pindai.', urgent: false };
+  }
+  if (sp.on) return { msg: 'Pindai selesai: matikan spektrometer supaya baterai awet.', urgent: true };
+  if (!an.has) return { msg: 'Tidak ada antena: data tidak bisa dikirim ke Bumi.', urgent: true };
+  if (!an.on) return { msg: 'Spesialis: nyalakan antena.', urgent: false };
+  if (!pointed(sf)) {
+    const diff = an.deg - earthDeg();
+    return { msg: `Putar antena ke ${diff > 0 ? 'kanan' : 'kiri'}, sinyal ${Math.round(signal(sf) * 100)}%`, urgent: true };
+  }
+  if (!an.sending) return { msg: 'Daya kurang untuk mengirim. Matikan spektrometer dan tunggu baterai terisi.', urgent: true };
+  return { msg: 'Sinyal kuat, data terkirim', urgent: false };
+}
+
+function surfaceCommand(game, cmd) {
+  const sf = game.surface;
+  if (!sf) return;
+  const sp = sf.spectrometer;
+  const an = sf.antenna;
+  if (cmd === 'spectrometerToggle' && sp.has) {
+    sp.on = !sp.on;
+    game.log.push(`Spektrometer ${sp.on ? 'menyala' : 'dimatikan'}.`);
+  }
+  if (cmd === 'scan' && sp.has && sp.on && !sf.scan && !sf.iceFound) {
+    sf.scan = { t: 0 };
+    game.log.push('Memindai tanah dengan spektrometer…');
+  }
+  if (cmd === 'antennaToggle' && an.has) {
+    an.on = !an.on;
+    game.log.push(`Antena ${an.on ? 'menyala' : 'dimatikan'}.`);
+  }
+  if (cmd === 'antennaLeft' && an.has) an.deg = Math.min(180, an.deg + SF.antennaStepDeg);
+  if (cmd === 'antennaRight' && an.has) an.deg = Math.max(0, an.deg - SF.antennaStepDeg);
+}
+
+// Untuk snapshot
+function surfaceView(game) {
+  const sf = game.surface;
+  if (!sf) return null;
+  const pass = nextPass(sf, sf.t);
+  return {
+    t: sf.t,
+    timeLeft: Math.max(0, SF.timeSec - sf.t),
+    site: sf.site,
+    alwaysDark: sf.alwaysDark,
+    sunlit: sf.sunlit,
+    shadowInSec: pass ? pass.from - sf.t : null,
+    battery: sf.battery,
+    batteryMax: sf.batteryMax,
+    lowPowerShare: SF.lowPowerShare,
+    powerNet: Math.round(sf.powerNet),
+    solar: sf.sunlit ? sf.panelPower : 0,
+    panel: sf.panelPower,
+    rtg: sf.rtgPower,
+    spectrometer: { has: sf.spectrometer.has, on: sf.spectrometer.on },
+    scan: sf.scan ? { progress: sf.scan.t / SF.scanSec } : null,
+    scans: sf.scans,
+    iceFound: sf.iceFound,
+    antenna: { has: sf.antenna.has, on: sf.antenna.on, deg: sf.antenna.deg, signal: signal(sf), pointed: pointed(sf), sending: sf.antenna.sending },
+    earthDeg: earthDeg(),
+    minSignal: SF.minSignal,
+    data: sf.data,
+    dataTarget: SF.dataTarget,
+  };
+}
+
+// Debrief: sebab gagal (atau kurang bintang) dan cara memperbaikinya.
+function adviceFor(game, success, failCode) {
+  const out = [];
+  const td = game.touchdown;
+  const sf = game.surface;
+  const num = (v) => String(v).replace('.', ',');
+  if (failCode === 'F-HEAVY') out.push('Wahana terlalu berat untuk roket sedang. Kurangi bahan bakar atau item di Rakit.');
+  if (failCode === 'F-CRASH') {
+    if (!game.hasEngine) out.push('Tidak ada mesin pendarat. Pasang Mesin pendarat di Rakit.');
+    else if (!td) out.push('Pendarat jatuh. Ikuti aba-aba pelatih untuk mulai mengerem, lalu jaga gas sekitar 50% saat turun.');
+    else if (td.speed > L.maxLandingSpeed)
+      out.push(`Menyentuh permukaan ${num(td.speed)} u/s (maks. ${L.maxLandingSpeed}). Tambah gas saat dekat tanah supaya kecepatan turun di bawah saran.`);
+    else out.push(`Terlalu miring ${td.tiltDeg}°. Tegakkan pendarat (A/D) sebelum menyentuh; dekat kawah batasnya ${S.crater.maxTiltDeg}°.`);
+  }
+  if (failCode === 'F-POWER' && sf) {
+    if (sf.alwaysDark && !sf.rtgPower)
+      out.push('Di dekat kawah selalu bayangan, jadi panel surya tidak menghasilkan daya. Pasang RTG atau baterai tambahan di Rakit.');
+    else if (sf.passes.length) out.push('Bayangan bukit lain sempat menutupi panel surya. Matikan instrumen saat pelatih memberi tahu, atau tambah baterai.');
+    out.push('Matikan spektrometer setelah memindai, dan nyalakan antena hanya saat sudah mengarah ke Bumi.');
+  }
+  if (sf && success) {
+    if (!sf.antenna.has) out.push('Tidak ada antena, jadi data tidak terkirim. Pasang antena di Rakit.');
+    else if (failCode === 'P-ANTENNA')
+      out.push(
+        `Data terkirim ${Math.round((sf.data / SF.dataTarget) * 100)}%. Antena mengarah ke Bumi hanya ${Math.round(sf.pointedSec)} detik. Putar antena ke kanan sampai ${earthDeg()}° (Bumi rendah di cakrawala) lebih awal, atau pakai antena sedang supaya lebih cepat.`,
+      );
+    if (!sf.spectrometer.has) out.push('Bintang 3 butuh es terdeteksi: pasang Spektrometer di Rakit.');
+    else if (!sf.iceFound) out.push(sf.site === 'crater' ? 'Es belum terdeteksi. Nyalakan spektrometer dan tekan Pindai lebih awal.' : 'Es lebih mungkin ditemukan di dekat kawah gelap.');
+    if (sf.site !== 'crater') out.push('Bintang 3 hanya bisa didapat di titik Dekat kawah gelap.');
+    else if (td.speed > L.smoothLandingSpeed) out.push(`Bintang 3 butuh mendarat mulus (≤ ${num(L.smoothLandingSpeed)} u/s).`);
+    if (game.fuel < L.minFuelFor3Stars)
+      out.push(
+        `Bintang 3 butuh sisa bahan bakar ≥ ${Math.round(L.minFuelFor3Stars * 100)}% (sisa ${Math.round(game.fuel * 100)}%). Mulai mengerem tepat saat aba-aba pelatih, atau tambah bahan bakar di Rakit.`,
+      );
+  }
+  return out;
+}
+
 // ---------- Perintah Spesialis ----------
 export const SITE_COMMANDS = { siteRidge: 'ridge', siteCrater: 'crater' };
 
 export function command(game, cmd) {
   if (game.result) return game;
+  if (SURFACE_COMMANDS.includes(cmd)) {
+    if (game.phase === 'landed') surfaceCommand(game, cmd);
+    return game;
+  }
   const id = SITE_COMMANDS[cmd];
   if (id && game.sites && (game.phase === 'orbit' || game.phase === 'descent') && game.siteChoice !== id) {
     game.siteChoice = id;
@@ -407,9 +681,13 @@ function finish(game, success, failCode) {
   const site = td ? td.site : null;
   const maxStars = site ? S[site].maxStars : L.outsideMaxStars;
   const smoothLanding = td && td.speed <= L.smoothLandingSpeed;
+  const sf = game.surface;
+  const dataFull = !!sf && sf.data >= SF.dataTarget;
+  // 1 = mendarat dan bertahan (data sebagian), 2 = data penuh,
+  // 3 = mendarat mulus dekat kawah + es terdeteksi + data penuh + sisa bahan bakar ≥ minFuelFor3Stars.
   let stars = 0;
-  if (success) stars = 2;
-  if (success && maxStars >= 3 && smoothLanding && fuelLeft >= L.minFuelFor3Stars && !game.check.overBudget) stars = 3;
+  if (success) stars = dataFull ? Math.min(2, maxStars) : 1;
+  if (success && dataFull && maxStars >= 3 && smoothLanding && sf.iceFound && fuelLeft >= L.minFuelFor3Stars && !game.check.overBudget) stars = 3;
   const score = success ? stars * 1000 + Math.round(fuelLeft * 500) + Math.max(0, (L.budget - game.check.price) * 5) : 0;
   const reward = missionReward({ success, stars, budget: game.check.budget, price: game.check.price });
   game.result = {
@@ -424,6 +702,10 @@ function finish(game, success, failCode) {
     landingTiltDeg: td ? td.tiltDeg : null,
     landingSite: site, // 'ridge' | 'crater' | null (di luar titik)
     siteChoice: game.siteChoice,
+    dataSent: sf ? Math.round(sf.data) : 0,
+    dataTarget: SF.dataTarget,
+    iceFound: !!(sf && sf.iceFound),
+    advice: adviceFor(game, success, failCode),
   };
   game.phase = 'done';
   return game;
@@ -508,6 +790,7 @@ export function snapshotLevel3(game, withPaths = true) {
     target: tg ? { id: tg.id, dx: tg.dx, over: Math.abs(tg.dx) <= tg.halfWidth } : null,
     direction: game.phase === 'descent' ? directionText(tg) : null,
     touchdown: game.touchdown,
+    surface: surfaceView(game),
     terrain,
     trail: withPaths ? game.trail : [],
     lastLog: game.log[game.log.length - 1] || '',
