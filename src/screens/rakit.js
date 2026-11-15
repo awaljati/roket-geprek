@@ -78,7 +78,7 @@ export function rakitScreen(app, el) {
                 const s = CUBESAT_SIZES[k];
                 return `<label class="rk-size"><input type="radio" name="size" value="${k}">
                   <img src="${A}cubesat-${k.toLowerCase()}.webp" alt="CubeSat ${k}">
-                  <b>${k}</b><small>maks. ${s.massLimit} kg · ${s.slots} slot${s.optional ? ' · kalau sempat' : ''}</small></label>`;
+                  <b>${k}</b><small>maks. ${s.massLimit} kg · ${s.slots} slot</small></label>`;
               })
               .join('')}</div></fieldset>`
           : ''

@@ -15,7 +15,7 @@ export const LEVEL_MODULES = {
     rakitItems: ITEMS.filter((it) => it.level === 1 && it.cubesat),
     defaultBuild: { size: '1U', items: ['cs-battery', 'cs-antenna-uhf'], fuel: 0.8, assist: true },
     briefing: 'Build a CubeSat, ride a rocket to low Earth orbit, deploy safely, and send your first signal to the BRIN ground station in Biak.',
-    realMission: 'CubeSat buatan kampus yang diluncurkan lewat NASA CubeSat Launch Initiative, juga Surya Satellite-1 dari Indonesia (cek ulang).',
+    realMission: 'CubeSat buatan kampus yang diluncurkan lewat NASA CubeSat Launch Initiative, juga Surya Satellite-1 (SS-1), CubeSat buatan Indonesia yang dilepas dari Stasiun Luar Angkasa Internasional pada 2023.',
     fact: 'Di Biak, Papua, ada stasiun bumi milik BRIN (dulu LAPAN) untuk melacak satelit, mengirim perintah, dan menerima datanya. Karena dekat khatulistiwa, satelit yang orbitnya sejajar khatulistiwa, seperti LAPAN-A2, melintas di atasnya hampir setiap putaran. Stasiun ini juga membantu memantau peluncuran roket India (ISRO).',
   },
   2: {
