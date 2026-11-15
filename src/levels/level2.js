@@ -164,7 +164,7 @@ export function createLevel2(build, seed = 'solo') {
     // Bahan bakar roket terpisah dari bahan bakar kapsul (slider di Rakit = bahan bakar kapsul untuk MCC).
     flight: createFlight({ planet: EARTH, fuel: 1, orbitHoldSec: 3 }),
     assist: build.assist !== false,
-    launchAssist: build.assist !== false ? createAssist() : null,
+    launchAssist: createAssist({ steerOnly: build.assist === false }), // mode ahli: hanya kemudi
     tliArmed: false,
     coach: null,
     holdThrust: false,
@@ -506,7 +506,7 @@ export function snapshotLevel2(game, withPaths = true) {
     batteryMax: game.batteryMax,
     signalLost: game.signalLost,
     lastLog: game.log[game.log.length - 1] || '',
-    coach: game.assist ? game.coach : null,
+    coach: game.assist || game.phase === 'launch' ? game.coach : null,
     earthAngle: game.flight.earthAngle + game.t * EARTH.spin,
     secondsToTli: game.phase === 'tli' ? game.secondsToTli : null,
     // Saat peluncuran, tampilan memakai gambar orbit Bumi seperti Level 1.

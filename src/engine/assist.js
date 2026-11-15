@@ -1,6 +1,8 @@
-// Bantuan pilot untuk Level 1 (level tutorial). Murni hitungan.
+// Bantuan pilot untuk peluncuran ke orbit Bumi (Level 1-4). Murni hitungan.
 // Bantuan mengatur ARAH roket (gravity turn) dan mematikan mesin di saat yang pas.
 // Pemain tetap menyalakan mesin sendiri: saat lepas landas dan saat di puncak lintasan.
+// steerOnly (mode ahli, bantuan pilot mati): kemudi dan mesin mati tetap otomatis seperti roket sungguhan,
+// tapi tanpa aba-aba; pemain sendiri yang memutuskan kapan menyalakan mesin di puncak.
 
 import { orbitExtremes, orbitCheck, positionAngle } from './flight.js';
 
@@ -9,12 +11,34 @@ const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
 const TILT_START_ALT = 6; // u di atas permukaan
 const TILT_ANGLE = (70 * Math.PI) / 180;
 
-export function createAssist() {
-  return { stage: 'pad', msg: '', urgent: false };
+export function createAssist({ steerOnly = false } = {}) {
+  return { stage: 'pad', msg: '', urgent: false, steerOnly };
 }
 
 // Dipanggil sebelum stepFlight. Mengubah ctrl (arah dan gas) dan mengisi pesan pelatih.
 export function stepAssist(a, s, ctrl) {
+  stepGuidance(a, s, ctrl);
+  if (a.steerOnly) expertMessage(a, s, ctrl);
+  return a;
+}
+
+// Mode ahli (bantuan pilot mati): komputer tetap memiringkan roket dan mematikan mesin saat target
+// tercapai, seperti roket sungguhan. Pemain sendiri yang memutuskan kapan menyalakan mesin lagi di puncak;
+// pelatih hanya memberi info, tanpa aba-aba "SEKARANG".
+function expertMessage(a, s, ctrl) {
+  const p = s.planet;
+  const goal = Math.round(p.orbitRadius - p.radius);
+  const { apo } = orbitExtremes(s);
+  const o = orbitCheck(s);
+  const top = apo === Infinity ? 'lepas' : Math.round(apo - p.radius);
+  a.urgent = false;
+  if (a.stage === 'pad') a.msg = s.padTooWeak ? 'Gas belum cukup. Tekan Gas + sampai 100%.' : 'Mode ahli: Gas + (W) sampai 100%. Mesin mati otomatis; kamu yang menyalakan lagi di puncak.';
+  else if (a.stage === 'climb' || a.stage === 'burn1') a.msg = `Titik tertinggi ${top} / ${goal}. Mesin mati otomatis saat cukup.`;
+  else if (a.stage === 'coast') a.msg = `Meluncur naik: naik/turun ${o.radial.toFixed(0)}. Nyalakan mesin (W) tepat di puncak, saat naik/turun 0.`;
+  else if (a.stage === 'burn2') a.msg = `Kecepatan ${o.speed.toFixed(0)} / ${o.vCirc.toFixed(0)}. Mesin mati otomatis saat cukup.`;
+}
+
+function stepGuidance(a, s, ctrl) {
   const p = s.planet;
   const alt = Math.hypot(s.x, s.y) - p.radius;
   const target = p.orbitRadius;
@@ -85,3 +109,4 @@ export function stepAssist(a, s, ctrl) {
   }
   return a;
 }
+

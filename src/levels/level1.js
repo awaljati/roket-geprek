@@ -42,7 +42,8 @@ export function createLevel1(build) {
     check,
     phase: 'launch',
     flight: createFlight({ planet: EARTH, fuel: build.fuel, orbitHoldSec: L.orbitHoldSec }),
-    assist: build.assist === false ? null : createAssist(),
+    // Bantuan selalu ada saat peluncuran; tanpa bantuan pilot hanya kemudi (mode ahli).
+    assist: createAssist({ steerOnly: build.assist === false }),
     countdown: L.safeCountdownSec,
     panelsOpen: false,
     antennaOpen: false,

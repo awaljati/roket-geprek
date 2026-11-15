@@ -179,7 +179,7 @@ export function createLevel3(build, seed = 'solo') {
     coach: null,
     // Fase awal (lihat bagian "Fase awal"). Roket punya bahan bakar sendiri, terpisah dari game.fuel (pendarat).
     flight: createFlight({ planet: EARTH, fuel: 1, orbitHoldSec: L.orbitHoldSec }),
-    launchAssist: build.assist !== false ? createAssist() : null,
+    launchAssist: createAssist({ steerOnly: build.assist === false }), // mode ahli: hanya kemudi
     tliArmed: false,
     secondsToTli: null,
     holdThrust: false,
@@ -803,7 +803,7 @@ function spaceSnapshot(game, withPaths) {
     siteChoice: game.siteChoice,
     surface: null,
     lastLog: game.log[game.log.length - 1] || '',
-    coach: game.assist ? game.coach : null,
+    coach: game.assist || game.phase === 'launch' ? game.coach : null,
     result: game.result,
   };
 }
@@ -1360,7 +1360,7 @@ export function snapshotLevel3(game, withPaths = true) {
     terrain,
     trail: withPaths ? game.trail : [],
     lastLog: game.log[game.log.length - 1] || '',
-    coach: game.assist ? game.coach : null,
+    coach: game.assist || game.phase === 'launch' ? game.coach : null,
     result: game.result,
   };
 }
