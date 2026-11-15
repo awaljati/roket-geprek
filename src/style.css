@@ -86,7 +86,7 @@ h2 { margin: 0; }
 
 .floating-icon {  width: min(460px, 82vw);  height: auto; pointer-events: none; animation: naikTurun 2s ease-in-out infinite;}
 
-@keyframes naikTurun { 0%, 100% { transform: translateY(0); } 50% {    transform: translateY(-5px);  } }
+@keyframes naikTurun { 0%, 100% { transform: translateY(0); } 50% {    transform: translateY(-10px);  } }
 
 @media (max-width: 720px) {
   .flight { grid-template-columns: 1fr; grid-template-rows: 60vh auto; height: auto; }
