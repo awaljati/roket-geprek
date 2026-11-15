@@ -6,9 +6,13 @@ export function lobbyScreen(app, el) {
     <div class="headerlobby">
     <div class="headerlobby-left">
       <button id="back">Kembali</button>
-      <button class="btn-settinglobby" id="settings" aria-label="Pengaturan">
-        <img src="/assets/l-icon-setting.svg" alt="" />
-      </button>
+      <a class="btn-settinglobby" id="settings"
+         href="http://itb.ac.id/"
+         target="_blank"
+         rel="noopener noreferrer"
+         aria-label="Pengaturan">
+        <img src="/assets/l-icon-setting.svg" />
+      </a>
       <div class="coin" aria-label="Koin">
         <img src="/assets/l-koin-cabe.svg" alt="" class="coin-icon" />
         <span class="coin-text" id="coin-count">0</span>
