@@ -37,12 +37,14 @@ export function rakitScreen(app, el) {
     <label class="card row"><input type="checkbox" id="assist"> <span><b>Bantuan pilot</b> (disarankan untuk pemula)<br><small class="muted">${
       isCubeSat
         ? 'Roket dimiringkan otomatis dan mesin dimatikan tepat waktu. Kamu cukup menekan Gas + saat diminta.'
-        : app.level === 3
+        : app.level === 4
+          ? 'Roket dimiringkan otomatis saat peluncuran, dan pelatih mengingatkan badai matahari serta rentang aman program pendaratan.'
+          : app.level === 3
           ? 'Pendarat dijaga tetap tegak dan gas dikurangi otomatis kalau berlebihan. Kamu cukup menekan Gas + saat diminta.'
           : 'Arah kapsul diatur otomatis (koreksi lintasan, membidik Bulan, pelindung panas). Kamu cukup menekan Gas + dan Ambil foto saat diminta.'
     }</small></span></label>
     <div class="card">
-      <b>Bahan bakar ${isCubeSat ? 'roket' : app.level === 3 ? 'pendarat' : 'kapsul'}: <span id="fuelv"></span></b>
+      <b>Bahan bakar ${isCubeSat ? 'roket' : app.level === 4 ? 'roket pendarat' : app.level === 3 ? 'pendarat' : 'kapsul'}: <span id="fuelv"></span></b>
       <input type="range" id="fuel" min="1" max="10" step="1" style="width:100%">
     </div>
     <div class="card" id="fundsCard"></div>

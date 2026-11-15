@@ -4,6 +4,7 @@
 
 import { EARTH, ROCKET_TUNING } from '../engine/flight.js';
 import { CISLUNAR } from '../engine/cislunar.js';
+import { drawMars } from './mars2d.js';
 
 const COLORS = {
   space: '#05070f',
@@ -84,6 +85,8 @@ export function createRenderer(canvas) {
   }
 
   function draw(view) {
+    // Level 4: peluncuran memakai tampilan orbit Bumi (ada view.flight), sesudahnya tampilan Mars.
+    if (view.level === 4 && !view.flight) return drawMars(ctx, canvas, view);
     // Level 3 memakai tampilan Bumi/Bumi-Bulan untuk fase awal (view.space), tampilan samping setelahnya.
     if (view.level === 3 && !view.space) return drawLander(view);
     if ((view.level === 2 || view.level === 3) && view.phase !== 'launch' && !(view.level === 3 && view.flight)) return drawCislunar(view);

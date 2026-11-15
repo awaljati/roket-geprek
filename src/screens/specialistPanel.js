@@ -294,7 +294,111 @@ export function mountSpecialistPanel3(container, send) {
   }
 }
 
+// Panel Spesialis Level 4: radar badai matahari, ketinggian parasut, dan foto pertama dari Mars.
+export function mountSpecialistPanel4(container, send) {
+  container.innerHTML = `
+    <h2>Spesialis</h2>
+    <div class="status" id="sp-status"></div>
+    <div class="card" id="sp-radar"><b>Radar badai matahari</b><div id="sp-storm"></div></div>
+    <div class="card" id="sp-prog"><b>Program pendaratan</b>
+      <div id="sp-chute"></div>
+      <div class="row"><button id="sp-cDown">Parasut − (1)</button><button id="sp-cUp">Parasut + (2)</button></div>
+      <button id="sp-ready">Siap (3)</button>
+      <div id="sp-ranges"></div>
+    </div>
+    <div class="card" id="sp-edl" style="display:none"></div>
+    <div class="card" id="sp-surface" style="display:none"><b>Di permukaan Mars</b> <small class="muted" id="sp-time"></small>
+      <div id="sp-power"></div>
+      <div>Baterai</div><div class="bar"><i id="sp-batt"></i></div>
+      <button class="primary" id="sp-photo">Kirim foto (4)</button>
+      <div>Foto ke Bumi</div><div class="bar"><i id="sp-data"></i></div>
+    </div>
+    <small class="muted" id="sp-log"></small>
+  `;
+  const $ = (s) => container.querySelector(s);
+  const KEYS = { 1: 'chuteDown', 2: 'chuteUp', 3: 'programReady', 4: 'sendPhoto' };
+  $('#sp-cDown').onclick = () => send('chuteDown');
+  $('#sp-cUp').onclick = () => send('chuteUp');
+  $('#sp-ready').onclick = () => send('programReady');
+  $('#sp-photo').onclick = () => send('sendPhoto');
+  window.addEventListener('keydown', onKey);
+  function onKey(e) {
+    if (!container.isConnected) return window.removeEventListener('keydown', onKey);
+    if (KEYS[e.key]) send(KEYS[e.key]);
+  }
+  const n = (x) => String(x).replace('.', ',');
+
+  return function update(v) {
+    if (!v) return;
+    const c = v.cruise;
+    const p = v.program;
+    const ph = v.view;
+    // Status utama
+    let status = v.lastLog;
+    if (ph === 'launch') status = 'Peluncuran dari Biak. Tunggu sampai roket masuk orbit parkir.';
+    else if (ph === 'park') status = 'Aba-aba ke Navigator: tekan Gas + untuk berangkat ke Mars (TMI).';
+    else if (ph === 'cruise' && c) {
+      if (c.stormActive) status = v.radShield ? 'Badai lewat. Pelindung radiasi melindungi instrumen.' : v.instrumentsOn ? 'BADAI! Navigator, matikan instrumen sekarang!' : 'Badai lewat. Instrumen aman.';
+      else if (c.stormInSec !== null) status = v.instrumentsOn && !v.radShield ? `Aba-aba: badai dalam ${Math.ceil(c.stormInSec)} detik! Navigator, matikan instrumen.` : `Badai dalam ${Math.ceil(c.stormInSec)} detik.`;
+      else status = v.instrumentsOn ? `Menuju Mars. Awasi radar badai. Tiba dalam ${Math.ceil(c.arriveInSec)} detik.` : 'Radar tenang. Aba-aba: Navigator, nyalakan lagi instrumen.';
+    } else if (ph === 'program') status = p.ready ? 'Siap. Tunggu Navigator memulai masuk atmosfer.' : 'Waktu berhenti. Atur ketinggian parasut, cek angka Navigator, lalu tekan Siap.';
+    else if (ph === 'edl') status = 'Tujuh menit penuh ketegangan. Tidak ada yang bisa dikendalikan: tunggu sinyal.';
+    else if (ph === 'landed' && v.surface) status = v.surface.sending ? 'Mengirim foto pertama…' : v.surface.pressed ? 'Foto terkirim.' : 'Mendarat! Tekan Kirim foto.';
+    if (v.result) status = 'Misi selesai.';
+    $('#sp-status').textContent = status;
+
+    // Radar badai
+    $('#sp-radar').style.display = ph === 'launch' || ph === 'park' || ph === 'cruise' ? '' : 'none';
+    const warn = c && c.stormInSec !== null;
+    $('#sp-storm').innerHTML = !c
+      ? '<small class="muted">Radar aktif setelah berangkat ke Mars.</small>'
+      : `<div class="bar"><i style="width:${c.stormActive ? 100 : warn ? (1 - c.stormInSec / c.stormWarnSec) * 100 : 0}%;background:${c.stormActive || warn ? 'var(--bad)' : ''}"></i></div>
+        <div>${c.stormActive ? '<b style="color:var(--bad)">BADAI SEDANG LEWAT</b>' : warn ? `<b style="color:var(--bad)">⚠ Badai dalam ${Math.ceil(c.stormInSec)} detik</b>` : 'Tenang'}</div>
+        <small>Instrumen: <b>${v.instrumentsOn ? 'menyala' : 'mati'}</b> · pelindung radiasi: ${v.radShield ? 'ada ✓' : 'tidak ada'} · kamera: ${v.cameraDamaged ? '<b style="color:var(--bad)">rusak</b>' : 'baik'}<br>Sisa badai di perjalanan: ${c.stormsLeft}</small>`;
+
+    // Program pendaratan (Spesialis melihat semua rentang aman)
+    $('#sp-prog').style.display = ph === 'program' ? '' : 'none';
+    const okMark = (k) => (p.ok[k] ? '✓' : '⚠');
+    const rng = (k, u) => `${n(p.safe[k][0])} … ${n(p.safe[k][1])}${u}`;
+    $('#sp-chute').innerHTML = `${okMark('chute')} Parasut dibuka di: <b>${n(p.chuteKm)} km</b> <small class="muted">aman ${rng('chute', ' km')}</small>`;
+    $('#sp-cDown').disabled = $('#sp-cUp').disabled = ph !== 'program';
+    $('#sp-ready').disabled = ph !== 'program';
+    $('#sp-ready').className = p.ready ? 'primary' : '';
+    $('#sp-ready').textContent = p.ready ? 'Siap ✓ (3 = batal)' : 'Siap (3)';
+    $('#sp-ranges').innerHTML = `<small>Angka Navigator:<br>
+      ${okMark('entry')} Sudut masuk <b>${n(p.entryDeg)}°</b> <span class="muted">aman ${rng('entry', '°')}</span><br>
+      ${okMark('retro')} Roket pendarat <b>${n(p.retroKm)} km</b> <span class="muted">aman ${rng('retro', ' km')}</span><br>
+      ${v.hasEdl ? '' : '<b style="color:var(--bad)">Tidak ada Paket Pendaratan Mars!</b>'}</small>`;
+
+    // Tujuh menit
+    const e = v.edl;
+    $('#sp-edl').style.display = ph === 'edl' && e ? '' : 'none';
+    if (e) {
+      const left = e.clockLeft;
+      $('#sp-edl').innerHTML = `<b>T− ${Math.floor(left / 60)}:${String(Math.floor(left % 60)).padStart(2, '0')}</b>
+        <div>Ketinggian ${e.alt >= 10 ? Math.round(e.alt) : n(e.alt.toFixed(1))} km · ${Math.round(e.speed)} m/s</div>
+        <small class="muted">Sinyal dari Mars butuh ±${e.signalDelayMin} menit ke Bumi, jadi wahana mendarat sendiri.</small>`;
+    }
+
+    // Permukaan
+    const sf = v.surface;
+    $('#sp-surface').style.display = sf ? '' : 'none';
+    if (sf) {
+      $('#sp-time').textContent = sf.pressed ? '' : `· sisa waktu ${Math.ceil(sf.timeLeft)} detik`;
+      $('#sp-power').innerHTML = `<small>Panel surya ${sf.solar} W (di Mars hanya ${Math.round(sf.solarShare * 100)}% dari ${sf.solarFull} W)${sf.rtg ? ` · RTG ${sf.rtg} W` : ''}<br>
+        Mengirim butuh ${-sf.load} W${sf.sending ? ` · daya bersih <b style="color:var(${sf.powerNet < 0 ? '--bad' : '--ok'})">${sf.powerNet > 0 ? '+' : ''}${sf.powerNet} W</b>` : ''}<br>
+        Antena: ${sf.antenna ? `${sf.antenna}${sf.hasBig ? ' ✓' : ` (hanya ${Math.round(sf.cap * 100)}% foto)`}` : '<b style="color:var(--bad)">tidak ada</b>'}${v.cameraDamaged ? '<br><b style="color:var(--bad)">Kamera rusak terkena badai</b>' : ''}</small>`;
+      $('#sp-batt').style.width = Math.max(0, (sf.battery / sf.batteryMax) * 100) + '%';
+      $('#sp-photo').disabled = !sf.ready || sf.pressed || !sf.antenna || !!v.result;
+      $('#sp-photo').textContent = sf.sending ? `Mengirim… ${Math.round(sf.progress * 100)}%` : sf.pressed ? 'Foto sudah dikirim' : !sf.antenna ? 'Tidak ada antena' : 'Kirim foto (4)';
+      $('#sp-data').style.width = Math.min(100, sf.progress * 100) + '%';
+    }
+    $('#sp-log').textContent = `Bahan bakar roket pendarat ${Math.round(v.fuel * 100)}% · ${v.lastLog}`;
+  };
+}
+
 export function mountPanelFor(level, container, send) {
+  if (level === 4) return mountSpecialistPanel4(container, send);
   if (level === 3) return mountSpecialistPanel3(container, send);
   return level === 2 ? mountSpecialistPanel2(container, send) : mountSpecialistPanel(container, send);
 }

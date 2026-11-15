@@ -2,6 +2,7 @@
 import * as L1 from './level1.js';
 import * as L2 from './level2.js';
 import * as L3 from './level3.js';
+import * as L4 from './level4.js';
 import { ITEMS } from '../data/items.js';
 
 export const LEVEL_MODULES = {
@@ -39,6 +40,18 @@ export const LEVEL_MODULES = {
     realMission: 'Artemis IV (rencana 2028): pendaratan astronaut pertama program Artemis, di dekat kutub selatan Bulan, wilayah yang diduga menyimpan es air di kawah yang selalu gelap. Artemis III (2027) kini menjadi uji coba di orbit Bumi. Juga Chandrayaan-3 dari India yang mendarat di dekat kutub selatan pada 2023.',
     fact: 'Di kutub selatan Bulan ada kawah yang dasarnya tidak pernah terkena Matahari selama miliaran tahun; di sanalah es air tersimpan.',
   },
+  4: {
+    create: (build, seed) => L4.createLevel4(build, seed),
+    step: L4.stepLevel4,
+    command: L4.command,
+    snapshot: L4.snapshotLevel4,
+    buildCheck: L4.buildCheck,
+    rakitItems: L4.RAKIT_ITEMS,
+    defaultBuild: L4.DEFAULT_BUILD,
+    briefing: 'Bring a rover to Mars. On the way, turn instruments off when the Specialist sees a solar storm. Before arrival, program the landing: entry angle, parachute altitude, and landing rocket altitude. Then wait through seven minutes of terror: no one can steer, the signal takes minutes to reach Earth.',
+    realMission: 'Perseverance (2021) dan Curiosity (2012) dari NASA: masuk atmosfer Mars dengan pelindung panas, parasut, lalu roket pendarat "sky crane", semuanya otomatis selama "tujuh menit penuh ketegangan".',
+    fact: 'Atmosfer Mars hanya sekitar 1% kepadatan atmosfer Bumi. Cukup tebal untuk membuat wahana sangat panas, tapi terlalu tipis untuk memperlambatnya dengan parasut saja, jadi dibutuhkan roket pendarat.',
+  },
 };
 
-export const LAST_LEVEL = 3;
+export const LAST_LEVEL = 4;

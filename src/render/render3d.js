@@ -303,6 +303,8 @@ export async function createRenderer(canvas) {
   function draw(v) {
     // Level 3 setelah masuk orbit Bulan (tampilan samping) belum ada versi 3D.
     if (v.level === 3 && !v.space) return false;
+    // Level 4 setelah peluncuran (perjalanan ke Mars sampai permukaan) belum ada versi 3D.
+    if (v.level === 4 && !v.flight) return false;
     resize();
     // Level 3: peluncuran = tampilan orbit Bumi (ada v.flight), sesudahnya tampilan Bumi-Bulan.
     const cislunar = (v.level === 2 && v.phase !== 'launch') || (v.level === 3 && !v.flight);

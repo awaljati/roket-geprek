@@ -18,6 +18,7 @@ src/
                 view.js      memilih 3D atau 2D, otomatis kembali ke 2D kalau 3D gagal
                 render3d.js  Three.js: planet bertekstur NASA, kamera bisa diputar
                 render2d.js  canvas 2D (cadangan, lebih ringan)
+                mars2d.js    canvas 2D Level 4 setelah peluncuran (ke Mars, program, tujuh menit, permukaan)
   screens/    layar: home, lobby, rakit, flight, spesialis, debrief, kontrol
   main.js     perpindahan layar dan tombol Back
 ```
@@ -79,6 +80,19 @@ Timeline di HUD: Peluncuran → Ke Bulan → Masuk orbit → Pilih titik → Tur
 9. **Di permukaan** (fase `landed`, `surface.timeSec` detik layar): dekat kawah selalu bayangan (panel 0 W, perlu RTG atau baterai); di puncak bukit panel bekerja kecuali saat bayangan bukit lain lewat (`shadowPasses`, waktunya dari seed). Spesialis menyalakan/mematikan spektrometer dan antena, menekan Pindai (`scanSec`, peluang es `iceChance` per titik), dan memutar antena ke Bumi (`antennaStepDeg`, Bumi di `earth.elevationDeg`). Data terkirim hanya saat antena menyala, mengarah ke Bumi, dan baterai di atas `lowPowerShare`. Baterai habis: F-POWER. Selesai saat data penuh atau waktu habis (data sebagian: P-ANTENNA). Bintang: 1 = mendarat dan bertahan, 2 = data penuh, 3 = mulus dekat kawah + es + data penuh. `result.advice` berisi sebab dan cara memperbaiki untuk Debrief. Perintah: `spectrometerToggle`, `scan`, `antennaToggle`, `antennaLeft`, `antennaRight` (tombol 3–7).
 
 Semua angka ada di `LEVELS[3]` (`src/data/levels.js`). Fase awal Level 3 (peluncuran, ke Bulan, masuk orbit) punya tampilan 3D; setelah masuk orbit (pilih titik sampai permukaan) selalu 2D.
+
+## Model Level 4
+
+Fase (`phase`): launch -> park -> cruise -> program -> edl -> landed -> done. Semua angka di `LEVELS[4]`.
+
+1. **Peluncuran:** sama dengan Level 3 (engine dan bantuan pilot `launch`), dari Biak ke orbit parkir. Gas + di orbit parkir = TMI.
+2. **Ke Mars (`cruise`):** animasi setengah elips Hohmann Bumi-Mars selama `cruiseSec` (bukan fisika). Dua badai matahari, waktunya dari seed (`storms`). Snapshot `cruise.stormInSec` hanya terisi `warnSec` detik sebelum badai (radar Spesialis). Instrumen menyala saat badai tanpa `rad-shield` = kamera rusak (P-STORM). Percepat waktu dimatikan menjelang badai (`game.noWarp`).
+3. **Program (`program`, waktu berhenti):** Navigator `entryDown/Up`, `retroDown/Up`, `lockProgram`; Spesialis `chuteDown/Up`, `programReady`. Mulai hanya kalau Spesialis siap dan instrumen menyala.
+4. **Tujuh menit (`edl`):** hasil dihitung sekali saat program dikunci (`planEdl`), lalu animasi memutar rencana itu (`edl.timeScale` kali lebih cepat). Tanpa `mars-edl` F-ATMO, sudut di luar `entry.safeDeg` F-ENTRY, parasut di luar `chute.safeKm` F-CHUTE, roket pendarat di bawah `retro.safeKm` F-HARD, di atasnya (atau bahan bakar kurang) F-FUEL. Bahan bakar roket pendarat (slider Rakit) terpakai `(base + perKm × km) × massa/refMassKg`.
+5. **Permukaan (`landed`):** `sendPhoto` mengirim foto selama `photoSec`. Panel surya hanya `solarShare` (40%). Baterai habis atau tanpa antena besar = foto sebagian (P-ANTENNA).
+6. **Bintang:** 1 = mendarat, 2 = foto penuh dan kamera baik, 3 = ditambah sisa bahan bakar ≥ `minFuelFor3Stars` dan harga ≤ anggaran level (tanpa dana cadangan).
+
+Peluncuran Level 4 punya tampilan 3D; sesudahnya `render3d` mengembalikan `false` dan `mars2d.js` yang menggambar.
 
 ## Tampilan 3D
 

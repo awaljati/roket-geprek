@@ -24,6 +24,7 @@ export function flightScreen(app, el) {
       </div>
       <button class="menu-btn" id="menuBtn">☰ Menu</button>
       <div class="touch" id="pad"></div>
+      <div class="touch" id="nav4" style="display:none"></div>
       <div class="overlay" id="pause">
         <div class="card pause-card">
           <h2>Misi dijeda</h2>
@@ -58,7 +59,7 @@ export function flightScreen(app, el) {
   }
 
   const padSet =
-    app.level === 2 ? (game.assist ? 'moonAssist' : 'moon') : app.level === 3 ? (game.assist ? 'moonAssist' : 'lunar') : game.assist ? 'basic' : 'manual';
+    app.level === 2 ? (game.assist ? 'moonAssist' : 'moon') : app.level >= 3 ? (game.assist ? 'moonAssist' : 'lunar') : game.assist ? 'basic' : 'manual';
   const unbind = bindControls(
     $('#pad'),
     (action) => {
@@ -68,6 +69,9 @@ export function flightScreen(app, el) {
     },
     padSet,
   );
+
+  // Level 4: tombol Navigator untuk instrumen dan program pendaratan (dijalankan langsung di perangkat ini).
+  const nav4 = app.level === 4 ? mountNav4($('#nav4'), (cmd) => !paused && M.command(game, cmd)) : null;
 
   // ---------- Menu jeda ----------
   let paused = false;
@@ -121,7 +125,8 @@ export function flightScreen(app, el) {
     if (game.phase === 'landed' && prevPhase !== 'landed') warp = 1;
     prevPhase = game.phase;
     // Percepat waktu hanya saat mesin mati dan tidak di fase genting.
-    const calm = ctrl.throttle === 0 && ctrl.pulseLeft === 0 && !['flyby', 'entry', 'launch', 'descent', 'loi'].includes(game.phase);
+    // Level 4: game.noWarp saat badai matahari mendekat, supaya peringatan 8 detik tidak terlewat.
+    const calm = ctrl.throttle === 0 && ctrl.pulseLeft === 0 && !['flyby', 'entry', 'launch', 'descent', 'loi', 'edl'].includes(game.phase) && !game.noWarp;
     const speed = calm ? warp : 1;
     acc += Math.min(0.1, (now - last) / 1000) * speed;
     last = now;
@@ -156,6 +161,7 @@ export function flightScreen(app, el) {
   }
 
   function drawHud(v, speed) {
+    if (app.level === 4) return drawHud4(v, speed);
     if (app.level === 3) return drawHud3(v, speed);
     if (app.level === 1 || v.phase === 'launch') return drawHud1(v, speed);
     drawHud2(v, speed);
@@ -293,6 +299,66 @@ export function flightScreen(app, el) {
     $('#hud').innerHTML = fuelLine + lines;
   }
 
+  // Level 4: peluncuran seperti Level 1, lalu perjalanan ke Mars, program pendaratan, tujuh menit, foto pertama.
+  function drawHud4(v, speed) {
+    const steps = [
+      ['Peluncuran', v.stage === 'launch'],
+      ['Ke Mars', v.stage === 'cruise'],
+      ['Program', v.stage === 'program'],
+      ['Masuk atmosfer', v.stage === 'entry'],
+      ['Parasut', v.stage === 'chute'],
+      ['Roket pendarat', v.stage === 'retro'],
+      ['Mendarat', v.stage === 'landed'],
+      ['Foto pertama', v.stage === 'photo'],
+    ];
+    // Setelah peluncuran tombol gas tidak dipakai lagi; Percepat ⏩ tetap ada untuk perjalanan ke Mars.
+    const padMain = $('#pad .pad-main');
+    const padExtra = $('#pad .pad-extra');
+    if (padMain) padMain.style.display = v.flight ? '' : 'none';
+    $('#pad').style.display = v.flight || (padExtra && v.view === 'cruise') ? '' : 'none';
+    if (nav4) nav4(v);
+    if (v.flight) {
+      drawHud1(v, speed);
+      if (v.view === 'park' && !game.assist) $('#hud').innerHTML += '<span>Orbit parkir: tekan Gas + (W) untuk berangkat ke Mars (TMI).</span>';
+    } else {
+      drawCoach(v);
+      const bad = (t) => `<span style="color:var(--bad)">${t}</span>`;
+      const ok = (t) => `<span style="color:var(--ok)">${t}</span>`;
+      const n = (x) => String(x).replace('.', ',');
+      const fuel = `<b>Bahan bakar roket pendarat ${Math.round(v.fuel * 100)}%</b>`;
+      let lines = '';
+      if (v.view === 'cruise') {
+        const c = v.cruise;
+        lines = `<span>Tiba di Mars dalam ${Math.ceil(c.arriveInSec)} s${speed > 1 ? ' · Waktu ×' + speed : game.noWarp ? ' · percepat dimatikan (badai)' : ' (T = percepat)'}</span>
+          ${v.instrumentsOn ? '<span>Instrumen: menyala</span>' : bad('Instrumen: mati')}
+          ${v.radShield ? ok('Pelindung radiasi terpasang') : ''}
+          ${c.stormActive ? bad('BADAI MATAHARI sedang lewat') : game.assist && c.stormInSec !== null ? bad(`Badai dalam ${Math.ceil(c.stormInSec)} s (radar Spesialis)`) : ''}
+          ${v.cameraDamaged ? bad('Kamera rusak terkena badai') : ''}
+          <small class="muted">Dengarkan Spesialis: dia melihat radar badai.</small>`;
+      } else if (v.view === 'program') {
+        const p = v.program;
+        const mark = (k) => (game.assist ? (p.ok[k] ? ' ✓' : ' ⚠') : '');
+        const range = (k, unit) => (game.assist ? ` <small class="muted">aman ${n(p.safe[k][0])} … ${n(p.safe[k][1])}${unit}</small>` : '');
+        lines = `<b>Waktu berhenti: program pendaratan</b>
+          <span>Sudut masuk: <b>${n(p.entryDeg)}°</b>${mark('entry')}${range('entry', '°')}</span>
+          <span>Roket pendarat menyala: <b>${n(p.retroKm)} km</b>${mark('retro')}${range('retro', ' km')}</span>
+          <span>Parasut (Spesialis): <b>${n(p.chuteKm)} km</b> ${p.ready ? ok('siap ✓') : '<small class="muted">belum siap</small>'}</span>
+          ${v.instrumentsOn ? '' : bad('Instrumen mati: nyalakan (I)')}`;
+      } else if (v.view === 'edl' && v.edl) {
+        lines = `<b>Otomatis: tidak bisa dikendalikan</b>
+          <span>Ketinggian ${v.edl.alt >= 10 ? Math.round(v.edl.alt) : n(v.edl.alt.toFixed(1))} km · ${Math.round(v.edl.speed)} m/s</span>`;
+      } else if (v.surface) {
+        const sf = v.surface;
+        lines = `<b>Di permukaan Mars${sf.pressed ? '' : ` · sisa ${Math.ceil(sf.timeLeft)} detik`}</b>
+          <span>Baterai ${Math.round((sf.battery / sf.batteryMax) * 100)}% · panel surya ${sf.solar} W (${Math.round(sf.solarShare * 100)}% dari ${sf.solarFull} W)${sf.rtg ? ` · RTG ${sf.rtg} W` : ''}</span>
+          <span>Foto ${Math.round(sf.progress * 100)}%${sf.sending ? ' · mengirim' : ''}</span>
+          <small class="muted">Tombol Kirim foto dipegang Spesialis</small>`;
+      }
+      $('#hud').innerHTML = fuel + lines;
+    }
+    $('#timeline').innerHTML = steps.map(([n, on]) => `<span class="${on ? 'on' : ''}">${n}</span>`).join('');
+  }
+
   function aimText(off) {
     if (off === null) return 'Arahkan kapsul ke Bulan (A/D)';
     if (Math.abs(off) <= 10) return '<span style="color:var(--ok)">Kamera mengarah ke Bulan ✓</span>';
@@ -305,8 +371,58 @@ export function flightScreen(app, el) {
     unbind();
     window.removeEventListener('keydown', onEsc);
     window.removeEventListener('beforeunload', onUnload);
+    if (nav4) nav4.dispose();
     app.onCmd = null;
     app.onBack = null;
     renderer.dispose();
   };
+}
+
+// Level 4: tombol Navigator. Instrumen (saat perjalanan dan program), sudut masuk dan roket pendarat (saat program).
+// Mengembalikan update(view); update.dispose() melepas keyboard.
+function mountNav4(box, send) {
+  box.innerHTML = `
+    <div class="pad-extra"><button id="n4-instr">Instrumen (I)</button></div>
+    <div class="pad-extra" id="n4-prog">
+      <button id="n4-eDown">Sudut − (U)</button><button id="n4-eUp">Sudut + (O)</button>
+      <button id="n4-rDown">Roket pendarat − (J)</button><button id="n4-rUp">Roket pendarat + (L)</button>
+      <button class="primary" id="n4-lock">Mulai masuk atmosfer (Enter)</button>
+    </div>`;
+  const $ = (s) => box.querySelector(s);
+  const CMDS = { '#n4-instr': 'instrumentsToggle', '#n4-eDown': 'entryDown', '#n4-eUp': 'entryUp', '#n4-rDown': 'retroDown', '#n4-rUp': 'retroUp', '#n4-lock': 'lockProgram' };
+  for (const [id, cmd] of Object.entries(CMDS)) {
+    $(id).onpointerdown = (e) => {
+      e.preventDefault();
+      if (!$(id).disabled) send(cmd);
+    };
+  }
+  const KEYS = { i: 'instrumentsToggle', u: 'entryDown', o: 'entryUp', j: 'retroDown', l: 'retroUp', enter: 'lockProgram' };
+  const onKey = (e) => {
+    if (e.target && e.target.tagName === 'INPUT') return;
+    const cmd = KEYS[e.key.toLowerCase()];
+    if (!cmd || (e.repeat && (cmd === 'instrumentsToggle' || cmd === 'lockProgram'))) return;
+    e.preventDefault();
+    send(cmd);
+  };
+  window.addEventListener('keydown', onKey);
+  const n = (x) => String(x).replace('.', ',');
+  function update(v) {
+    const show = (v.view === 'cruise' || v.view === 'program') && !v.result;
+    box.style.display = show ? '' : 'none';
+    if (!show) return;
+    const instr = $('#n4-instr');
+    instr.textContent = v.instrumentsOn ? 'Instrumen: MENYALA (matikan) (I)' : 'Instrumen: MATI (nyalakan) (I)';
+    instr.className = v.instrumentsOn ? '' : 'primary';
+    const prog = v.view === 'program';
+    $('#n4-prog').style.display = prog ? '' : 'none';
+    if (!prog) return;
+    const p = v.program;
+    $('#n4-eDown').textContent = `Sudut − (U) · ${n(p.entryDeg)}°`;
+    $('#n4-rDown').textContent = `Roket pendarat − (J) · ${n(p.retroKm)} km`;
+    const lock = $('#n4-lock');
+    lock.disabled = !p.ready || !v.instrumentsOn;
+    lock.textContent = !v.instrumentsOn ? 'Mulai (nyalakan instrumen dulu)' : p.ready ? 'Mulai masuk atmosfer (Enter)' : 'Mulai (tunggu Spesialis siap)';
+  }
+  update.dispose = () => window.removeEventListener('keydown', onKey);
+  return update;
 }
