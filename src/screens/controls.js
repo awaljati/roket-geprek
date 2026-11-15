@@ -53,6 +53,8 @@ export const BUTTON_SETS = {
   moon: ['turnLeft', 'turnRight', 'prograde', 'left', 'right', 'retrograde', 'pulse', 'warp'],
   moonAssist: ['warp'],
   lander: ['turnLeft', 'turnRight', 'retrograde', 'pulse'],
+  // Level 3 tanpa bantuan: peluncuran, mengerem masuk orbit Bulan, lalu mendarat.
+  lunar: ['turnLeft', 'turnRight', 'prograde', 'retrograde', 'pulse', 'warp'],
 };
 
 // Memasang keyboard + tombol. onAction(action) dipanggil per ketukan.

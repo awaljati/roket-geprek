@@ -42,7 +42,8 @@ export function flightScreen(app, el) {
   // Dana cadangan yang dipakai terpotong setiap kali misi dimulai (termasuk Ulangi misi).
   if (app.build.extraBudget) app.build.extraBudget = spendFunds(app.build.extraBudget);
   const game = M.create(app.build, app.code || 'solo');
-  const craft = () => game.flight || game.craft;
+  // Wahana yang sedang dikendalikan: roket di orbit Bumi, wahana di jalur Bumi-Bulan (Level 3), atau pendarat.
+  const craft = () => game.flight || game.space || game.craft;
   const ctrl = createControls();
   let warp = 1;
 
@@ -57,7 +58,7 @@ export function flightScreen(app, el) {
   }
 
   const padSet =
-    app.level === 2 ? (game.assist ? 'moonAssist' : 'moon') : app.level === 3 ? (game.assist ? 'basic' : 'lander') : game.assist ? 'basic' : 'manual';
+    app.level === 2 ? (game.assist ? 'moonAssist' : 'moon') : app.level === 3 ? (game.assist ? 'moonAssist' : 'lunar') : game.assist ? 'basic' : 'manual';
   const unbind = bindControls(
     $('#pad'),
     (action) => {
@@ -115,7 +116,7 @@ export function flightScreen(app, el) {
       return;
     }
     // Percepat waktu hanya saat mesin mati dan tidak di fase genting.
-    const calm = ctrl.throttle === 0 && ctrl.pulseLeft === 0 && !['flyby', 'entry', 'launch', 'descent'].includes(game.phase);
+    const calm = ctrl.throttle === 0 && ctrl.pulseLeft === 0 && !['flyby', 'entry', 'launch', 'descent', 'loi'].includes(game.phase);
     const speed = calm ? warp : 1;
     acc += Math.min(0.1, (now - last) / 1000) * speed;
     last = now;
@@ -209,16 +210,24 @@ export function flightScreen(app, el) {
 
   // Level 3: ketinggian, kecepatan turun, kecepatan menyamping, bahan bakar (di controlLine), kemiringan.
   function drawHud3(v, speed) {
-    drawCoach(v);
     const steps = [
+      ['Peluncuran', v.stage === 'launch'],
+      ['Ke Bulan', v.stage === 'transfer'],
+      ['Masuk orbit', v.stage === 'loi'],
       ['Pilih titik', v.stage === 'pick'],
-      ['Keluar orbit', v.stage === 'deorbit'],
-      ['Turun', v.stage === 'descent'],
+      ['Turun', v.stage === 'deorbit' || v.stage === 'descent'],
       ['Mendarat', v.stage === 'landed'],
       ['Pindai es', v.stage === 'scan'],
       ['Kirim data', v.stage === 'send'],
     ];
-    $('#timeline').innerHTML = steps.map(([n, on]) => `<span class="${on ? 'on' : ''}">${n}</span>`).join('');
+    const timeline = () => ($('#timeline').innerHTML = steps.map(([n, on]) => `<span class="${on ? 'on' : ''}">${n}</span>`).join(''));
+    if (v.space) {
+      if (v.flight) drawHud1(v, speed);
+      else drawHudSpace3(v, speed);
+      return timeline();
+    }
+    drawCoach(v);
+    timeline();
     const max = v.maxLandingSpeed;
     const speedNow = Math.hypot(v.vDown, v.vSide);
     const warn = (bad) => (bad ? ' style="color:var(--bad)"' : '');
@@ -245,6 +254,27 @@ export function flightScreen(app, el) {
       <span${warn(v.altitude < 40 && Math.abs(v.vSide) > max)}>Kecepatan menyamping ${Math.abs(v.vSide).toFixed(1)} u/s${Math.abs(v.vSide) > 0.2 ? (v.vSide > 0 ? ' →' : ' ←') : ''}</span>
       <span${warn(tiltBad && v.altitude < 40)}>Kemiringan ${Math.round(Math.abs(v.tiltDeg))}° ${tiltBad ? '' : '✓'}</span>
       <small class="muted">Aman mendarat: kecepatan ≤ ${max} u/s, miring ≤ ${v.maxLandingTiltDeg}° · gas ${Math.round(v.hoverThrottle * 100)}% = melayang</small>`;
+  }
+
+  // Level 3 fase awal setelah peluncuran: orbit parkir, perjalanan ke Bulan, masuk orbit Bulan.
+  function drawHudSpace3(v, speed) {
+    drawCoach(v);
+    const fuelLine = `<b>Bahan bakar roket ${Math.round(v.rocketFuel * 100)}% · pendarat ${Math.round(v.fuel * 100)}%</b>
+      <span>Gas ${Math.round(ctrl.throttle * 100)}% · Arah: ${MODE_NAME[ctrl.mode]}${speed > 1 ? ' · Waktu ×' + speed : ''}</span>`;
+    let lines = '';
+    if (v.phase === 'tli') lines = `<span>${v.secondsToTli !== null && v.tliArmed ? `TLI dalam ${Math.ceil(v.secondsToTli)} detik` : 'Tekan Gas + (W) untuk berangkat ke Bulan (TLI).'}</span>`;
+    else if (v.phase === 'transfer') lines = `<span>Mesin terkunci selama perjalanan. Tiba di wilayah Bulan dalam ${Math.ceil(v.arriveInSec)} s${speed === 1 ? ' (T = percepat)' : ''}</span>`;
+    else if (v.loi) {
+      const o = v.loi;
+      const mark = (ok) => (ok ? '✓' : '·');
+      const when = o.burnInSec === null || o.burnInSec === undefined ? '' : o.burnInSec > 0.5 ? `Mengerem dalam ${Math.ceil(o.burnInSec)} detik` : '<b>Mengerem SEKARANG</b> (lawan arah gerak, E)';
+      lines = `${when ? `<span>${when}</span>` : ''}
+        <span>${mark(o.altOk)} Ketinggian ${o.alt.toFixed(0)} / ${o.ringAlt} u</span>
+        <span>${mark(o.speedOk)} Kecepatan ${o.speed.toFixed(0)} / ${o.vCirc.toFixed(0)} u/s${o.status ? ` (${o.status})` : ''}</span>
+        <span>${mark(o.flatOk)} Naik/turun ${o.radial.toFixed(0)}</span>
+        ${o.captured ? '<span style="color:var(--ok)">Masuk orbit polar Bulan ✓</span>' : o.inRing ? `<span style="color:var(--ok)">Tahan di cincin ${o.inRingFor.toFixed(1)} / ${o.hold} s</span>` : ''}`;
+    }
+    $('#hud').innerHTML = fuelLine + lines;
   }
 
   function aimText(off) {

@@ -54,21 +54,23 @@ export function createView(stage, want3D = prefers3D()) {
       return mode;
     },
     draw(view) {
-      // Level 3 (tampilan samping pendaratan) baru ada di 2D.
-      const only2D = view.level === 3;
-      if (c3) {
-        c3.style.display = mode === '3d' && !only2D ? 'block' : 'none';
-        c2.style.display = mode === '3d' && !only2D ? 'none' : 'block';
-      }
-      if (mode === '3d' && !only2D) {
+      // Kanvas yang akan digambar ditampilkan dulu (ukurannya dibaca dari layout), lalu kanvas lain disembunyikan.
+      // Semuanya dalam satu frame, jadi perpindahan 3D <-> 2D tidak pernah menampilkan layar kosong.
+      if (mode === '3d') {
+        c3.style.display = 'block';
         try {
-          r3.draw(view);
-          return;
+          // false = tampilan ini belum ada versi 3D-nya (misalnya pendaratan Level 3): gambar dengan 2D.
+          if (r3.draw(view) !== false) {
+            c2.style.display = 'none';
+            return;
+          }
         } catch (e) {
           use2D(e);
         }
       }
+      c2.style.display = 'block';
       r2.draw(view);
+      if (c3) c3.style.display = 'none';
     },
     dispose() {
       if (r3) r3.dispose();
