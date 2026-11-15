@@ -862,7 +862,8 @@ export function stepLevel3(game, ctrl, rawDt) {
           ? `Terlalu cepat: ${speed.toFixed(1)} u/s (maks. ${L.maxLandingSpeed}). Pendarat hancur.`
           : `Terlalu miring: ${Math.round(tilt)}° (maks. ${maxTilt}°${site ? ' di ' + S[site].name : ''}). Pendarat terguling.`,
       );
-      return finish(game, false, 'F-CRASH');
+      // Bahan bakar habis sebelum menyentuh tanah = F-FUEL (Game Design Final), selain itu F-CRASH.
+      return finish(game, false, game.fuel <= 0 ? 'F-FUEL' : 'F-CRASH');
     }
     c.vx = c.vy = 0;
     game.phase = 'landed';
@@ -1054,24 +1055,30 @@ function surfaceCoach(game) {
   const draining = sf.powerNet < 0;
   const secLeft = draining ? sf.battery / (-sf.powerNet * SF.whPerWattSec) : Infinity;
   const pass = nextPass(sf, t);
-  // Spektrometer sudah menyala dan pindaian pertama belum dilakukan: minta Pindai dulu, jangan minta dimatikan.
-  // Tanpa ini pelatih bolak-balik "nyalakan spektrometer" lalu "matikan spektrometer!" (dekat kawah tanpa RTG).
-  // Pengecualian: baterai akan habis sebelum pindaian selesai.
+  // Pindai belum dilakukan dan baterai cukup untuk memindai lalu tetap mengirim data:
+  // utamakan memindai, jangan suruh mematikan spektrometer (dulu dua perintah ini saling bertentangan
+  // sehingga pemain menyalakan-mematikan terus sampai baterai habis).
   const needScan = sp.has && !sf.iceFound && sf.scans === 0;
-  if (needScan && sp.on && !sf.scan && secLeft > SF.scanSec + 2) return { msg: 'Spesialis: tekan Pindai sekarang.', urgent: true };
+  const scanAffordable = needScan && canAffordScan(sf);
+  const shadowSoon = pass && pass.from - t <= SF.shadowWarnSec + SF.scanSec;
+  if (needScan && scanAffordable && !inPass(sf, t) && !shadowSoon) {
+    if (sf.scan) return { msg: `Memindai… ${Math.ceil(SF.scanSec - sf.scan.t)} detik. Jangan matikan spektrometer.`, urgent: false };
+    return sp.on ? { msg: 'Spesialis: tekan Pindai sekarang.', urgent: true } : { msg: 'Spesialis: nyalakan spektrometer, lalu tekan Pindai.', urgent: false };
+  }
   if (draining && secLeft < SF.timeSec - t && sp.on && !sf.scan)
     return { msg: `Daya tinggal ${Math.round(share * 100)}%: matikan spektrometer!`, urgent: true };
   if (pass && pass.from - t <= SF.shadowWarnSec && sp.on && !sf.scan)
     return { msg: `Bayangan bukit lewat dalam ${Math.ceil(pass.from - t)} detik: matikan spektrometer.`, urgent: true };
+  if (needScan && !scanAffordable && !sp.on)
+    return { msg: 'Baterai tidak cukup untuk memindai dan mengirim data. Utamakan kirim data.', urgent: false };
+  // Bayangan sebentar lagi atau sedang lewat: jangan diam menunggu. Arahkan antena dan kirim data dulu
+  // (memutar antena tidak butuh daya), pindai setelah terang.
+  const waitScan = needScan && (inPass(sf, t) || shadowSoon);
   if (draining && secLeft < SF.timeSec - t && an.on && !an.sending)
     return { msg: 'Daya menipis: matikan antena sampai siap mengirim.', urgent: true };
-  if (inPass(sf, t)) {
-    const p = inPass(sf, t);
-    if (sp.on && !sf.scan) return { msg: 'Dalam bayangan: matikan spektrometer, hemat baterai.', urgent: true };
-    if (!an.sending) return { msg: `Dalam bayangan, panel 0 W. Tunggu ${Math.ceil(p.to - t)} detik.`, urgent: false };
-  }
+  if (inPass(sf, t) && sp.on && !sf.scan) return { msg: 'Dalam bayangan: matikan spektrometer, hemat baterai.', urgent: true };
   if (sf.scan) return { msg: `Memindai… ${Math.ceil(SF.scanSec - sf.scan.t)} detik. Jangan matikan spektrometer.`, urgent: false };
-  if (sp.has && !sf.iceFound && sf.scans === 0) {
+  if (needScan && !waitScan && scanAffordable) {
     return sp.on ? { msg: 'Spesialis: tekan Pindai sekarang.', urgent: true } : { msg: 'Spesialis: nyalakan spektrometer, lalu tekan Pindai.', urgent: false };
   }
   if (sp.on) return { msg: 'Pindai selesai: matikan spektrometer supaya baterai awet.', urgent: true };
@@ -1081,8 +1088,21 @@ function surfaceCoach(game) {
     const diff = an.deg - earthDeg();
     return { msg: `Putar antena ke ${diff > 0 ? 'kanan' : 'kiri'}, sinyal ${Math.round(signal(sf) * 100)}%`, urgent: true };
   }
-  if (!an.sending) return { msg: 'Daya kurang untuk mengirim. Matikan spektrometer dan tunggu baterai terisi.', urgent: true };
+  if (!an.sending && sf.data < SF.dataTarget) return { msg: 'Daya kurang untuk mengirim. Matikan spektrometer dan tunggu baterai terisi.', urgent: true };
+  if (waitScan) return { msg: 'Sinyal kuat, data terkirim. Pindai es setelah bayangan lewat.', urgent: false };
   return { msg: 'Sinyal kuat, data terkirim', urgent: false };
+}
+
+// Cukupkah baterai untuk memindai (spektrometer menyala selama scanSec) lalu mengirim data penuh?
+// Dihitung dengan daya saat ini tanpa panel surya (perkiraan aman untuk bayangan).
+function canAffordScan(sf) {
+  const an = sf.antenna;
+  const base = sf.basePower + sf.rtgPower + (sf.sunlit ? sf.panelPower : 0);
+  const scanUse = Math.max(0, -(base + sf.spectrometer.power)) * SF.whPerWattSec * SF.scanSec;
+  const sendSec = an.rate > 0 ? (SF.dataTarget - sf.data) / an.rate + 10 : 0; // +10 detik untuk mengarahkan antena
+  const sendUse = Math.max(0, -(base + an.power)) * SF.whPerWattSec * sendSec;
+  const reserve = SF.lowPowerShare * sf.batteryMax;
+  return sf.battery - scanUse - sendUse > reserve;
 }
 
 function surfaceCommand(game, cmd) {
@@ -1173,6 +1193,9 @@ function adviceFor(game, success, failCode) {
     else if (td.speed > L.maxLandingSpeed)
       out.push(`Menyentuh permukaan ${num(td.speed)} u/s (maks. ${L.maxLandingSpeed}). Tambah gas saat dekat tanah supaya kecepatan turun di bawah saran.`);
     else out.push(`Terlalu miring ${td.tiltDeg}°. Tegakkan pendarat (A/D) sebelum menyentuh; dekat kawah batasnya ${S.crater.maxTiltDeg}°.`);
+  }
+  if (failCode === 'F-FUEL' && td) {
+    out.push(`Bahan bakar pendarat habis sebelum menyentuh permukaan (${num(td.speed)} u/s saat jatuh). Tambah bahan bakar pendarat di Rakit, dan mulai mengerem tepat saat aba-aba pelatih supaya tidak perlu mengejar titik.`);
   }
   if (failCode === 'F-POWER' && sf) {
     if (sf.alwaysDark && !sf.rtgPower)
