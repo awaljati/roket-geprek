@@ -192,5 +192,46 @@ export const LEVELS = {
     },
     hint: 'Pick a landing site early, slide over it while still high, then descend slowly and upright. Gas 50% holds your descent speed; 75% slows you down. On the surface: turn the spectrometer off after scanning, and point the antenna low toward Earth on the right horizon. 3 stars: smooth landing near the dark crater, ice found, all data sent.',
   },
-  4: { name: 'Level 4: Mendarat di Mars', rocket: 'besar', budget: 260, body: 'Rover', minFuelFor3Stars: 0.15, photoTarget: 1 },
+  4: {
+    name: 'Level 4: Mendarat di Mars',
+    rocket: 'besar',
+    budget: 260,
+    body: 'Rover',
+    minFuelFor3Stars: 0.15,
+    photoTarget: 1,
+    orbitHoldSec: 3,
+    requiredItem: 'mars-edl', // tanpa Paket Pendaratan Mars: F-ATMO
+    // Nilai game (bukan skala asli), perlu balancing:
+    cruiseSec: 40, // perjalanan ke Mars (detik layar, bisa dipercepat); aslinya ~7 bulan
+    // Badai matahari: waktunya dari seed (sama untuk semua tim battle). Rentang mulai dibagi rata per badai.
+    storms: { count: 2, startSec: [10, 34], durationSec: [4, 6], warnSec: 8 },
+    // Program pendaratan (waktu berhenti). Nilai awal sengaja di luar rentang aman supaya harus diatur.
+    entry: { safeDeg: [-16, -11], startDeg: -8, minDeg: -25, maxDeg: -4, stepDeg: 0.5 },
+    chute: { safeKm: [7, 13], startKm: 16, minKm: 3, maxKm: 20, stepKm: 0.5 },
+    retro: { safeKm: [1, 2.5], startKm: 0.5, minKm: 0.25, maxKm: 4, stepKm: 0.25 },
+    // "Tujuh menit penuh ketegangan" (waktu game dalam detik, dipercepat edlTimeScale kali di layar)
+    edl: {
+      totalSec: 420, // 7 menit dari masuk atmosfer sampai menyentuh tanah
+      timeScale: 20, // 420 detik game = 21 detik layar
+      entryKm: 125, // ketinggian mulai masuk atmosfer
+      chuteAtSec: 240, // parasut dibuka sekitar menit ke-4
+      peakHeatSec: 80,
+      retroDescentMs: 30, // kecepatan rata-rata saat roket pendarat menyala (m/s), menentukan lama fase terakhir
+      signalDelayMin: 11, // jeda sinyal Mars-Bumi saat itu (berubah 4-24 menit sesuai jarak)
+    },
+    // Bahan bakar roket pendarat (slider Rakit): dipakai = (base + perKm × ketinggian menyala) × massa/refMassKg.
+    // Roket pendarat paket EDL hanya bisa menyala selama turun retro.safeKm[1] km; menyala lebih tinggi = habis di udara.
+    retroFuel: { base: 0.15, perKm: 0.1, refMassKg: 1600 },
+    landedHoldSec: 1.5,
+    // Di permukaan: foto pertama dikirim lewat antena besar. Panel surya di Mars hanya 40% (lebih jauh dari Matahari, debu).
+    surface: {
+      timeSec: 40, // waktu untuk menekan Kirim foto (detik layar)
+      photoSec: 10, // lama mengirim foto
+      solarShare: 0.4,
+      roverBatteryWh: 40, // baterai kecil bawaan rover (ditambah storeWh item baterai)
+      whPerWattSec: 0.25, // Wh per watt per detik layar (waktu dipercepat)
+      photoAntenna: 'antenna-l', // antena lain hanya bisa mengirim sebagian (data / data antena besar)
+    },
+    hint: 'Turn instruments off when the Specialist sees a solar storm, then back on. Program the landing inside the safe ranges: entry -16° to -11°, parachute 7-13 km, landing rockets 1-2.5 km. Bring the large antenna and enough power (solar panels give only 40% on Mars).',
+  },
 };

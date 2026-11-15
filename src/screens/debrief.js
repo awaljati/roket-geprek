@@ -51,6 +51,15 @@ export function debriefScreen(app, el) {
           ${r.success ? `<p class="muted">Data ke Bumi: ${Math.round((r.dataSent / r.dataTarget) * 100)}% · Es air: ${r.iceFound ? 'terdeteksi ✓' : 'tidak terdeteksi'}</p>` : ''}`
         : ''
     }
+    ${
+      app.level === 4
+        ? `${
+            r.program
+              ? `<p class="muted">Program: sudut masuk ${String(r.program.entryDeg).replace('.', ',')}° (aman ${L.entry.safeDeg.join('° … ')}°) · parasut ${String(r.program.chuteKm).replace('.', ',')} km (aman ${L.chute.safeKm.join('–')} km) · roket pendarat ${String(r.program.retroKm).replace('.', ',')} km (aman ${L.retro.safeKm.join('–').replace('.', ',')} km)</p>`
+              : ''
+          }${r.success ? `<p class="muted">Foto pertama: ${Math.round(r.photoShare * 100)}% terkirim · kamera ${r.cameraDamaged ? 'rusak terkena badai' : 'baik ✓'}${r.frugal ? '' : ' · memakai dana cadangan'}</p>` : ''}`
+        : ''
+    }
     ${r.advice && r.advice.length ? `<div class="card"><b>${r.success ? 'Supaya lebih baik' : 'Cara memperbaiki'}</b><ul>${r.advice.map((a) => `<li>${a}</li>`).join('')}</ul></div>` : ''}
     ${M.fact ? `<p class="card">Fakta: ${M.fact}</p>` : ''}
     <p class="card">${

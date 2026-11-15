@@ -10,7 +10,7 @@ export const FAIL_CODES = {
   'F-PANEL': 'Panel surya tidak dibuka.',
   'F-ENTRY': 'Sudut masuk atmosfer di luar koridor aman: terlalu curam membuat kapsul terbakar, terlalu landai membuat kapsul memantul ke angkasa.',
   'F-HEAT': 'Pelindung panas tidak ada, atau tidak menghadap ke depan saat masuk atmosfer.',
-  'F-ATMO': 'Masuk atmosfer Mars di luar rentang aman.',
+  'F-ATMO': 'Paket Pendaratan Mars tidak dipasang: tanpa pelindung panas dan parasut, rover terbakar.',
   'F-CHUTE': 'Parasut dibuka di ketinggian yang salah.',
   'F-HARD': 'Mendarat terlalu cepat.',
   'P-SIGNAL': 'Sinyal hanya terkirim sebagian.',
