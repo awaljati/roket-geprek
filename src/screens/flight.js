@@ -1,6 +1,5 @@
 // Layar terbang (perangkat Navigator / solo). Menjalankan fisika, menggambar, dan mengirim snapshot ke Spesialis.
 import { LEVEL_MODULES } from '../levels/index.js';
-import { LAUNCH_SITE } from '../data/levels.js';
 import { orbitCheck, orbitExtremes } from '../engine/flight.js';
 import { createView, prefers3D, setPrefer3D } from '../render/view.js';
 import { mountPanelFor, progRowHtml, bindProgRows, updateProgRows } from './specialistPanel.js';
@@ -158,8 +157,9 @@ export function flightScreen(app, el) {
 
   function controlLine(v, speed) {
     const fuel = v.flight ? v.flight.fuel : v.fuel;
-    return `<b>Bahan bakar ${Math.round(fuel * 100)}%</b>
-      <span>Gas ${Math.round(ctrl.throttle * 100)}%${ctrl.pulseLeft > 0 ? ' (dorongan pendek)' : ''} · Arah: ${MODE_NAME[ctrl.mode]}${speed > 1 ? ' · Waktu ×' + speed : ''}</span>`;
+    // Satu baris: arah hanya ditampilkan saat kemudi manual (tanpa bantuan pilot).
+    const arah = !game.assist && !(v.flight && v.phase === 'launch') ? ` · ${MODE_NAME[ctrl.mode]}` : '';
+    return `<span><b>Bahan bakar ${Math.round(fuel * 100)}%</b> · Gas ${Math.round(ctrl.throttle * 100)}%${ctrl.pulseLeft > 0 ? ' (pendek)' : ''}${arah}${speed > 1 ? ' · ×' + speed : ''}</span>`;
   }
 
   function drawHud(v, speed) {
@@ -214,17 +214,16 @@ export function flightScreen(app, el) {
     const f = game.flight;
     const o = orbitCheck(f);
     const p = f.planet;
-    const mark = (ok) => (ok ? '✓' : '·');
-    const { apo, peri } = orbitExtremes(f);
+    const mark = (ok) => (ok ? '✓ ' : '');
+    const { apo } = orbitExtremes(f);
     const fmt = (r) => (r === Infinity ? 'lepas' : Math.round(r - p.radius));
     const near = (r) => r !== null && Math.abs(r - p.orbitRadius) < 14;
     $('#timeline').innerHTML = '';
+    // Ringkas: target ketinggian 60 dan kecepatan cincin; titik terendah dan landasan tidak perlu di layar.
+    const goal = p.orbitRadius - p.radius;
     $('#hud').innerHTML = `${controlLine(v, speed)}
-      ${v.flight.status === 'pad' ? `<span>Landasan: ${LAUNCH_SITE.name} (dekat khatulistiwa)</span>` : ''}
-      <span>Titik tertinggi ${fmt(apo)}${near(apo) ? ' ✓' : ''} · terendah ${peri === null ? '-' : fmt(peri)}${near(peri) ? ' ✓' : ''} (target ${p.orbitRadius - p.radius})</span>
-      <span>${mark(o.altOk)} Ketinggian ${Math.round(o.r - p.radius)} / ${p.orbitRadius - p.radius}</span>
-      <span>${mark(o.speedOk)} Kecepatan ${o.speed.toFixed(0)} / ${o.vCirc.toFixed(0)}</span>
-      <span>${mark(o.flatOk)} Naik/turun ${o.radial.toFixed(0)}</span>
+      <span>${mark(o.altOk)}Tinggi ${Math.round(o.r - p.radius)} / ${goal} · puncak ${fmt(apo)}${near(apo) ? ' ✓' : ''}</span>
+      <span>${mark(o.speedOk)}Kecepatan ${o.speed.toFixed(0)} / ${o.vCirc.toFixed(0)} · ${mark(o.flatOk)}naik/turun ${o.radial.toFixed(0)}</span>
       ${v.phase === 'launch' && v.flight.inRing ? `<span style="color:var(--ok)">Tahan di cincin ${v.flight.inRingFor.toFixed(1)} s</span>` : ''}`;
   }
 
@@ -298,19 +297,17 @@ export function flightScreen(app, el) {
   // Level 3 fase awal setelah peluncuran: orbit parkir, perjalanan ke Bulan, masuk orbit Bulan.
   function drawHudSpace3(v, speed) {
     drawCoach(v);
-    const fuelLine = `<b>Bahan bakar roket ${Math.round(v.rocketFuel * 100)}% · pendarat ${Math.round(v.fuel * 100)}%</b>
-      <span>Gas ${Math.round(ctrl.throttle * 100)}% · Arah: ${MODE_NAME[ctrl.mode]}${speed > 1 ? ' · Waktu ×' + speed : ''}</span>`;
+    const fuelLine = `<span><b>Bahan bakar ${Math.round(v.rocketFuel * 100)}% · pendarat ${Math.round(v.fuel * 100)}%</b> · Gas ${Math.round(ctrl.throttle * 100)}%${!game.assist ? ` · ${MODE_NAME[ctrl.mode]}` : ''}${speed > 1 ? ' · ×' + speed : ''}</span>`;
     let lines = '';
     if (v.phase === 'tli') lines = `<span>${v.secondsToTli !== null && v.tliArmed ? `TLI dalam ${Math.ceil(v.secondsToTli)} detik` : 'Tekan Gas + (W) untuk berangkat ke Bulan (TLI).'}</span>`;
-    else if (v.phase === 'transfer') lines = `<span>Mesin terkunci selama perjalanan. Tiba di wilayah Bulan dalam ${Math.ceil(v.arriveInSec)} s${speed === 1 ? ' (T = percepat)' : ''}</span>`;
+    else if (v.phase === 'transfer') lines = `<span>Tiba di Bulan dalam ${Math.ceil(v.arriveInSec)} s${speed === 1 ? ' (T = percepat)' : ''}</span>`;
     else if (v.loi) {
       const o = v.loi;
-      const mark = (ok) => (ok ? '✓' : '·');
+      const mark = (ok) => (ok ? '✓ ' : '');
       const when = o.burnInSec === null || o.burnInSec === undefined ? '' : o.burnInSec > 0.5 ? `Mengerem dalam ${Math.ceil(o.burnInSec)} detik` : '<b>Mengerem SEKARANG</b> (lawan arah gerak, E)';
       lines = `${when ? `<span>${when}</span>` : ''}
-        <span>${mark(o.altOk)} Ketinggian ${o.alt.toFixed(0)} / ${o.ringAlt} u</span>
-        <span>${mark(o.speedOk)} Kecepatan ${o.speed.toFixed(0)} / ${o.vCirc.toFixed(0)} u/s${o.status ? ` (${o.status})` : ''}</span>
-        <span>${mark(o.flatOk)} Naik/turun ${o.radial.toFixed(0)}</span>
+        <span>${mark(o.altOk)}Tinggi ${o.alt.toFixed(0)} / ${o.ringAlt} · ${mark(o.speedOk)}kecepatan ${o.speed.toFixed(0)} / ${o.vCirc.toFixed(0)}</span>
+        ${o.flatOk ? '' : `<span>Naik/turun ${o.radial.toFixed(0)}</span>`}
         ${o.captured ? '<span style="color:var(--ok)">Masuk orbit polar Bulan ✓</span>' : o.inRing ? `<span style="color:var(--ok)">Tahan di cincin ${o.inRingFor.toFixed(1)} / ${o.hold} s</span>` : ''}`;
     }
     $('#hud').innerHTML = fuelLine + lines;
@@ -346,12 +343,9 @@ export function flightScreen(app, el) {
       let lines = '';
       if (v.view === 'cruise') {
         const c = v.cruise;
-        lines = `<span>Tiba di Mars dalam ${Math.ceil(c.arriveInSec)} s${speed > 1 ? ' · Waktu ×' + speed : game.noWarp ? ' · percepat dimatikan (badai)' : ' (T = percepat)'}</span>
-          ${v.instrumentsOn ? '<span>Instrumen: menyala</span>' : bad('Instrumen: mati')}
-          ${v.radShield ? ok('Pelindung radiasi terpasang') : ''}
-          ${c.stormActive ? bad('BADAI MATAHARI sedang lewat') : game.assist && c.stormInSec !== null ? bad(`Badai dalam ${Math.ceil(c.stormInSec)} s (radar Spesialis)`) : ''}
-          ${v.cameraDamaged ? bad('Kamera rusak terkena badai') : ''}
-          <small class="muted">Dengarkan Spesialis: dia melihat radar badai.</small>`;
+        lines = `<span>Tiba di Mars dalam ${Math.ceil(c.arriveInSec)} s${speed > 1 ? ' · ×' + speed : game.noWarp ? '' : ' (T = percepat)'} · instrumen ${v.instrumentsOn ? 'menyala' : '<b style="color:var(--bad)">mati</b>'}</span>
+          ${c.stormActive ? bad('BADAI MATAHARI sedang lewat') : game.assist && c.stormInSec !== null ? bad(`Badai dalam ${Math.ceil(c.stormInSec)} s`) : ''}
+          ${v.cameraDamaged ? bad('Kamera rusak terkena badai') : ''}`;
       } else if (v.view === 'program') {
         lines = ''; // angka program ada di kartu tengah layar
       } else if (v.view === 'edl' && v.edl) {
@@ -360,9 +354,7 @@ export function flightScreen(app, el) {
       } else if (v.surface) {
         const sf = v.surface;
         lines = `<b>Di permukaan Mars${sf.pressed ? '' : ` · sisa ${Math.ceil(sf.timeLeft)} detik`}</b>
-          <span>Baterai ${Math.round((sf.battery / sf.batteryMax) * 100)}% · panel surya ${sf.solar} W (${Math.round(sf.solarShare * 100)}% dari ${sf.solarFull} W)${sf.rtg ? ` · RTG ${sf.rtg} W` : ''}</span>
-          <span>Foto ${Math.round(sf.progress * 100)}%${sf.sending ? ' · mengirim' : ''}</span>
-          <small class="muted">Tombol Kirim foto dipegang Spesialis</small>`;
+          <span>Baterai ${Math.round((sf.battery / sf.batteryMax) * 100)}% · Foto ${Math.round(sf.progress * 100)}%${sf.sending ? ' · mengirim' : ''}</span>`;
       }
       $('#hud').innerHTML = fuel + lines;
     }
