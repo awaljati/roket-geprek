@@ -11,9 +11,18 @@ export function homeScreen(app, el) {
   el.innerHTML = `
 
     <img src="/assets/judul.svg" alt="Roket Geprek" class="floating-icon" />
-    <button class="primary" id="play">
-      <img src="/assets/button-mulai.svg" alt="Mulai" />
-    </button>
+    <div class="home-actions">
+      <button class="primary" id="play">
+        <img src="/assets/button-mulai.svg" alt="Mulai" />
+      </button>
+
+       <a class="btnlink"
+         href="http://itb.ac.id/"
+         target="_blank"
+         rel="noopener noreferrer">
+        <img src="/assets/kepala-ayam-icon.svg" alt="Kunjungi Kami" />
+      </a>
+    </div>
   `;
   el.querySelector('#play').onclick = () => app.go('lobby');
 }
