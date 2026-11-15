@@ -1,0 +1,99 @@
+/* UI dari desain DKV yang dipakai beberapa layar: bar atas (Kembali, Pengaturan, koin),
+   jendela Pengaturan, dan kotak oranye pilihan mode di Lobby. Gambar ada di public/assets/ui/ (versi WebP ringan). */
+
+/* Bar atas selalu di atas isi layar (di HP isi lobi sempat menutupi tombolnya) */
+.headerlobby.topbar { z-index: 30; }
+.lobby-screen .contentlobby { pointer-events: none; }
+.lobby-screen .contentlobby > * { pointer-events: auto; }
+
+/* Bar atas: tombol tanpa kotak (bukan gaya button umum) */
+.topbar .topbar-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+.topbar .topbar-btn:hover { transform: scale(1.06); }
+.topbar .topbar-btn:active { transform: scale(0.94); }
+.topbar .tb-back img { height: clamp(30px, 3.6vw, 42px); width: auto; display: block; }
+.topbar .tb-settings img { width: clamp(36px, 4vw, 48px); height: auto; display: block; }
+.topbar .coin {
+  background: url('/assets/ui/wadah-koin.webp') center / 100% 100% no-repeat;
+  padding: 4px 18px 4px 6px;
+}
+.topbar .coin-text { color: #3b2412; }
+.topbar .tb-ayam { height: clamp(36px, 4.5vw, 52px); width: auto; display: block; }
+.topbar .headerlobby-name { text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6); }
+/* Rakit: bar ikut alur halaman, tidak menempel */
+.topbar.topbar-flow { position: relative; padding: 0 0 4px; min-height: 0; }
+
+/* Jendela Pengaturan */
+.tb-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(5, 7, 15, 0.7);
+}
+.tb-dialog {
+  width: min(440px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px;
+  border-radius: 16px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+}
+.tb-dialog h3 { margin: 0; }
+.tb-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.tb-row small, .tb-note { color: var(--muted); }
+.tb-note { margin: 0; font-size: 0.85rem; }
+.tb-seg { display: flex; gap: 4px; }
+.tb-seg button.on { background: var(--accent); border-color: var(--accent); color: #1a0d03; font-weight: 700; }
+.tb-confirm { display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 10px; background: rgba(255, 90, 90, 0.12); }
+.tb-confirm[hidden] { display: none; }
+.tb-confirm-btns { display: flex; gap: 8px; }
+.tb-close { align-self: flex-end; }
+
+/* Lobby: kotak pilihan mode memakai kotak oranye DKV (sudut tetap bulat walau ukurannya berubah) */
+.lobby-screen .contentlobby-right .card {
+  background: none;
+  border: 22px solid transparent;
+  border-image: url('/assets/ui/kotak-oranye.webp') 40 fill / 22px / 0 stretch;
+  border-radius: 0;
+  padding: 0 4px;
+  color: #3b2412;
+}
+.lobby-screen .contentlobby-right .card b { color: #2a1708; }
+.lobby-screen .contentlobby-right .card .muted { color: #5c3a1c; }
+.lobby-screen .contentlobby-right .card button {
+  background: #3b2412;
+  border-color: #3b2412;
+  color: #fff3dc;
+  font-weight: 700;
+}
+.lobby-screen .contentlobby-right .card button.primary { background: #c0392b; border-color: #8e2a1f; color: #fff; }
+.lobby-screen .contentlobby-right .card input[type='text'] { background: #fff3dc; color: #3b2412; border-color: #b0701f; }
+.lobby-screen .contentlobby-right > .muted,
+.lobby-screen #msg { color: #fff; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7); }
+
+/* HP: lobi satu kolom (Pok-Pok kecil di atas, kotak pilihan di bawah), tidak tertimpa bar atas */
+@media (max-width: 720px) {
+  .lobby-screen .contentlobby {
+    position: relative;
+    inset: auto;
+    margin-top: 0;
+    padding: 72px 16px 24px;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .lobby-screen .contentlobby-left .floating-icon { width: 120px; }
+  .lobby-screen .contentlobby-right { max-width: none; }
+}

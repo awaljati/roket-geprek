@@ -45,7 +45,7 @@ input[type='text'] { font: inherit; padding: 10px; border-radius: 10px; border: 
   min-height: 100vh;
   min-height: 100svh;
   margin: 0;
-  background-image: url('/assets/intro-screen.svg');
+  background-image: url('/assets/ui/bg-intro.webp');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -65,7 +65,7 @@ input[type='text'] { font: inherit; padding: 10px; border-radius: 10px; border: 
   min-height: 100vh;
   min-height: 100svh;
   margin: 0;
-  background-image: url('/assets/l-lobby-screen.svg');
+  background-image: url('/assets/ui/bg-lobi.webp');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -342,7 +342,7 @@ button.big { padding: 14px 16px; font-size: 1.1rem; font-weight: 700; }
   gap: clamp(6px, 0.8vw, 10px);
   padding: 4px clamp(10px, 1.4vw, 16px) 4px 6px;
   min-height: clamp(44px, 5vw, 60px);       /* naik — ikut ikon yang lebih besar */
-  background: url('/assets/coin-bg.svg') center / 100% 100% no-repeat;
+  background: url('/assets/ui/wadah-koin.webp') center / 100% 100% no-repeat;
 }
 
 .coin-icon {

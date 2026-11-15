@@ -1,6 +1,7 @@
 // Layar Pilih Level (peta misi dari desain DKV). Semua level yang sudah dibuat bisa langsung dipilih (tidak perlu membuka berurutan).
 import { LEVEL_MODULES } from '../levels/index.js';
-import { bestStars, getFunds } from './progress.js';
+import { bestStars } from './progress.js';
+import { topbarHtml, bindTopbar } from './topbar.js';
 import '../styles/pilih-misi.css';
 
 // x, y = titik tengah lingkaran jalur pada latar 1920×1080 (persen lebar dan tinggi latar).
@@ -15,11 +16,10 @@ const CARDS = [
 export function levelsScreen(app, el) {
   el.className = 'misi-screen';
   el.innerHTML = `
+    ${topbarHtml()}
     <div class="misi-head">
       <h2 class="misi-title">Pilih Misi</h2>
-      <p>Dana cadangan: <b>${getFunds()} juta $</b> <small>· didapat dari misi yang berhasil dan hemat</small></p>
       <p>${app.code && app.role === 'navigator' ? `Room <b>${app.code}</b> · Spesialis otomatis mengikuti misi yang kamu pilih.` : 'Pilih misi yang ingin dimainkan.'}</p>
-      <button id="back" class="misi-back">Kembali</button>
     </div>
     <div class="misi-stage">
       ${CARDS.map((c) => {
@@ -43,5 +43,5 @@ export function levelsScreen(app, el) {
       app.go('rakit');
     };
   });
-  el.querySelector('#back').onclick = () => app.go('lobby');
+  bindTopbar(el, app, { back: () => app.go('lobby') });
 }

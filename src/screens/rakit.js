@@ -2,6 +2,7 @@ import { LEVELS, CUBESAT_SIZES, ROCKETS } from '../data/levels.js';
 import { LEVEL_MODULES } from '../levels/index.js';
 import { REWARD } from '../data/levels.js';
 import { getFunds } from './progress.js';
+import { topbarHtml, bindTopbar } from './topbar.js';
 
 export function rakitScreen(app, el) {
   const L = LEVELS[app.level];
@@ -15,6 +16,7 @@ export function rakitScreen(app, el) {
 
   el.className = 'screen';
   el.innerHTML = `
+    ${topbarHtml({ flow: true })}
     <h2>${L.name}: Rakit</h2>
     <p class="muted">${M.briefing}</p>
     <p class="muted">Roket: <b>${L.rocket}</b> (kapasitas ${ROCKETS[L.rocket].capacityKg} kg) · Anggaran ${L.budget} juta $${isCubeSat ? '' : ` · Badan: ${L.body}`}</p>
@@ -50,7 +52,6 @@ export function rakitScreen(app, el) {
     <div class="card" id="fundsCard"></div>
     <div class="card" id="bars"></div>
     <div class="row">
-      <button id="back">Kembali</button>
       <button class="primary" id="launch">Luncurkan</button>
       ${app.code ? `<span class="muted">Room <b>${app.code}</b></span>` : ''}
     </div>
@@ -113,6 +114,6 @@ export function rakitScreen(app, el) {
   }
   update();
 
-  $('#back').onclick = () => app.go('levels');
+  bindTopbar(el, app, { back: () => app.go('levels') });
   $('#launch').onclick = () => app.go('flight');
 }

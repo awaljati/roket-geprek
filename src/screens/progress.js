@@ -49,3 +49,11 @@ export function spendFunds(n) {
   setFunds(getFunds() - used);
   return used;
 }
+
+// Pengaturan > Hapus progres: bintang dan dana cadangan kembali ke 0.
+export function resetProgress() {
+  try {
+    localStorage.removeItem(KEY);
+    localStorage.removeItem(FUNDS);
+  } catch (_) {}
+}

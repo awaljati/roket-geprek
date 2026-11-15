@@ -124,3 +124,6 @@
   .misi-planet:nth-child(odd) { align-self: flex-start; margin-left: 6%; }
   .misi-planet:nth-child(even) { align-self: flex-end; margin-right: 6%; }
 }
+
+/* Bar atas (Kembali, Pengaturan, koin) menempel di atas; judul turun di bawahnya */
+.misi-screen .misi-head { padding-top: clamp(70px, 8vw, 92px); }

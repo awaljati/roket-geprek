@@ -1,42 +1,14 @@
 import { makeRoomCode, openRoom, hasFirebase } from '../net/room.js';
+import { topbarHtml, bindTopbar } from './topbar.js';
 
 export function lobbyScreen(app, el) {
   el.className = 'screen lobby-screen';
   el.innerHTML = `
-    <div class="headerlobby">
-    <div class="headerlobby-left">
-      <a class="btn-back" id="back"
-         aria-label="back">
-        <img src="/assets/back-icon.svg" />
-      </a>
-      <a class="btn-settinglobby" id="settings"
-         href="http://itb.ac.id/"
-         target="_blank"
-         rel="noopener noreferrer"
-         aria-label="Pengaturan">
-        <img src="/assets/l-icon-setting.svg" />
-      </a>
-      <div class="coin" aria-label="Koin">
-        <img src="/assets/koin-cabe-merah.svg" alt="" class="coin-icon" />
-        <span class="coin-text" id="coin-count">0</span>
-      </div>
-    </div>
-
-    <div class="headerlobby-right">
-      <span class="headerlobby-name">Roket Geprek</span>
-      <a class="btnlink"
-         href="http://itb.ac.id/"
-         target="_blank"
-         rel="noopener noreferrer"
-         aria-label="Kunjungi ITB">
-        <img src="/assets/kepala-ayam-icon.svg" alt="Kunjungi Kami" />
-      </a>
-    </div>
-  </div>
+    ${topbarHtml()}
   
 <div class="contentlobby">
   <div class="contentlobby-left">
-    <img src="/assets/netral.svg" alt="Roket Geprek" class="floating-icon" />
+    <img src="/assets/netral.svg" alt="Pok-Pok" class="floating-icon" />
   </div>
   
   <div class="contentlobby-right">
@@ -91,5 +63,5 @@ export function lobbyScreen(app, el) {
     app.go('spesialis');
   };
 
-  $('#back').onclick = () => app.go('home');
+  bindTopbar(el, app, { back: () => app.go('home') });
 }
