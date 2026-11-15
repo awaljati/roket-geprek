@@ -5,9 +5,10 @@ export function lobbyScreen(app, el) {
   el.innerHTML = `
     <div class="headerlobby">
     <div class="headerlobby-left">
-      <button id="back" class="btn-back">
-        <img src="/assets/back-icon.svg" alt="" class="btn-back-icon" />
-      </button>
+      <a class="btn-back" id="back"
+         aria-label="back">
+        <img src="/assets/back-icon.svg" />
+      </a>
       <a class="btn-settinglobby" id="settings"
          href="http://itb.ac.id/"
          target="_blank"
