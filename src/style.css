@@ -312,8 +312,8 @@ button.big { padding: 14px 16px; font-size: 1.1rem; font-weight: 700; }
 
 /* Tombol setting */
 .btn-settinglobby {
-  width: clamp(36px, 3.6vw, 44px);
-  height: clamp(36px, 3.6vw, 44px);
+  width: clamp(36px, 4vw, 48px);
+  height: clamp(36px, 4vw, 48px);
   padding: 0;
   display: grid;
   place-items: center;
