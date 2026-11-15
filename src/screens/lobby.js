@@ -8,11 +8,11 @@ export function lobbyScreen(app, el) {
          href="http://itb.ac.id/"
          target="_blank"
          rel="noopener noreferrer">
-        <img src="/assets/netral.svg" alt="Kunjungi Kami" />
+        <img src="/assets/kepala-ayam-icon.svg" alt="Kunjungi Kami" />
       </a>
     </div>
 
-    <img src="/assets/judul.svg" alt="Roket Geprek" class="floating-icon" />
+    <img src="/assets/netral.svg" alt="Roket Geprek" class="floating-icon" />
     <div class="card row">
       <div style="flex:1"><b>Solo</b><br><span class="muted">Satu perangkat memegang Navigator dan Spesialis.</span></div>
       <button class="primary" id="solo">Main solo</button>
