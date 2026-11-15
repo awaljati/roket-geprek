@@ -18,7 +18,8 @@
 }
 .topbar .topbar-btn:hover { transform: scale(1.06); }
 .topbar .topbar-btn:active { transform: scale(0.94); }
-.topbar .tb-back img { height: clamp(30px, 3.6vw, 42px); width: auto; display: block; }
+/* back-button.svg (332×246): panah melengkung oranye */
+.topbar .tb-back img { height: clamp(38px, 4.4vw, 52px); width: auto; display: block; }
 .topbar .tb-settings img { width: clamp(36px, 4vw, 48px); height: auto; display: block; }
 .topbar .coin {
   background: url('/assets/ui/wadah-koin.webp') center / 100% 100% no-repeat;
