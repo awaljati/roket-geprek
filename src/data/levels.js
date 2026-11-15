@@ -106,11 +106,18 @@ export const LEVELS = {
     // Matahari di kutub selatan selalu rendah (aslinya ~1,5°), jadi bayangan sangat panjang.
     sunElevationDeg: 4,
     shadowLookback: 600, // u ke arah Matahari yang diperiksa untuk bayangan
+    // Bumi kecil di cakrawala, di sisi berlawanan dengan Matahari (Matahari di kiri).
+    // xFrac = posisi mendatar di layar (0 = kiri, 1 = kanan), elevationDeg = tinggi di atas cakrawala.
+    earth: { xFrac: 0.86, elevationDeg: 8, radiusPx: 9 },
     // Titik pendaratan: sepasang (puncak bukit + dekat kawah) berulang setiap sitePeriod u.
-    // Saat mulai turun, pasangan pertama di depan pendarat (minimal siteMinAhead u) diberi penanda.
+    // Pasangan dipilih Spesialis saat masih di orbit; mesin terkunci sampai ada pilihan.
+    pickLeadU: 360, // saat mulai: titik mulai mengerem pasangan pertama minimal sejauh ini di depan pendarat
+    pickMinLeadU: 60, // belum memilih dan titik mulai mengerem tinggal sedekat ini: pakai pasangan berikutnya
+    burnWindowU: 20, // aba-aba "SEKARANG!" selama pendarat sejauh ini dari titik mulai mengerem
+    burnCountdownSec: 3, // hitung mundur sebelum aba-aba (detik layar)
+    deorbitDoneShare: 0.5, // "Keluar orbit" selesai saat kecepatan menyamping < 50% kecepatan orbit
     sitePeriod: 300, // semua bentuk satu pasangan harus muat dalam satu periode
     sitePhase: 180, // posisi puncak bukit pertama
-    siteMinAhead: 70,
     outsideMaxStars: 2, // mendarat di luar kedua titik: sah, tapi bintang maksimal 2
     smoothLandingSpeed: 1.5, // u/s, "mulus" untuk bintang 3 di dekat kawah
     sites: {
@@ -129,12 +136,19 @@ export const LEVELS = {
         about: 'Medan sempit, harus lebih tegak, sering dalam bayangan, banyak es.',
         ice: 'banyak',
         offset: 130, // jarak dari puncak bukit (u)
-        halfWidth: 7,
+        halfWidth: 12,
         ramp: 10,
-        maxTiltDeg: 5,
+        maxTiltDeg: 7,
         maxStars: 3,
-        craterRadius: 35, // kawah di sebelah kanan landasan (jauh dari Matahari)
+        craterRadius: 30, // kawah di sebelah kanan landasan (jauh dari Matahari)
+        craterGap: 10, // jarak tepi landasan ke bibir kawah (u)
         craterDepth: 30,
+        lipHeight: 3, // bibir kawah (u)
+        lipWidth: 4,
+        // Dekat landasan ini, di bawah slowAltitude u: waktu diperlambat dan ada garis panduan ke tanah.
+        slowAltitude: 60,
+        slowNearU: 30, // jarak menyamping dari tepi landasan
+        slowFactor: 0.5,
         rimOffset: -50, // bukit di sisi Matahari yang membuat landasan sering dalam bayangan
         rimHeight: 12,
         rimWidth: 20,
