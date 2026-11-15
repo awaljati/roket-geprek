@@ -2,8 +2,14 @@
 // Tahap 1: inti pendaratan. Tahap 2: pilihan titik pendaratan dan bayangan panjang dari Matahari rendah.
 // Tahap 3: di permukaan (daya, pindai es, kirim data ke Bumi).
 //
-// Tampilan samping: permukaan Bulan berupa garis berbukit (y = ketinggian, x = jarak menyamping).
-// Misi dimulai di orbit rendah Bulan, tanpa peluncuran dari Bumi.
+// Fase awal (tampilan Bumi-Bulan seperti Level 2):
+//   - Peluncuran dari Biak ke orbit parkir: engine dan bantuan pilot sama dengan Level 1/2 (launch, tli).
+//   - Ke Bulan: lintasan otomatis (hasil simulasi gravitasi Bumi-Bulan, dihitung sekali), bisa dipercepat.
+//   - Masuk orbit polar Bulan (LOI): di wilayah Bulan hanya gravitasi Bulan yang dihitung. Saat paling dekat,
+//     Navigator mengerem berlawanan arah gerak sampai masuk cincin orbit. Kurang mengerem: lewat (F-ORBIT).
+//     Kebanyakan: jatuh (F-CRASH). Bahan bakar roket (peluncuran + LOI) terpisah dari bahan bakar pendarat.
+//
+// Setelah masuk orbit, tampilan samping: permukaan Bulan berupa garis berbukit (y = ketinggian, x = jarak menyamping).
 //
 // Model "orbit datar": permukaan dianggap datar, tapi gravitasi efektif berkurang kalau pendarat bergerak
 // menyamping cepat: g_efektif = g * (1 - (vx / orbitSpeed)^2). Pada kecepatan orbit pendarat tidak jatuh.
@@ -23,12 +29,15 @@
 //   - Kirim data: antena menyala, mengarah ke Bumi (rendah di cakrawala kanan), dan daya cukup.
 //     Selesai saat data penuh atau waktu habis; data sebagian: P-ANTENNA.
 //
-// Fase: orbit -> descent -> landed (permukaan) -> done
-// Tahap (untuk timeline): pick (pilih titik) -> deorbit (keluar orbit) -> descent (turun) -> landed -> scan / send
+// Fase: launch -> tli -> transfer -> loi -> captured -> orbit -> descent -> landed (permukaan) -> done
+// Tahap (untuk snapshot): launch -> transfer -> loi -> pick (pilih titik) -> deorbit (keluar orbit) -> descent (turun)
+//   -> landed -> scan / send
 
 import { applyControls, createControls } from '../engine/attitude.js';
 import { stepLanderAssist, targetDescent, directionText } from '../engine/landerAssist.js';
-import { EARTH } from '../engine/flight.js';
+import { createFlight, stepFlight, EARTH, positionAngle } from '../engine/flight.js';
+import { createAssist, stepAssist } from '../engine/assist.js';
+import { CISLUNAR, stepBody } from '../engine/cislunar.js';
 import { makeRng } from '../engine/rng.js';
 import { LEVELS, ROCKETS, BODIES } from '../data/levels.js';
 import { missionReward } from './reward.js';
@@ -165,9 +174,21 @@ export function createLevel3(build, seed = 'solo') {
     level: 3,
     build,
     check,
-    phase: 'orbit',
+    phase: 'launch',
     assist: build.assist !== false,
     coach: null,
+    // Fase awal (lihat bagian "Fase awal"). Roket punya bahan bakar sendiri, terpisah dari game.fuel (pendarat).
+    flight: createFlight({ planet: EARTH, fuel: 1, orbitHoldSec: L.orbitHoldSec }),
+    launchAssist: build.assist !== false ? createAssist() : null,
+    tliArmed: false,
+    secondsToTli: null,
+    holdThrust: false,
+    space: null, // wahana di tampilan Bumi-Bulan setelah TLI: { x, y, vx, vy, angle }
+    spaceT: 0,
+    spaceTrail: [],
+    rocketFuel: 1,
+    earthAngle: 0,
+    loi: null,
     ground: makeTerrain(rng),
     t: 0,
     craft: { x: 0, y: L.startAltitude, vx: L.orbitSpeed, vy: 0, angle: 0 },
@@ -184,7 +205,7 @@ export function createLevel3(build, seed = 'solo') {
     touchdown: null,
     surface: null, // keadaan di permukaan setelah mendarat (lihat startSurface)
     surfaceRng: makeRng(seed + '-L3-surface'), // terpisah supaya permukaan dan bentuk medan tidak saling memengaruhi
-    log: ['Pendarat di orbit rendah Bulan, di atas wilayah kutub selatan. Spesialis: pilih titik pendaratan.'],
+    log: ['Luncurkan roket dari Biak ke orbit parkir.'],
     result: null,
     trail: [],
   };
@@ -278,6 +299,9 @@ function altitude(game) {
 
 // Tahap untuk timeline: pilih titik -> keluar orbit -> turun -> mendarat.
 function stage(game) {
+  if (game.phase === 'launch' || game.phase === 'tli') return 'launch';
+  if (game.phase === 'transfer') return 'transfer';
+  if (game.phase === 'loi' || game.phase === 'captured') return 'loi';
   if (game.phase === 'orbit') return game.siteChoice ? 'deorbit' : 'pick';
   if (game.phase === 'descent') return Math.abs(game.craft.vx) > L.orbitSpeed * L.deorbitDoneShare ? 'deorbit' : 'descent';
   if (game.phase === 'landed') {
@@ -301,9 +325,493 @@ function target(game) {
   return { id: s.id, name: S[s.id].name, dx: s.x - game.craft.x, halfWidth: S[s.id].halfWidth };
 }
 
+// ---------- Fase awal: peluncuran, ke Bulan, masuk orbit polar (LOI) ----------
+const SPACE_PHASES = ['launch', 'tli', 'transfer', 'loi', 'captured'];
+const MOON = CISLUNAR.moon;
+const RING = L.moonOrbitRadius;
+const moonCirc = (r) => Math.sqrt(MOON.gm / r);
+const moonDist = (s) => Math.hypot(s.x - MOON.x, s.y - MOON.y);
+const TRANSFER_DT = 1 / 30;
+
+// Lintasan ke Bulan dari orbit parkir (sudut theta, kecepatan tliSpeed), gravitasi Bumi + Bulan,
+// sampai masuk wilayah Bulan (moonSoiRadius). Mengembalikan keadaan saat masuk dan titik-titiknya.
+function transferFrom(theta, keep) {
+  const r0 = CISLUNAR.parkingRadius;
+  const v = L.tliSpeed;
+  const s = { x: Math.sin(theta) * r0, y: Math.cos(theta) * r0, vx: Math.cos(theta) * v, vy: -Math.sin(theta) * v };
+  const pts = [];
+  let t = 0;
+  while (t < 120) {
+    if (keep) pts.push({ t, x: s.x, y: s.y, vx: s.vx, vy: s.vy });
+    if (moonDist(s) < L.moonSoiRadius) break;
+    stepBody(s, [CISLUNAR.earth, MOON], 0, 0, TRANSFER_DT);
+    t += TRANSFER_DT;
+  }
+  return { s, t, pts };
+}
+
+// Titik terdekat dan terjauh orbit (hanya gravitasi Bulan) dari keadaan s, diukur dari pusat Bulan.
+// Belum terikat (masih lewat): apo = Infinity.
+function moonConic(s) {
+  const dx = s.x - MOON.x;
+  const dy = s.y - MOON.y;
+  const r = Math.hypot(dx, dy);
+  const eps = (s.vx * s.vx + s.vy * s.vy) / 2 - MOON.gm / r;
+  const h = dx * s.vy - dy * s.vx;
+  const e = Math.sqrt(Math.max(0, 1 + (2 * eps * h * h) / (MOON.gm * MOON.gm)));
+  const p = (h * h) / MOON.gm;
+  return { peri: p / (1 + e), apo: e < 1 ? p / (1 - e) : Infinity };
+}
+const moonPeri = (s) => moonConic(s).peri;
+
+// Lintasan nominal (dihitung sekali): sudut berangkat dicari supaya titik terdekat ke Bulan tepat di cincin orbit.
+let NOMINAL = null;
+function nominal() {
+  if (NOMINAL) return NOMINAL;
+  let lo = 160 * DEG; // titik terdekat makin kecil kalau sudut makin besar
+  let hi = 170 * DEG;
+  for (let i = 0; i < 40; i++) {
+    const mid = (lo + hi) / 2;
+    if (moonPeri(transferFrom(mid, false).s) > RING) lo = mid;
+    else hi = mid;
+  }
+  const theta = (lo + hi) / 2;
+  const tr = transferFrom(theta, true);
+  // Bagian di wilayah Bulan sampai titik terdekat, hanya untuk digambar.
+  const tail = [];
+  const m = { ...tr.s };
+  let prev = Infinity;
+  for (let i = 0; i < 4000; i++) {
+    const r = moonDist(m);
+    if (r > prev) break;
+    prev = r;
+    if (i % 2 === 0) tail.push({ x: Math.round(m.x), y: Math.round(m.y) });
+    stepBody(m, [MOON], 0, 0, TRANSFER_DT);
+  }
+  NOMINAL = { theta, pts: tr.pts, soiT: tr.t, soiState: tr.s, tail };
+  return NOMINAL;
+}
+
+function sampleTransfer(t) {
+  const n = nominal();
+  const i = Math.max(0, Math.min(n.pts.length - 2, Math.floor(t / TRANSFER_DT)));
+  const a = n.pts[i];
+  const b = n.pts[i + 1];
+  const f = Math.max(0, Math.min(1, (t - a.t) / TRANSFER_DT));
+  const mix = (k) => a[k] + (b[k] - a[k]) * f;
+  return { x: mix('x'), y: mix('y'), vx: mix('vx'), vy: mix('vy') };
+}
+
+// Jalur target (hijau) untuk tampilan. Snapshot untuk Spesialis memakai titik yang lebih jarang.
+const NOMINAL_POINTS = {};
+export function nominalPathPoints(every = 6) {
+  if (!NOMINAL_POINTS[every]) {
+    const n = nominal();
+    const pts = n.pts.filter((_, i) => i % every === 0).map((p) => ({ x: Math.round(p.x), y: Math.round(p.y) }));
+    NOMINAL_POINTS[every] = pts.concat(n.tail.filter((_, i) => i % Math.max(1, Math.round(every / 6)) === 0));
+  }
+  return NOMINAL_POINTS[every];
+}
+
+// Cek cincin orbit Bulan, seperti orbitCheck di engine/flight.js untuk Bumi.
+function moonOrbitCheck(s) {
+  const dx = s.x - MOON.x;
+  const dy = s.y - MOON.y;
+  const r = Math.hypot(dx, dy);
+  const speed = Math.hypot(s.vx, s.vy);
+  const radial = (s.vx * dx + s.vy * dy) / r;
+  const vCirc = moonCirc(RING);
+  const altOk = Math.abs(r - RING) <= L.moonOrbitRadiusTol;
+  const speedOk = Math.abs(speed - vCirc) <= vCirc * L.moonOrbitSpeedTol;
+  const flatOk = Math.abs(radial) <= L.moonOrbitRadialTol;
+  // Indikator untuk Spesialis (lambat / pas / cepat), hanya berarti di dekat cincin.
+  const status = !altOk ? null : speed > vCirc * (1 + L.moonOrbitSpeedTol) ? 'cepat' : speed < vCirc * (1 - L.moonOrbitSpeedTol) ? 'lambat' : 'pas';
+  return { ok: altOk && speedOk && flatOk, r, speed, radial, vCirc, altOk, speedOk, flatOk, status };
+}
+
+const loiAccel = (game) => L.loiAccel / game.massRatio;
+
+function spaceStep(game, ctrl, dt) {
+  if (game.phase === 'launch') return launchStep(game, ctrl, dt);
+  if (game.phase === 'tli') return tliStep(game, ctrl, dt);
+  if (game.phase === 'transfer') return transferStep(game, ctrl, dt);
+  return loiStep(game, ctrl, dt);
+}
+
+// Peluncuran ke orbit parkir: sama dengan fase 'launch' Level 2.
+function launchStep(game, ctrl, dt) {
+  const fdt = dt * LEVELS[1].launchTimeScale;
+  if (game.launchAssist && ctrl) {
+    stepAssist(game.launchAssist, game.flight, ctrl);
+    game.coach = { msg: game.launchAssist.msg, urgent: game.launchAssist.urgent };
+  }
+  stepFlight(game.flight, ctrl, fdt);
+  game.thrusting = !!game.flight.thrusting;
+  if (game.flight.failCode) return finish(game, false, game.flight.failCode);
+  if (game.flight.status === 'orbit') {
+    game.phase = 'tli';
+    game.thrusting = false;
+    if (ctrl) {
+      ctrl.throttle = 0;
+      ctrl.mode = 'prograde';
+    }
+    game.log.push('Orbit parkir tercapai. Tekan Gas + untuk berangkat ke Bulan (TLI).');
+  }
+  return game;
+}
+
+// Di orbit parkir: TLI dijalankan saat roket tiba di titik berangkat (seperti fase 'tli' Level 2).
+function tliStep(game, ctrl, dt) {
+  const f = game.flight;
+  stepFlight(f, null, dt);
+  if (ctrl && (ctrl.throttle > 0 || ctrl.pulseLeft > 0) && !game.tliArmed) {
+    game.tliArmed = true;
+    game.log.push('TLI dijadwalkan: menunggu roket tiba di titik berangkat.');
+  }
+  if (ctrl) {
+    ctrl.throttle = 0;
+    ctrl.pulseLeft = 0;
+  }
+  const theta = nominal().theta;
+  const omega = Math.hypot(f.vx, f.vy) / Math.hypot(f.x, f.y);
+  let diff = theta - positionAngle(f);
+  diff = ((diff % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+  game.secondsToTli = diff / omega;
+  game.coach = game.assist
+    ? game.tliArmed
+      ? { msg: `TLI dijadwalkan. Mesin menyala otomatis dalam ${Math.ceil(game.secondsToTli)} detik…`, urgent: false }
+      : { msg: 'Orbit parkir tercapai! Tekan Gas + untuk berangkat ke Bulan (TLI).', urgent: true }
+    : null;
+  if (game.tliArmed && (diff < 0.05 || diff > 2 * Math.PI - 0.01)) {
+    game.space = { ...sampleTransfer(0), angle: f.angle };
+    game.rocketFuel = f.fuel;
+    game.earthAngle = f.earthAngle;
+    game.flight = null;
+    game.spaceT = 0;
+    game.secondsToTli = null;
+    game.phase = 'transfer';
+    game.log.push('TLI selesai, menuju Bulan.');
+  }
+  return game;
+}
+
+// Perjalanan ke Bulan: otomatis mengikuti lintasan nominal. Mesin terkunci.
+function transferStep(game, ctrl, dt) {
+  const n = nominal();
+  game.spaceT += dt;
+  game.earthAngle += EARTH.spin * dt;
+  if (ctrl) {
+    if (game.assist) ctrl.mode = 'retrograde'; // bersiap: mesin menghadap lawan arah gerak untuk mengerem nanti
+    ctrl.throttle = 0;
+    ctrl.pulseLeft = 0;
+  }
+  Object.assign(game.space, sampleTransfer(game.spaceT));
+  if (ctrl) applyControls(ctrl, game.space, L.turnRate, dt);
+  game.thrusting = false;
+  pushSpaceTrail(game);
+  const left = n.soiT - game.spaceT;
+  game.coach = game.assist
+    ? { msg: `Menuju Bulan, tiba dalam ${Math.ceil(left)} detik (Percepat ⏩ untuk mempercepat). Wahana diputar lawan arah gerak.`, urgent: false }
+    : null;
+  if (game.spaceT >= n.soiT) startLoi(game);
+  return game;
+}
+
+function pushSpaceTrail(game) {
+  const tr = game.spaceTrail;
+  if (tr.length === 0 || game.spaceT - tr[tr.length - 1].t > 0.25) {
+    tr.push({ x: game.space.x, y: game.space.y, t: game.spaceT });
+    if (tr.length > 400) tr.shift();
+  }
+}
+
+// Masuk wilayah Bulan: hitung kapan paling dekat dan kapan sebaiknya mulai mengerem (pengereman berpusat di titik terdekat).
+function startLoi(game) {
+  const n = nominal();
+  Object.assign(game.space, n.soiState);
+  const m = { ...n.soiState };
+  const dt = 1 / 120;
+  let best = Infinity;
+  let tPeri = 0;
+  let vPeri = 0;
+  for (let t = 0; t < L.loiMaxSec; t += dt) {
+    const r = moonDist(m);
+    if (r > best) break;
+    best = r;
+    tPeri = t;
+    vPeri = Math.hypot(m.vx, m.vy);
+    stepBody(m, [MOON], 0, 0, dt);
+  }
+  const burnSec = Math.max(0, vPeri - moonCirc(RING)) / loiAccel(game);
+  // Aba-aba sedikit lebih awal dari tengah pengereman, untuk waktu reaksi dan menaikkan gas.
+  const cueAt = tPeri - burnSec / 2 - L.loiReactSec * L.loiTimeScale;
+  game.loi = { t: 0, tPeri, rPeri: best, vPeri, cueAt, inRingFor: 0, inRing: false, cut: false, burnedSec: 0, showT: 0 };
+  game.phase = 'loi';
+  game.log.push('Masuk wilayah Bulan. Saat paling dekat, mengerem lawan arah gerak sampai masuk cincin orbit.');
+}
+
+function loiStep(game, ctrl, rawDt) {
+  const lo = game.loi;
+  const s = game.space;
+  const dt = rawDt * L.loiTimeScale;
+  lo.t += dt;
+  game.spaceT += dt;
+  game.earthAngle += EARTH.spin * dt;
+
+  if (game.phase === 'captured') {
+    // Sudah di cincin: tampilkan sebentar, lalu pendarat lepas dari roket dan mulai memilih titik.
+    if (ctrl) ctrl.throttle = 0;
+    stepBody(s, [MOON], 0, 0, dt);
+    pushSpaceTrail(game);
+    lo.showT += rawDt;
+    if (lo.showT >= L.captureShowSec) enterLanderOrbit(game, ctrl);
+    return game;
+  }
+
+  game.holdThrust = false;
+  if (game.assist && ctrl) loiAssist(game, ctrl, moonOrbitCheck(s));
+  let throttle = ctrl ? applyControls(ctrl, s, L.turnRate, dt) : 0;
+  if (game.holdThrust) throttle = 0;
+  const fuelBefore = game.rocketFuel;
+  game.thrusting = throttle > 0 && game.rocketFuel > 0;
+  let ax = 0;
+  let ay = 0;
+  if (game.thrusting) {
+    const a = loiAccel(game) * throttle;
+    ax = Math.sin(s.angle) * a;
+    ay = Math.cos(s.angle) * a;
+    game.rocketFuel = Math.max(0, game.rocketFuel - L.loiFuelBurnPerSec * throttle * dt);
+    lo.burnedSec += dt;
+    if (game.rocketFuel === 0 && fuelBefore > 0) game.log.push('Bahan bakar roket habis!');
+  }
+  stepBody(s, [MOON], ax, ay, dt);
+  pushSpaceTrail(game);
+
+  const o = moonOrbitCheck(s);
+  lo.inRing = o.ok;
+  lo.inRingFor = o.ok ? lo.inRingFor + dt : 0;
+  if (o.r <= MOON.radius) {
+    game.log.push('Terlalu banyak mengerem: wahana jatuh ke permukaan Bulan.');
+    return finish(game, false, 'F-CRASH');
+  }
+  if (o.r > L.moonSoiRadius && lo.t > lo.tPeri) {
+    game.log.push(lo.burnedSec > 0 ? 'Kurang mengerem: wahana melewati Bulan.' : 'Tidak mengerem: wahana melewati Bulan.');
+    return finish(game, false, 'F-ORBIT');
+  }
+  if (lo.inRingFor >= L.orbitHoldSec) {
+    // Komputer roket merapikan orbit supaya tetap di cincin (seperti circularize di engine/flight.js).
+    const dx = s.x - MOON.x;
+    const dy = s.y - MOON.y;
+    const r = Math.hypot(dx, dy);
+    const v = moonCirc(r);
+    const dir = Math.sign(dx * s.vy - dy * s.vx) || 1;
+    s.vx = ((-dy * dir) / r) * v;
+    s.vy = ((dx * dir) / r) * v;
+    game.phase = 'captured';
+    game.thrusting = false;
+    if (ctrl) ctrl.throttle = 0;
+    game.coach = game.assist ? { msg: 'Masuk orbit polar Bulan!', urgent: false } : null;
+    game.log.push('Masuk orbit polar Bulan! Pendarat bersiap lepas dari roket.');
+    return game;
+  }
+  if (lo.t > L.loiMaxSec) {
+    game.log.push('Belum masuk cincin orbit Bulan.');
+    return finish(game, false, 'F-ORBIT');
+  }
+  return game;
+}
+
+// Detik layar sampai aba-aba mengerem (negatif = sudah lewat).
+function secondsToLoi(game) {
+  const lo = game.loi;
+  return lo ? (lo.cueAt - lo.t) / L.loiTimeScale : null;
+}
+
+// Bantuan pilot LOI: mengarahkan wahana, memberi aba-aba Gas +, dan mematikan mesin saat orbit sudah pas
+// (seperti bantuan peluncuran yang mematikan mesin di puncak lintasan). Gas + ditekan lebih awal = dijadwalkan.
+// Kalau orbit masih lonjong setelah mesin dimatikan, bantuan memberi aba-aba koreksi:
+//   - titik terjauh terlalu tinggi: mengerem (lawan arah gerak) di titik terdekat;
+//   - titik terdekat terlalu rendah: mendorong (searah gerak) di titik terjauh.
+function loiAssist(game, ctrl, o) {
+  const lo = game.loi;
+  const sp = game.space;
+  const tol = L.moonOrbitRadiusTol * 0.5;
+  const conic = moonConic(sp);
+  const apoHigh = conic.apo > RING + tol;
+  const periLow = conic.peri < RING - tol;
+  // Lewat titik terdekat (jarak berhenti turun) atau titik terjauh (jarak berhenti naik)?
+  const prev = lo.prevRadial;
+  lo.prevRadial = o.radial;
+  const atPeri = prev !== undefined && prev < 0 && o.radial >= 0;
+  const atApo = prev !== undefined && prev > 0 && o.radial <= 0;
+  if (lo.cut && !o.ok && conic.apo < Infinity) {
+    // Titik terdekat yang terlalu rendah dibetulkan dulu (berbahaya), baru titik terjauh.
+    if (periLow && atApo) lo.fix = 'raise';
+    else if (!periLow && apoHigh && atPeri) lo.fix = 'lower';
+    if (lo.fix) {
+      lo.cut = false;
+      lo.cueAt = lo.t;
+      game.log.push(lo.fix === 'lower' ? 'Koreksi orbit: mengerem di titik terdekat.' : 'Koreksi orbit: mendorong searah gerak di titik terjauh.');
+    }
+  }
+  // Arah: searah gerak hanya untuk koreksi "naikkan titik terdekat"; selain itu lawan arah gerak.
+  const raising = lo.fix === 'raise' || (lo.cut && periLow);
+  ctrl.mode = raising ? 'prograde' : 'retrograde';
+  const want = Math.atan2(sp.vx, sp.vy) + (raising ? 0 : Math.PI);
+  const aimed = Math.abs(Math.atan2(Math.sin(sp.angle - want), Math.cos(sp.angle - want))) < 0.35;
+  const sec = secondsToLoi(game);
+  const what = lo.fix === 'raise' ? 'mendorong (searah gerak)' : lo.fix === 'lower' ? 'mengerem lagi' : 'mengerem';
+  let msg;
+  let urgent = false;
+  if (lo.cut) {
+    ctrl.throttle = 0;
+    msg = o.ok
+      ? `Tahan di cincin… ${lo.inRingFor.toFixed(1)} / ${L.orbitHoldSec} detik`
+      : `Mesin dimatikan. Orbit masih lonjong: tunggu aba-aba koreksi di titik ${periLow ? 'terjauh' : 'terdekat'}…`;
+  } else if (sec > 0) {
+    game.holdThrust = true;
+    if (ctrl.throttle > 0) msg = `Pengereman dijadwalkan: mesin menyala otomatis dalam ${Math.ceil(sec)} detik…`;
+    else if (sec <= L.loiCountdownSec) {
+      msg = `Siap mengerem… ${Math.ceil(sec)}`;
+      urgent = true;
+    } else msg = `Mendekati Bulan. Wahana diarahkan lawan arah gerak. Mengerem dalam ${Math.ceil(sec)} detik.`;
+  } else if (ctrl.throttle === 0) {
+    msg = `SEKARANG! Tekan Gas + sampai 100% untuk ${what}`;
+    urgent = true;
+  } else {
+    game.holdThrust = !aimed;
+    urgent = ctrl.throttle < 1;
+    const nums = `kecepatan ${o.speed.toFixed(0)} / ${o.vCirc.toFixed(0)}`;
+    msg = !aimed ? `Memutar wahana untuk ${what}…` : urgent ? `Tambah Gas + sampai 100%! ${nums}` : `${what[0].toUpperCase() + what.slice(1)}… ${nums}`;
+    // Mesin dimatikan saat orbit sudah masuk cincin (bantuan mematikan mesin tepat waktu).
+    // Saat mengerem, mesin juga dimatikan sebelum titik terdekat turun di bawah cincin (supaya tidak jatuh).
+    const done = raising
+      ? conic.peri >= RING - tol || o.speed >= moonCirc(o.r) * 1.03
+      : conic.apo <= RING + tol || o.speed <= moonCirc(o.r) * 0.97 || conic.peri < RING - L.moonOrbitRadiusTol;
+    if (done) {
+      ctrl.throttle = 0;
+      lo.cut = true;
+      lo.fix = null;
+    }
+  }
+  game.coach = { msg, urgent };
+}
+
+function enterLanderOrbit(game, ctrl) {
+  game.phase = 'orbit';
+  game.space = null;
+  game.thrusting = false;
+  game.holdThrust = false;
+  game.coach = null;
+  if (ctrl) {
+    ctrl.throttle = 0;
+    ctrl.pulseLeft = 0;
+    ctrl.mode = 'retrograde';
+  }
+  game.log.push('Pendarat lepas dari roket di orbit rendah Bulan, di atas wilayah kutub selatan. Spesialis: pilih titik pendaratan.');
+}
+
+// Prediksi lintasan di wilayah Bulan kalau mesin dimatikan sekarang (garis putus-putus).
+function loiPrediction(game, withPaths) {
+  const m = { ...game.space };
+  const pts = [];
+  const dt = 1 / 30;
+  const every = withPaths ? 3 : 9;
+  for (let i = 0; i < 30 * 14; i++) {
+    stepBody(m, [MOON], 0, 0, dt);
+    if (i % every === 0) pts.push({ x: Math.round(m.x * 10) / 10, y: Math.round(m.y * 10) / 10 });
+    const r = moonDist(m);
+    if (r <= MOON.radius || r > L.moonSoiRadius * 1.4) break;
+  }
+  return pts;
+}
+
+// Kamera: seluruh jalur Bumi-Bulan (seperti Level 2), mendekat ke Bulan saat wahana mendekat.
+function spaceCamera(p) {
+  const d = p ? moonDist(p) : Infinity;
+  const k0 = Math.max(0, Math.min(1, (900 - d) / (900 - L.moonSoiRadius)));
+  const k = k0 * k0 * (3 - 2 * k0);
+  const lerp = (a, b) => a + (b - a) * k;
+  const near = L.moonSoiRadius * 2.2;
+  return { x: lerp(-112, MOON.x), y: lerp(535, MOON.y), spanX: lerp(760, near), spanY: lerp(1590, near) };
+}
+
+function spaceSnapshot(game, withPaths) {
+  const f = game.flight;
+  const sp = game.space;
+  const c = sp || (f ? { x: f.x, y: f.y, vx: f.vx, vy: f.vy, angle: f.angle } : { x: 0, y: 0, vx: 0, vy: 0, angle: 0 });
+  const now = game.phase === 'done' ? game.endedIn : game.phase;
+  const o = sp && (now === 'loi' || now === 'captured') ? moonOrbitCheck(sp) : null;
+  const lo = game.loi;
+  return {
+    level: 3,
+    space: true,
+    phase: game.phase,
+    stage: now === 'launch' || now === 'tli' ? 'launch' : now === 'transfer' ? 'transfer' : 'loi',
+    t: game.spaceT,
+    craft: { x: c.x, y: c.y, angle: c.angle, thrusting: !!game.thrusting },
+    fuel: game.fuel, // bahan bakar pendarat (belum dipakai)
+    rocketFuel: f ? f.fuel : game.rocketFuel,
+    hasEngine: game.hasEngine,
+    earthAngle: f ? f.earthAngle : game.earthAngle,
+    secondsToTli: game.phase === 'tli' ? game.secondsToTli : null,
+    tliArmed: game.tliArmed,
+    arriveInSec: game.phase === 'transfer' ? Math.max(0, nominal().soiT - game.spaceT) : null,
+    // Saat peluncuran, tampilan memakai gambar orbit Bumi seperti Level 1.
+    flight:
+      now === 'launch' && f
+        ? {
+            x: f.x,
+            y: f.y,
+            vx: f.vx,
+            vy: f.vy,
+            angle: f.angle,
+            fuel: f.fuel,
+            status: f.status,
+            thrusting: !!f.thrusting,
+            earthAngle: f.earthAngle,
+            inRing: !!f.inRing,
+            inRingFor: f.inRingFor,
+            trail: withPaths ? f.trail : [],
+          }
+        : null,
+    camera: spaceCamera(sp),
+    moonRing: { r: RING, tol: L.moonOrbitRadiusTol, ok: now === 'captured' || !!(lo && lo.inRing) },
+    loi: o
+      ? {
+          alt: o.r - MOON.radius,
+          ringAlt: RING - MOON.radius,
+          speed: o.speed,
+          vCirc: o.vCirc,
+          radial: o.radial,
+          altOk: o.altOk,
+          speedOk: o.speedOk,
+          flatOk: o.flatOk,
+          status: o.status,
+          inRing: lo.inRing,
+          inRingFor: lo.inRingFor,
+          hold: L.orbitHoldSec,
+          burnInSec: lo.cut || game.phase !== 'loi' ? null : secondsToLoi(game),
+          captured: now === 'captured',
+        }
+      : null,
+    nominal: nominalPathPoints(withPaths ? 6 : 24),
+    trail: withPaths ? game.spaceTrail : [],
+    prediction: sp && game.phase === 'loi' ? loiPrediction(game, withPaths) : [],
+    signalLost: false,
+    sites: null,
+    siteChoice: game.siteChoice,
+    surface: null,
+    lastLog: game.log[game.log.length - 1] || '',
+    coach: game.assist ? game.coach : null,
+    result: game.result,
+  };
+}
+
 // ---------- Langkah per frame ----------
 export function stepLevel3(game, ctrl, rawDt) {
   if (game.result) return game;
+  if (SPACE_PHASES.includes(game.phase)) return spaceStep(game, ctrl, rawDt);
 
   if (game.phase === 'landed') {
     if (ctrl) ctrl.throttle = 0;
@@ -626,6 +1134,29 @@ function adviceFor(game, success, failCode) {
   const sf = game.surface;
   const num = (v) => String(v).replace('.', ',');
   if (failCode === 'F-HEAVY') out.push('Wahana terlalu berat untuk roket sedang. Kurangi bahan bakar atau item di Rakit.');
+  const where = game.phase;
+  if (where === 'launch' && game.flight && game.flight.failCode) {
+    out.push('Peluncuran gagal. Tekan Gas + sampai 100% saat lepas landas, lalu tekan Gas + lagi saat aba-aba SEKARANG di puncak lintasan.');
+    return out;
+  }
+  if (where === 'loi' && failCode === 'F-ORBIT') {
+    const lo = game.loi;
+    const v = Math.round(moonCirc(RING));
+    const passed = moonConic(game.space).apo === Infinity;
+    out.push(
+      lo.burnedSec === 0
+        ? 'Mesin tidak dinyalakan dekat Bulan, jadi wahana melewati Bulan. Saat paling dekat dengan Bulan, arahkan lawan arah gerak (E) dan tekan Gas +.'
+        : passed
+          ? `Kurang mengerem: kecepatan masih di atas ${v} u/s, jadi wahana melewati Bulan. Mulai mengerem saat paling dekat dengan Bulan (aba-aba SEKARANG) dan biarkan mesin menyala sampai kecepatan sekitar ${v} u/s.`
+          : `Orbit terlalu lonjong, tidak masuk cincin. Mulai mengerem tepat saat paling dekat dengan Bulan, dengan gas 100%, sampai kecepatan sekitar ${v} u/s.`,
+    );
+    if (game.rocketFuel <= 0) out.push('Bahan bakar roket habis saat mengerem. Ikuti aba-aba bantuan pilot saat peluncuran supaya bahan bakar roket tersisa.');
+    return out;
+  }
+  if (where === 'loi' && failCode === 'F-CRASH') {
+    out.push(`Terlalu banyak mengerem: wahana jatuh ke Bulan. Matikan mesin (X) saat kecepatan sekitar ${Math.round(moonCirc(RING))} u/s, atau nyalakan bantuan pilot.`);
+    return out;
+  }
   if (failCode === 'F-CRASH') {
     if (!game.hasEngine) out.push('Tidak ada mesin pendarat. Pasang Mesin pendarat di Rakit.');
     else if (!td) out.push('Pendarat jatuh. Ikuti aba-aba pelatih untuk mulai mengerem, lalu jaga gas sekitar 50% saat turun.');
@@ -707,6 +1238,7 @@ function finish(game, success, failCode) {
     iceFound: !!(sf && sf.iceFound),
     advice: adviceFor(game, success, failCode),
   };
+  game.endedIn = game.phase;
   game.phase = 'done';
   return game;
 }
@@ -738,6 +1270,7 @@ function shadowPoint(game, px, py, maxDist) {
 
 // ---------- Untuk tampilan dan Spesialis ----------
 export function snapshotLevel3(game, withPaths = true) {
+  if (SPACE_PHASES.includes(game.phase) || SPACE_PHASES.includes(game.endedIn)) return spaceSnapshot(game, withPaths);
   const c = game.craft;
   const alt = altitude(game);
   // Permukaan dikirim sebagai titik-titik di sekitar pendarat (tampilan tidak menghitung permukaan sendiri).

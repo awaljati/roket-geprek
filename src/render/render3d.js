@@ -3,6 +3,9 @@
 // Bentuknya sama dengan render2d: createRenderer(canvas) -> { draw(view), dispose() }.
 //
 // Tekstur NASA dibaca dari public/assets/textures/ (bumi.jpg, bulan.jpg). Kalau belum ada, planet berwarna polos.
+//
+// draw(view) mengembalikan false kalau tampilan ini tidak didukung (Level 3 setelah masuk orbit Bulan:
+// tampilan samping pendaratan). view.js lalu menggambar frame itu dengan render2d.
 
 import { EARTH, ROCKET_TUNING } from '../engine/flight.js';
 import { CISLUNAR } from '../engine/cislunar.js';
@@ -153,6 +156,31 @@ export async function createRenderer(canvas) {
   ringLine.computeLineDistances();
   scene.add(ringLine);
 
+  // Cincin orbit polar Bulan (Level 3), dibuat saat pertama dibutuhkan karena ukurannya dari snapshot.
+  let moonRing = null;
+  function moonRingMesh(r, tol) {
+    const band = new THREE.Mesh(
+      new THREE.RingGeometry(r - tol, r + tol, 96),
+      new THREE.MeshBasicMaterial({ color: COLORS.ring, transparent: true, opacity: 0.2, side: THREE.DoubleSide, depthWrite: false }),
+    );
+    const line = new THREE.LineLoop(
+      new THREE.BufferGeometry().setFromPoints(
+        Array.from({ length: 120 }, (_, i) => {
+          const a = (i / 120) * Math.PI * 2;
+          return new THREE.Vector3(Math.sin(a) * r, Math.cos(a) * r, 0);
+        }),
+      ),
+      new THREE.LineDashedMaterial({ color: COLORS.ring, dashSize: 4, gapSize: 4 }),
+    );
+    line.computeLineDistances();
+    const g = new THREE.Group();
+    g.add(band, line);
+    g.position.set(CISLUNAR.moon.x, CISLUNAR.moon.y, 0);
+    g.userData = { band, key: `${r}/${tol}` };
+    scene.add(g);
+    return g;
+  }
+
   // Stasiun Bumi Level 1
   const station = new THREE.Mesh(new THREE.SphereGeometry(5, 12, 8), new THREE.MeshBasicMaterial({ color: COLORS.station }));
   scene.add(station);
@@ -271,10 +299,13 @@ export async function createRenderer(canvas) {
     }
   }
 
-  let nominalSet = false;
+  let nominalFor = null; // jalur target berbeda per level, jadi diisi ulang saat level berganti
   function draw(v) {
+    // Level 3 setelah masuk orbit Bulan (tampilan samping) belum ada versi 3D.
+    if (v.level === 3 && !v.space) return false;
     resize();
-    const cislunar = v.level === 2 && v.phase !== 'launch';
+    // Level 3: peluncuran = tampilan orbit Bumi (ada v.flight), sesudahnya tampilan Bumi-Bulan.
+    const cislunar = (v.level === 2 && v.phase !== 'launch') || (v.level === 3 && !v.flight);
     // Putaran Bumi mengikuti fisika (landasan dan stasiun Bumi ikut berputar).
     const ea = v.flight && v.flight.earthAngle !== undefined ? v.flight.earthAngle : v.earthAngle;
     if (ea !== undefined) localEarthAngle = ea;
@@ -284,20 +315,33 @@ export async function createRenderer(canvas) {
     station.position.set(Math.sin(stationAngle) * EARTH.radius, Math.cos(stationAngle) * EARTH.radius, 0);
 
     if (cislunar) {
-      frame('moon', -112, 535, 400, 820);
+      // Level 3 mengirim kamera sendiri (mendekat ke Bulan saat masuk orbit). Bingkai diatur ulang hanya
+      // saat kamera berubah, jadi pemain tetap bisa memutar pandangan saat kamera diam.
+      const cam = v.camera;
+      if (cam) frame(`moon3/${Math.round(cam.x)}/${Math.round(cam.y)}/${Math.round(cam.spanY)}`, cam.x, cam.y, (cam.spanX / 2) * 1.05, (cam.spanY / 2) * 1.03);
+      else frame('moon', -112, 535, 400, 820);
       ringBand.visible = ringLine.visible = station.visible = false;
       if (coverage) coverage.visible = false;
       moon.visible = true;
-      if (!nominalSet && v.nominal && v.nominal.length) {
+      if (v.moonRing) {
+        if (!moonRing || moonRing.userData.key !== `${v.moonRing.r}/${v.moonRing.tol}`) {
+          if (moonRing) scene.remove(moonRing);
+          moonRing = moonRingMesh(v.moonRing.r, v.moonRing.tol);
+        }
+        moonRing.visible = true;
+        moonRing.userData.band.material.color.set(v.moonRing.ok ? COLORS.ringOk : COLORS.ring);
+      } else if (moonRing) moonRing.visible = false;
+      if (nominalFor !== v.level && v.nominal && v.nominal.length) {
         nominal.set(v.nominal);
-        nominalSet = true;
+        nominalFor = v.level;
       }
-      nominal.line.visible = true;
+      nominal.line.visible = nominalFor === v.level;
       trail.set(v.trail);
       prediction.set(v.prediction);
       stationLink.set(null);
-      showCraft('capsule', v, v.craft.x, v.craft.y, v.craft.angle, v.craft.thrusting);
+      showCraft(v.level === 3 ? 'rocket' : 'capsule', v, v.craft.x, v.craft.y, v.craft.angle, v.craft.thrusting);
     } else {
+      if (moonRing) moonRing.visible = false;
       frame('earth', 0, 0, EARTH.orbitRadius * 1.3, EARTH.orbitRadius * 1.3);
       moon.visible = false;
       nominal.line.visible = false;
@@ -324,6 +368,7 @@ export async function createRenderer(canvas) {
 
     controls.update();
     renderer.render(scene, camera);
+    return true;
   }
 
   function dispose() {

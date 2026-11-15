@@ -137,7 +137,7 @@ export function mountSpecialistPanel3(container, send) {
       <div>Kekuatan sinyal <small class="muted" id="sp-aim"></small></div><div class="bar"><i id="sp-signal"></i></div>
       <div>Data ke Bumi</div><div class="bar"><i id="sp-data"></i></div>
     </div>
-    <div id="sp-fuelbox"><div>Bahan bakar</div><div class="bar"><i id="sp-fuel"></i></div></div>
+    <div id="sp-fuelbox"><div id="sp-fuelname">Bahan bakar</div><div class="bar"><i id="sp-fuel"></i></div></div>
     <small class="muted" id="sp-log"></small>
   `;
   const $ = (s) => container.querySelector(s);
@@ -174,6 +174,8 @@ export function mountSpecialistPanel3(container, send) {
 
   return function update(v) {
     if (!v) return;
+    if (v.space) return updateSpace(v);
+    $('#sp-fuelname').textContent = 'Bahan bakar pendarat';
     const max = v.maxLandingSpeed;
     const tooFast = v.phase === 'descent' && v.vDown > v.targetDescent + 0.5;
     $('#sp-status').textContent =
@@ -213,6 +215,47 @@ export function mountSpecialistPanel3(container, send) {
     $('#sp-log').textContent = v.lastLog;
     updateSurface(v.surface, v.phase === 'landed');
   };
+
+  // Fase awal: peluncuran, perjalanan ke Bulan, masuk orbit polar (Spesialis membaca indikator kecepatan).
+  function updateSpace(v) {
+    const o = v.loi;
+    const SPEED = { lambat: 'LAMBAT: terlalu banyak mengerem!', pas: 'PAS ✓', cepat: 'CEPAT: terus mengerem' };
+    $('#sp-status').textContent =
+      v.phase === 'launch'
+        ? 'Peluncuran dari Biak. Tunggu sampai roket masuk orbit parkir.'
+        : v.phase === 'tli'
+          ? v.tliArmed
+            ? `TLI dalam ${Math.ceil(v.secondsToTli || 0)} detik.`
+            : 'Aba-aba ke Navigator: tekan Gas + untuk berangkat ke Bulan (TLI).'
+          : v.phase === 'transfer'
+            ? `Menuju Bulan, tiba dalam ${Math.ceil(v.arriveInSec)} detik. Siapkan aba-aba mengerem.`
+            : o && o.captured
+              ? 'Masuk orbit polar Bulan! Bersiap memilih titik pendaratan.'
+              : o && o.burnInSec !== null && o.burnInSec !== undefined && o.burnInSec > 0.5
+                ? `Aba-aba ke Navigator: mengerem dalam ${Math.ceil(o.burnInSec)} detik.`
+                : o && o.status
+                  ? `Kecepatan ${SPEED[o.status]}`
+                  : v.phase === 'done'
+                    ? 'Misi selesai.'
+                    : 'Aba-aba: SEKARANG! Mengerem lawan arah gerak.';
+    for (const [id, btn] of [['ridge', '#sp-ridge'], ['crater', '#sp-crater']]) {
+      $(btn).disabled = true;
+      $(btn).className = '';
+      $(btn).textContent = `${id === 'ridge' ? 'Puncak bukit' : 'Dekat kawah gelap'} (${id === 'ridge' ? 1 : 2})`;
+    }
+    $('#sp-site').textContent = 'Titik dipilih setelah masuk orbit Bulan.';
+    const ok = (b) => (b ? '✓' : '⚠');
+    $('#sp-read').innerHTML = o
+      ? `<div>${ok(o.altOk)} Ketinggian: <b>${o.alt.toFixed(0)} u</b> <small class="muted">cincin ${o.ringAlt} u</small></div>
+        <div>${ok(o.speedOk)} Kecepatan: <b>${o.speed.toFixed(0)} u/s</b> ${o.status ? `<b>${o.status.toUpperCase()}</b>` : ''} <small class="muted">pas ${o.vCirc.toFixed(0)} u/s</small></div>
+        <div>${ok(o.flatOk)} Naik/turun: <b>${o.radial.toFixed(0)} u/s</b></div>
+        <small class="muted">Kurang mengerem: lewat Bulan (F-ORBIT). Kebanyakan: jatuh (F-CRASH).</small>`
+      : `<div>Bahan bakar pendarat: <b>${Math.round(v.fuel * 100)}%</b> <small class="muted">(dipakai saat turun ke permukaan)</small></div>`;
+    $('#sp-fuelname').textContent = 'Bahan bakar roket';
+    $('#sp-fuel').style.width = Math.max(0, v.rocketFuel * 100) + '%';
+    $('#sp-log').textContent = v.lastLog;
+    updateSurface(null, false);
+  }
 
   // Di permukaan: daya, spektrometer, antena, data.
   function updateSurface(sf, active) {

@@ -87,6 +87,22 @@ export const LEVELS = {
     maxLandingSpeed: 2, // u/s, kecepatan total saat menyentuh permukaan
     // Nilai game (bukan skala asli), perlu balancing:
     requiredItem: 'lander-engine', // tanpa mesin pendarat: F-CRASH
+    // Fase awal: peluncuran dari Biak ke orbit parkir (seperti Level 2), perjalanan otomatis ke Bulan,
+    // lalu masuk orbit polar Bulan (LOI). Bahan bakar roket terpisah dari bahan bakar pendarat (slider Rakit):
+    // roket dipakai untuk peluncuran dan LOI, pendarat untuk turun ke permukaan.
+    tliSpeed: 105, // u/s saat berangkat dari orbit parkir; sudut berangkat dihitung supaya lewat tepat di cincin Bulan
+    moonSoiRadius: 250, // u dari pusat Bulan: di dalam jarak ini hanya gravitasi Bulan yang dihitung
+    moonOrbitRadius: 58, // cincin orbit polar Bulan (u dari pusat Bulan; permukaan di 34)
+    moonOrbitRadiusTol: 8, // u
+    moonOrbitSpeedTol: 0.1, // 10% dari kecepatan orbit lingkaran
+    moonOrbitRadialTol: 6, // u/s kecepatan naik/turun yang masih dianggap datar
+    loiAccel: 25, // u/s^2 saat gas penuh (massa acuan); lebih berat = lebih lemah
+    loiFuelBurnPerSec: 0.2, // fraksi bahan bakar roket per detik game saat gas penuh
+    loiTimeScale: 0.5, // dekat Bulan waktu diperlambat supaya sempat bereaksi
+    loiMaxSec: 40, // detik game sejak masuk wilayah Bulan; belum masuk cincin = F-ORBIT
+    loiCountdownSec: 3, // hitung mundur sebelum aba-aba mengerem (detik layar)
+    loiReactSec: 0.5, // aba-aba diberikan sekian detik layar lebih awal (waktu reaksi dan menaikkan gas)
+    captureShowSec: 2, // jeda setelah masuk orbit sebelum pindah ke tampilan pilih titik (detik layar)
     moonGravityShare: 1 / 6, // gravitasi Bulan = 1/6 gravitasi Bumi game
     timeScale: 0.5, // pendaratan diperlambat (1 = normal)
     startAltitude: 300, // u di atas permukaan rata-rata

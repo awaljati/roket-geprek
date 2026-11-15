@@ -19,11 +19,57 @@ const COLORS = {
 
 // Level 3: tekstur permukaan Bulan dipakai sebagai pola tanah; satu ubin tekstur selebar ini (u).
 const MOON_TEXTURE = '/assets/textures/bulan.jpg';
+const EARTH_TEXTURE = '/assets/textures/bumi.jpg';
 const TEXTURE_WORLD_U = 420;
 
 export function createRenderer(canvas) {
   const ctx = canvas.getContext('2d');
   const stars = Array.from({ length: 140 }, () => [Math.random(), Math.random(), Math.random() * 1.4]);
+
+  // Tekstur planet (sama dengan tampilan 3D). Selama belum termuat (atau gagal), planet berwarna polos.
+  const images = {};
+  function image(url) {
+    if (!images[url]) {
+      const img = new Image();
+      img.src = url;
+      images[url] = img;
+    }
+    const img = images[url];
+    return img.complete && img.naturalWidth > 0 ? img : null;
+  }
+
+  // Planet bulat di (x, y) dengan jari-jari r, di koordinat y ke atas. Peta tekstur (equirectangular) dipotong
+  // lingkaran: diambil bagian tengahnya selebar setengah peta, lalu diputar `angle` (searah jarum jam) bersama planet.
+  function planetDisc(x, y, r, url, fill, edge, edgeWidth, angle = 0) {
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    const img = image(url);
+    if (img) {
+      ctx.save();
+      ctx.clip();
+      ctx.translate(x, y);
+      ctx.scale(1, -1); // kembali ke y ke bawah supaya gambar tidak terbalik
+      ctx.rotate(angle);
+      const sw = img.naturalWidth / 2;
+      const sh = img.naturalHeight;
+      ctx.drawImage(img, (img.naturalWidth - sw) / 2, 0, sw, sh, -r, -r, 2 * r, 2 * r);
+      // sedikit gelap di tepi supaya terlihat bulat
+      const shade = ctx.createRadialGradient(0, 0, r * 0.55, 0, 0, r);
+      shade.addColorStop(0, 'rgba(0,0,0,0)');
+      shade.addColorStop(1, 'rgba(0,0,0,0.45)');
+      ctx.fillStyle = shade;
+      ctx.fillRect(-r, -r, 2 * r, 2 * r);
+      ctx.restore();
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+    } else {
+      ctx.fillStyle = fill;
+      ctx.fill();
+    }
+    ctx.lineWidth = edgeWidth;
+    ctx.strokeStyle = edge;
+    ctx.stroke();
+  }
 
   function background() {
     const w = (canvas.width = canvas.clientWidth * devicePixelRatio);
@@ -38,8 +84,9 @@ export function createRenderer(canvas) {
   }
 
   function draw(view) {
-    if (view.level === 3) return drawLander(view);
-    if (view.level === 2 && view.phase !== 'launch') return drawCislunar(view);
+    // Level 3 memakai tampilan Bumi/Bumi-Bulan untuk fase awal (view.space), tampilan samping setelahnya.
+    if (view.level === 3 && !view.space) return drawLander(view);
+    if ((view.level === 2 || view.level === 3) && view.phase !== 'launch' && !(view.level === 3 && view.flight)) return drawCislunar(view);
     const [w, h] = background();
 
     const scale = Math.min(w, h) / (EARTH.orbitRadius * 2.6);
@@ -47,14 +94,8 @@ export function createRenderer(canvas) {
     ctx.translate(w / 2, h / 2);
     ctx.scale(scale, -scale); // y ke atas
 
-    // Bumi
-    ctx.beginPath();
-    ctx.arc(0, 0, EARTH.radius, 0, Math.PI * 2);
-    ctx.fillStyle = COLORS.earth;
-    ctx.fill();
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = COLORS.earthEdge;
-    ctx.stroke();
+    // Bumi (ikut berputar bersama landasan)
+    planetDisc(0, 0, EARTH.radius, EARTH_TEXTURE, COLORS.earth, COLORS.earthEdge, 3, view.flight.earthAngle || 0);
 
     // Stasiun Bumi (Level 1): ikut berputar bersama Bumi, dengan wilayah jangkauan antenanya
     if (view.level === 1 && view.station && ['countdown', 'deploy', 'transmit'].includes(view.phase)) {
@@ -165,14 +206,8 @@ export function createRenderer(canvas) {
     ctx.setLineDash([]);
   }
 
-  function body(b, fill, edge) {
-    ctx.beginPath();
-    ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
-    ctx.fillStyle = fill;
-    ctx.fill();
-    ctx.lineWidth = 2 / scaleNow;
-    ctx.strokeStyle = edge;
-    ctx.stroke();
+  function body(b, url, fill, edge, angle = 0) {
+    planetDisc(b.x, b.y, b.radius, url, fill, edge, 2 / scaleNow, angle);
   }
 
   let scaleNow = 1;
@@ -183,12 +218,11 @@ export function createRenderer(canvas) {
     const Mo = CISLUNAR.moon;
     const minY = -260; // bawah Bumi
     const maxY = 1330; // puncak lintasan di atas Bulan
-    const spanY = maxY - minY;
-    const spanX = 760;
-    const centerX = -112; // lintasan condong ke kiri
-    scaleNow = Math.min(h / spanY, w / spanX) * 0.95;
+    // Level 3 mengirim kamera sendiri (mendekat ke Bulan saat masuk orbit); Level 2 memakai bingkai tetap.
+    const cam = view.camera || { x: -112, y: (minY + maxY) / 2, spanX: 760, spanY: maxY - minY };
+    scaleNow = Math.min(h / cam.spanY, w / cam.spanX) * 0.95;
     ctx.save();
-    ctx.translate(w / 2 - centerX * scaleNow, h / 2 + ((minY + maxY) / 2) * scaleNow);
+    ctx.translate(w / 2 - cam.x * scaleNow, h / 2 + cam.y * scaleNow);
     ctx.scale(scaleNow, -scaleNow);
 
     // atmosfer, Bumi, Bulan
@@ -196,8 +230,23 @@ export function createRenderer(canvas) {
     ctx.arc(0, 0, CISLUNAR.atmosphere, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(127,182,255,0.18)';
     ctx.fill();
-    body(E, COLORS.earth, COLORS.earthEdge);
-    body(Mo, '#9a9a9a', '#d8d8d8');
+    body(E, EARTH_TEXTURE, COLORS.earth, COLORS.earthEdge, view.earthAngle || 0);
+    body(Mo, MOON_TEXTURE, '#9a9a9a', '#d8d8d8');
+
+    // Level 3: cincin orbit polar Bulan (seperti cincin orbit Bumi di Level 1)
+    if (view.moonRing) {
+      ctx.beginPath();
+      ctx.arc(Mo.x, Mo.y, view.moonRing.r, 0, Math.PI * 2);
+      ctx.strokeStyle = view.moonRing.ok ? COLORS.ringOk : COLORS.ring;
+      ctx.lineWidth = view.moonRing.tol * 2;
+      ctx.globalAlpha = 0.18;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.lineWidth = 1.5 / scaleNow;
+      ctx.setLineDash([8 / scaleNow, 8 / scaleNow]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
 
     // jalur target (hijau), jejak (oranye), prediksi (putus-putus)
     polyline(view.nominal, 'rgba(63,209,122,0.55)', 6 / scaleNow);
