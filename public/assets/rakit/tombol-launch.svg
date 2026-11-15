@@ -1,0 +1,28 @@
+<svg width="699" height="699" viewBox="0 0 699 699" fill="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<path d="M699 349.5C699 542.523 542.523 699 349.5 699C156.476 699 0 542.523 0 349.5C0 156.476 156.476 0 349.5 0C542.523 0 699 156.476 699 349.5Z" fill="#CCC34E"/>
+<mask id="stroke0_27_470" fill="white">
+<path d="M699 349.5C699 542.523 542.523 699 349.5 699C156.476 699 0 542.523 0 349.5C0 156.476 156.476 0 349.5 0C542.523 0 699 156.476 699 349.5Z"/>
+</mask>
+<path d="M699 349.5C699 542.524 542.524 699 349.5 699C156.476 699 0 542.524 0 349.5C0 156.476 156.476 0 349.5 0C542.524 0 699 156.476 699 349.5Z" stroke-width="20" stroke="black" mask="url(#stroke0_27_470)"/>
+<use xlink:href="#stroke1_27_470" fill="#F1532A"/>
+<mask id="stroke2_27_470" fill="white">
+<use xlink:href="#stroke1_27_470"/>
+</mask>
+<path d="M616 349.5C616 496.684 496.684 616 349.5 616C202.316 616 83 496.684 83 349.5C83 202.316 202.316 83 349.5 83C496.684 83 616 202.316 616 349.5Z" stroke-width="20" stroke="black" mask="url(#stroke2_27_470)"/>
+<text x="349.5" y="386" text-anchor="middle" font-family="Impact, 'Arial Black', 'Arial Narrow Bold', sans-serif" font-weight="900" font-size="112" letter-spacing="6" fill="white">LAUNCH</text>
+<path d="M176 250.186C192.435 218.853 238.5 156 329 147.5" stroke-width="30" stroke-linecap="round" stroke="white" stroke-opacity="0.3"/>
+<path d="M386.611 152.507C411.471 149.76 456.986 162.854 479.889 189.849" stroke-width="30" stroke-linecap="round" stroke="white" stroke-opacity="0.3"/>
+<defs>
+<filter id="filter0_i_27_470" x="139.783" y="301.92" width="418.359" height="99.5078" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+<feOffset dy="4"/>
+<feGaussianBlur stdDeviation="2"/>
+<feComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1"/>
+<feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0"/>
+<feBlend mode="normal" in2="shape" result="effect1_innerShadow_27_470"/>
+</filter>
+<path id="stroke1_27_470" d="M616 349.5C616 496.684 496.684 616 349.5 616C202.316 616 83 496.684 83 349.5C83 202.316 202.316 83 349.5 83C496.684 83 616 202.316 616 349.5Z"/>
+</defs>
+</svg>
