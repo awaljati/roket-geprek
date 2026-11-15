@@ -3,14 +3,28 @@ import { makeRoomCode, openRoom, hasFirebase } from '../net/room.js';
 export function lobbyScreen(app, el) {
   el.className = 'screen lobby-screen';
   el.innerHTML = `
-    <div>
-       <a class="btnlink"
+    <div class="header">
+    <div class="header-left">
+      <button class="btn-setting" id="settings" aria-label="Pengaturan">
+        <img src="/assets/l-icon-setting.svg" alt="" />
+      </button>
+      <div class="coin" aria-label="Koin">
+        <img src="/assets/coin-icon.svg" alt="" class="coin-icon" />
+        <span class="coin-text" id="coin-count">0</span>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <span class="header-name">Roket Geprek</span>
+      <a class="btnlink"
          href="http://itb.ac.id/"
          target="_blank"
-         rel="noopener noreferrer">
+         rel="noopener noreferrer"
+         aria-label="Kunjungi ITB">
         <img src="/assets/kepala-ayam-icon.svg" alt="Kunjungi Kami" />
       </a>
     </div>
+  </div>
 
     <img src="/assets/netral.svg" alt="Roket Geprek" class="floating-icon" />
     <div class="card row">
