@@ -2,6 +2,69 @@ import { FAIL_CODES } from '../data/failcodes.js';
 import { LEVELS } from '../data/levels.js';
 import { LEVEL_MODULES, LAST_LEVEL } from '../levels/index.js';
 import { saveStars, addFunds, getFunds } from './progress.js';
+import '@fontsource/londrina-solid/900.css';
+import '../styles/debrief.css';
+
+// Tampilan Debrief mengikuti desain DKV (public/layout screenshoot/): kiri = bintang, Pok-Pok, status menang/kalah;
+// kanan = skor, bahan bakar, rincian tiap level, fakta.
+const A = '/assets/debrief/';
+const num = (x) => String(x).replace('.', ',');
+
+// Baris rincian: label kiri, nilai kanan, keterangan kecil di bawah nilai.
+const row = (label, value, note = '', cls = '') =>
+  `<div class="db-row ${cls}"><span class="db-k">${label}</span><span class="db-v">${value}${note ? `<small>${note}</small>` : ''}</span></div>`;
+const section = (title, rows) => (rows ? `<div class="db-sec"><h3>${title}</h3>${rows}</div>` : '');
+
+// Rincian khusus tiap level (angka yang sama dengan Debrief lama).
+function levelDetails(level, r, L) {
+  if (level === 1 && r.orbitErrorPct != null) {
+    const ok = r.orbitErrorPct <= L.orbitAccuracyFor3StarsPct;
+    return section('Orbit', row('Ketepatan masuk orbit', `meleset ${num(r.orbitErrorPct)}%${ok ? ' ✓' : ''}`, ok ? '' : `bintang 3 butuh maks. ${L.orbitAccuracyFor3StarsPct}%`, 'sub'));
+  }
+  if (level === 2) {
+    return section('Dokumentasi', row('Foto berguna', `${r.photos} / ${L.photoTarget}`, '', 'sub'));
+  }
+  if (level === 3 && r.landingSpeed != null) {
+    const site = r.landingSite ? L.sites[r.landingSite] : null;
+    const maxTilt = site ? site.maxTiltDeg : L.maxLandingTiltDeg;
+    let siteNote = site ? `es ${site.ice} · bintang maks. ${site.maxStars}` : `bintang maks. ${L.outsideMaxStars}`;
+    if (r.landingSite === 'crater' && r.success && r.stars < 3)
+      siteNote += ` · bintang 3 butuh mendarat ≤ ${num(L.smoothLandingSpeed)} u/s dan sisa bahan bakar ≥ ${Math.round(L.minFuelFor3Stars * 100)}%`;
+    let html = section(
+      'Pendaratan',
+      row('Kecepatan sentuh', `${num(r.landingSpeed)} u/s`, `maks. ${L.maxLandingSpeed} u/s`, 'sub') +
+        row('Kemiringan', `${r.landingTiltDeg}°`, `maks. ${maxTilt}°`, 'sub') +
+        row('Titik pendaratan', site ? site.name : 'di luar kedua titik', siteNote, 'sub'),
+    );
+    if (r.success)
+      html += section(
+        'Di permukaan',
+        row('Data ke Bumi', `${Math.round((r.dataSent / r.dataTarget) * 100)}% terkirim`, '', 'sub') + row('Es air', r.iceFound ? 'terdeteksi ✓' : 'tidak terdeteksi', '', 'sub'),
+      );
+    return html;
+  }
+  if (level === 4) {
+    let html = '';
+    if (r.program) {
+      const p = r.program;
+      html += section(
+        'Program',
+        row('Sudut masuk', `${num(p.entryDeg)}°`, `aman: ${L.entry.safeDeg.map(num).join('° — ')}°`, 'sub') +
+          row('Parasut', `${num(p.chuteKm)} km`, `aman: ${L.chute.safeKm.map(num).join(' km — ')} km`, 'sub') +
+          row('Roket pendarat', `${num(p.retroKm)} km`, `aman: ${L.retro.safeKm.map(num).join(' km — ')} km`, 'sub'),
+      );
+    }
+    if (r.success)
+      html += `<div class="db-sec">${row(
+        'Dokumentasi',
+        `${Math.round(r.photoShare * 100)}% terkirim`,
+        `Kamera ${r.cameraDamaged ? 'rusak terkena badai' : 'baik'}${r.frugal ? '' : ' · memakai dana cadangan'}`,
+        'main',
+      )}</div>`;
+    return html;
+  }
+  return '';
+}
 
 export function debriefScreen(app, el) {
   const r = app.result || { success: false, failCode: null, stars: 0, score: 0, fuelLeft: 0, photos: 0 };
@@ -19,65 +82,54 @@ export function debriefScreen(app, el) {
   const showHint = !r.success && L.hint && app.fails[app.level] >= (app.level === 1 ? 1 : 2);
   // Semua level bebas dipilih; Lanjut hanya jalan pintas ke level berikutnya.
   const hasNext = app.level < LAST_LEVEL;
-  el.className = 'screen center';
+  // Gagal di mode ahli: sarankan bantuan pilot paling atas.
+  const tips = [
+    ...(!r.success && app.build && app.build.assist === false
+      ? ['Coba nyalakan Bantuan pilot di layar Rakit: pelatih memberi aba-aba kapan menekan Gas +, dan kemudi selanjutnya diatur otomatis.']
+      : []),
+    ...(r.advice || []),
+  ];
+  const stars = [0, 1, 2]
+    .map((i) => `<img class="db-star s${i}" src="${A}${i < r.stars ? 'bintang-warna' : 'bintang-fade'}.webp" alt="">`)
+    .join('');
+
+  el.className = `debrief-screen ${r.success ? 'win' : 'lose'}`;
   el.innerHTML = `
-    <h2>Debrief: ${L.name}</h2>
-    ${r.success ? '<img class="pokpok-win" src="/assets/senang.svg" alt="Pok-Pok senang" onerror="this.remove()">' : ''}
-    <div class="stars">${'★'.repeat(r.stars)}${'☆'.repeat(3 - r.stars)}</div>
-    <p><b>${r.success ? 'Misi berhasil' : 'Misi gagal'}</b>${r.failCode ? ` · ${r.failCode}` : ''}</p>
-    ${r.failCode ? `<p>${FAIL_CODES[r.failCode]}</p>` : ''}
-    <p class="muted">Skor ${r.score} · Sisa bahan bakar ${Math.round(r.fuelLeft * 100)}%${app.level === 2 ? ` · Foto berguna ${r.photos}` : ''}</p>
-    ${
-      app.level === 1 && r.orbitErrorPct != null
-        ? `<p class="muted">Ketepatan masuk orbit: meleset ${String(r.orbitErrorPct).replace('.', ',')}%${
-            r.orbitErrorPct <= L.orbitAccuracyFor3StarsPct ? ' ✓' : ` (bintang 3 butuh maksimal ${L.orbitAccuracyFor3StarsPct}%)`
-          }</p>`
-        : ''
-    }
-    ${
-      app.level === 3 && r.landingSpeed != null
-        ? `<p class="muted">Saat menyentuh permukaan: ${String(r.landingSpeed).replace('.', ',')} u/s (maks. ${L.maxLandingSpeed}) · miring ${r.landingTiltDeg}° (maks. ${
-            r.landingSite ? L.sites[r.landingSite].maxTiltDeg : L.maxLandingTiltDeg
-          }°)</p>
-          <p class="muted">Titik pendaratan: ${
-            r.landingSite
-              ? `<b>${L.sites[r.landingSite].name}</b> (es ${L.sites[r.landingSite].ice}) · bintang maks. ${L.sites[r.landingSite].maxStars}${
-                  r.landingSite === 'crater' && r.success && r.stars < 3
-                    ? ` (bintang 3 butuh mendarat ≤ ${L.smoothLandingSpeed} u/s dan sisa bahan bakar ≥ ${Math.round(L.minFuelFor3Stars * 100)}%)`
-                    : ''
-                }`
-              : `di luar kedua titik · bintang maks. ${L.outsideMaxStars}`
-          }</p>
-          ${r.success ? `<p class="muted">Data ke Bumi: ${Math.round((r.dataSent / r.dataTarget) * 100)}% · Es air: ${r.iceFound ? 'terdeteksi ✓' : 'tidak terdeteksi'}</p>` : ''}`
-        : ''
-    }
-    ${
-      app.level === 4
-        ? `${
-            r.program
-              ? `<p class="muted">Program: sudut masuk ${String(r.program.entryDeg).replace('.', ',')}° (aman ${L.entry.safeDeg.join('° … ')}°) · parasut ${String(r.program.chuteKm).replace('.', ',')} km (aman ${L.chute.safeKm.join('–')} km) · roket pendarat ${String(r.program.retroKm).replace('.', ',')} km (aman ${L.retro.safeKm.join('–').replace('.', ',')} km)</p>`
-              : ''
-          }${r.success ? `<p class="muted">Foto pertama: ${Math.round(r.photoShare * 100)}% terkirim · kamera ${r.cameraDamaged ? 'rusak terkena badai' : 'baik ✓'}${r.frugal ? '' : ' · memakai dana cadangan'}</p>` : ''}`
-        : ''
-    }
-    ${(() => {
-      // Gagal di mode ahli: sarankan bantuan pilot paling atas.
-      const tips = [...(!r.success && app.build && app.build.assist === false ? ['Coba nyalakan Bantuan pilot di layar Rakit: pelatih memberi aba-aba kapan menekan Gas +, dan kemudi selanjutnya diatur otomatis.'] : []), ...(r.advice || [])];
-      return tips.length ? `<div class="card"><b>${r.success ? 'Supaya lebih baik' : 'Cara memperbaiki'}</b><ul>${tips.map((a) => `<li>${a}</li>`).join('')}</ul></div>` : '';
-    })()}
-    ${M.fact ? `<p class="card">Fakta: ${M.fact}</p>` : ''}
-    <p class="card">${
-      r.reward ? `Dana misi diterima: <b>+${r.reward} juta $</b>` : 'Misi gagal: tidak ada dana misi.'
-    } · Dana cadangan sekarang <b>${getFunds()} juta $</b><br><small class="muted">Bisa ditambahkan ke anggaran misi berikutnya di layar Rakit.</small></p>
-    ${showHint ? `<p class="card">Hint: ${L.hint}</p>` : ''}
-    <p class="card">Misi nyata yang mirip: ${M.realMission}</p>
-    <div class="row">
-      <button id="again">Main lagi</button>
-      <button id="retry">Ubah rakitan</button>
-      <button class="primary" id="next" ${hasNext ? '' : 'disabled'}>${app.level >= LAST_LEVEL && r.success ? 'Level berikutnya belum dibuat' : 'Lanjut'}</button>
+    <div class="db-wrap">
+      <aside class="db-left">
+        <div class="db-stars" role="img" aria-label="${r.stars} dari 3 bintang">${stars}</div>
+        <img class="db-pokpok" src="${A}${r.success ? 'senang' : 'cemas'}.webp" alt="Pok-Pok ${r.success ? 'senang' : 'cemas'}">
+        <p class="db-status">${r.success ? 'Misi berhasil' : 'Misi gagal'}</p>
+      </aside>
+      <section class="db-right">
+        <h2 class="db-title">${L.name.replace(/^Level (\d+):/, 'Level $1 :')}</h2>
+        ${
+          r.failCode
+            ? `<div class="db-fail"><b>${r.failCode}</b> ${FAIL_CODES[r.failCode]}</div>`
+            : ''
+        }
+        <div class="db-sec">
+          ${row('Skor', r.score, '', 'score')}
+          ${row('Sisa Bahan Bakar', `${Math.round(r.fuelLeft * 100)}%`, '', 'main')}
+        </div>
+        ${levelDetails(app.level, r, L)}
+        ${tips.length ? `<div class="db-sec db-text"><h3>${r.success ? 'Supaya lebih baik' : 'Cara memperbaiki'}</h3><ul>${tips.map((a) => `<li>${a}</li>`).join('')}</ul></div>` : ''}
+        ${showHint ? `<div class="db-sec db-text"><h3>Hint</h3><p>${L.hint}</p></div>` : ''}
+        ${M.fact ? `<div class="db-sec db-text"><h3>Fakta</h3><p>${M.fact}</p></div>` : ''}
+        <div class="db-sec db-text"><h3>Misi nyata yang mirip</h3><p>${M.realMission}</p></div>
+        <div class="db-funds">${
+          r.reward ? `Dana misi diterima: <b>+${r.reward} juta $</b>` : 'Misi gagal: tidak ada dana misi.'
+        } · Dana cadangan sekarang <b>${getFunds()} juta $</b><small>Bisa ditambahkan ke anggaran misi berikutnya di layar Rakit.</small></div>
+        <div class="db-actions">
+          <button id="again">Main lagi</button>
+          <button id="retry">Ubah rakitan</button>
+          <button class="primary" id="next" ${hasNext ? '' : 'disabled'}>${app.level >= LAST_LEVEL && r.success ? 'Level berikutnya belum dibuat' : 'Lanjut'}</button>
+        </div>
+        <div class="db-actions small"><button id="levels">Pilih misi lain</button><button id="home">Menu utama</button></div>
+      </section>
     </div>
-    <div class="row"><button id="levels">Pilih misi lain</button><button id="home">Menu utama</button></div>
   `;
+  window.scrollTo(0, 0);
   el.querySelector('#again').onclick = () => app.go('flight');
   el.querySelector('#retry').onclick = () => app.go('rakit');
   el.querySelector('#home').onclick = () => app.go('home');
