@@ -1,0 +1,126 @@
+/* Layar Pilih Misi: peta level di atas latar DKV. Semua class berawalan .misi- supaya tidak memengaruhi layar lain. */
+.misi-screen {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100svh;
+  overflow: hidden;
+  background: #2a0b3d url('/assets/misi/latar.webp') center / cover no-repeat;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85), 0 0 8px rgba(0, 0, 0, 0.5);
+}
+
+.misi-head {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 20px 24px 0;
+  max-width: 560px;
+}
+.misi-head p { margin: 0; color: #f3e9ff; }
+.misi-head small { color: #e2d2f5; }
+.misi-title { margin: 0; font-size: 1.8rem; }
+.misi-back { margin-top: 6px; text-shadow: none; }
+
+.misi-planet {
+  /* buang gaya tombol bawaan, hanya untuk tombol planet */
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.misi-planet img {
+  display: block;
+  width: 100%;
+  height: auto;
+  transition: transform 0.15s ease;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.45));
+  user-select: none;
+}
+.misi-planet:hover img,
+.misi-planet:focus-visible img,
+.misi-planet:active img { transform: scale(1.08); }
+.misi-planet:focus-visible { outline: 2px solid #ffd27a; outline-offset: 4px; border-radius: 12px; }
+.misi-planet.misi-locked { cursor: not-allowed; opacity: 0.45; }
+
+.misi-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  text-align: center;
+  line-height: 1.2;
+}
+.misi-name { font-size: 1rem; }
+.misi-stars { color: #ffd23f; letter-spacing: 2px; font-size: 1.05rem; }
+.misi-tag {
+  font-size: 0.75rem;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: rgba(20, 6, 34, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  text-shadow: none;
+}
+
+/* Laptop: planet di tengah lingkaran jalur. Panggung mengikuti ukuran latar (cover, 16:9). */
+@media (min-width: 720px) {
+  .misi-screen {
+    height: 100vh;
+    height: 100svh;
+    container-type: size;
+  }
+  .misi-stage {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: max(100cqw, 100cqh * 16 / 9);
+    height: max(100cqh, 100cqw * 9 / 16);
+    transform: translate(-50%, -50%);
+  }
+  .misi-planet {
+    position: absolute;
+    left: var(--x);
+    top: var(--y);
+    width: 140px;
+    /* titik tengah bola planet (bukan koin nomornya) tepat di tengah lingkaran */
+    transform: translate(-50%, var(--cy, -50%));
+  }
+  .misi-info {
+    position: absolute;
+    left: 50%;
+    top: calc(100% + 4px);
+    width: 190px;
+    transform: translateX(-50%);
+  }
+}
+
+/* HP: planet menurun zig-zag, halaman bisa digulir ke bawah. */
+@media (max-width: 719.98px) {
+  .misi-head { padding: 16px 16px 0; }
+  .misi-title { font-size: 1.5rem; }
+  .misi-stage {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    padding: 20px 16px 32px;
+  }
+  .misi-planet {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    width: 160px;
+    max-width: 50%;
+  }
+  .misi-planet img { width: 110px; }
+  .misi-planet:nth-child(odd) { align-self: flex-start; margin-left: 6%; }
+  .misi-planet:nth-child(even) { align-self: flex-end; margin-right: 6%; }
+}
