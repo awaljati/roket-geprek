@@ -3,7 +3,17 @@ import { makeRoomCode, openRoom, hasFirebase } from '../net/room.js';
 export function lobbyScreen(app, el) {
   el.className = 'screen lobby-screen';
   el.innerHTML = `
-    <p class="muted">Mode koneksi: ${hasFirebase ? 'online (Firebase)' : 'lokal: buka 2 tab di browser yang sama untuk tes'}</p>
+    <div class="header">
+      el.innerHTML = `
+       <a class="btnlink"
+         href="http://itb.ac.id/"
+         target="_blank"
+         rel="noopener noreferrer">
+        <img src="/assets/netral.svg" alt="Kunjungi Kami" />
+      </a>
+    </div>
+
+    <img src="/assets/judul.svg" alt="Roket Geprek" class="floating-icon" />
     <div class="card row">
       <div style="flex:1"><b>Solo</b><br><span class="muted">Satu perangkat memegang Navigator dan Spesialis.</span></div>
       <button class="primary" id="solo">Main solo</button>
@@ -19,6 +29,7 @@ export function lobbyScreen(app, el) {
     </div>
     <div id="msg" class="status"></div>
     <button id="back">Kembali</button>
+    <p class="muted">Mode koneksi: ${hasFirebase ? 'online (Firebase)' : 'lokal: buka 2 tab di browser yang sama untuk tes'}</p>
   `;
   const $ = (s) => el.querySelector(s);
 
