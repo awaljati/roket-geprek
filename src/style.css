@@ -286,7 +286,7 @@ button.big { padding: 14px 16px; font-size: 1.1rem; font-weight: 700; }
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);  /* 50 : 50 */
   gap: clamp(16px, 3vw, 40px);
-  padding: clamp(16px, 3vw, 40px);
+  padding: clamp(8px, 1.5vw, 20px) clamp(16px, 3vw, 40px) clamp(16px, 3vw, 40px);
   align-items: center;                   /* kolom kiri & kanan vertikal center */
 }
 
