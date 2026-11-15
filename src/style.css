@@ -52,6 +52,17 @@ input[type='text'] { font: inherit; padding: 10px; border-radius: 10px; border: 
   background-position: center;
   background-repeat: no-repeat;
   gap: 20px;
+  z-index: -1;          /* ← ubah dari 0 menjadi -1 */
+}
+
+.home-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: -1;          /* ← ubah dari 0 menjadi -1 */
+  pointer-events: none;
 }
 
 .home-screen .floating-icon,
