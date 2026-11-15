@@ -17,8 +17,8 @@ export function flightScreen(app, el) {
   el.innerHTML = `
     <div class="view">
       <div class="stage" id="stage"><canvas id="cv"></canvas></div>
+      <div class="coach" id="coach"><img class="pokpok" id="pokpok" alt="" hidden><div class="bubble" id="coachMsg"></div></div>
       <div class="timeline" id="timeline"></div>
-      <div class="coach" id="coach"></div>
       <div class="hud"><div id="hud"></div>
         <details><summary class="muted">Kontrol</summary><div class="keys">${helpHtml()}</div></details>
       </div>
@@ -161,15 +161,26 @@ export function flightScreen(app, el) {
     drawHud2(v, speed);
   }
 
+  // Pelatih: maskot Pok-Pok dan balon kata. Kalau gambarnya belum ada, hanya balon yang tampil.
+  const pok = $('#pokpok');
+  pok.onload = () => (pok.hidden = false);
+  pok.onerror = () => (pok.hidden = true);
+  let coachKey = '';
   function drawCoach(v) {
     const box = $('#coach');
-    if (!v.coach || !v.coach.msg) {
+    const c = v.coach && v.coach.msg ? v.coach : null;
+    const key = c ? (c.urgent ? '!' : '') + c.msg : '';
+    if (key === coachKey) return;
+    coachKey = key;
+    if (!c) {
       box.style.display = 'none';
       return;
     }
-    box.style.display = 'block';
-    box.className = 'coach' + (v.coach.urgent ? ' urgent' : '');
-    box.textContent = v.coach.msg;
+    box.style.display = 'flex';
+    box.className = 'coach' + (c.urgent ? ' urgent' : '');
+    $('#coachMsg').textContent = c.msg;
+    const src = `/assets/pokpok-${c.urgent ? 'panik' : 'normal'}.png`;
+    if (pok.getAttribute('src') !== src) pok.src = src;
   }
 
   function drawHud1(v, speed) {
