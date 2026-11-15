@@ -299,6 +299,7 @@ button.big { padding: 14px 16px; font-size: 1.1rem; font-weight: 700; }
 .contentlobby-left .floating-icon {
   max-width: 100%;
   height: auto;
+  left:10px
 }
 
 .contentlobby-right {
