@@ -261,7 +261,7 @@ button.big { padding: 14px 16px; font-size: 1.1rem; font-weight: 700; }
   top: 0;
   left: 0;
   right: 0;
-  z-index: 12;
+  z-index: 10;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -281,6 +281,7 @@ button.big { padding: 14px 16px; font-size: 1.1rem; font-weight: 700; }
   position: absolute;
   inset: 0;                              /* top+right+bottom+left = 0 */
   z-index: 10;
+  top: var(--header-h); 
 
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);  /* 50 : 50 */
