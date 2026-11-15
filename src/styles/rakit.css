@@ -1,0 +1,158 @@
+/* Layar Rakit (desain DKV: public/assets/layout-rakit-wahana).
+   Panel biru tua berpaku, aksen kuning, judul kuning bergaris magenta. */
+.rakit-screen {
+  --rk-bg: #0a376a;
+  --rk-panel: #07254e;
+  --rk-edge: #020d19;
+  --rk-yel: #ccc34e;
+  --rk-yel-dim: rgba(204, 195, 78, 0.55);
+  --rk-ink: #07254e;
+  --rk-pink: #a92281;
+  --rk-red: #f1532a;
+  --rk-font: 'Londrina Solid', system-ui, sans-serif;
+  max-width: none;
+  min-height: 100vh;
+  min-height: 100svh;
+  margin: 0;
+  padding: 12px clamp(12px, 3vw, 32px) 32px;
+  background: var(--rk-bg);
+  align-items: center;
+  gap: 12px;
+}
+.rakit-screen > * { width: 100%; max-width: 820px; }
+
+/* Judul dan briefing */
+.rk-head { display: flex; flex-direction: column; gap: 4px; }
+.rk-title {
+  font-family: var(--rk-font);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: clamp(1.5rem, 4.2vw, 2.2rem);
+  line-height: 1.05;
+  color: #f2e45a;
+  -webkit-text-stroke: 1.5px var(--rk-pink);
+  paint-order: stroke fill;
+  text-shadow: 0 0 6px rgba(169, 34, 129, 0.9), 2px 2px 0 var(--rk-pink);
+}
+.rk-brief { margin: 0; color: #d9d6a6; font-size: 0.9rem; }
+
+/* Panel utama berpaku */
+.rk-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: clamp(20px, 3.5vw, 32px);
+  background: var(--rk-panel);
+  border: 3px solid var(--rk-edge);
+  border-radius: 14px;
+  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.35);
+  color: var(--rk-yel);
+}
+.rk-rivet { position: absolute; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--rk-edge); }
+.rk-rivet.tl { top: 8px; left: 8px; }
+.rk-rivet.tr { top: 8px; right: 8px; }
+.rk-rivet.bl { bottom: 8px; left: 8px; }
+.rk-rivet.br { bottom: 8px; right: 8px; }
+
+.rk-label { font-family: var(--rk-font); text-transform: uppercase; letter-spacing: 0.5px; font-size: 1.1rem; color: var(--rk-yel); }
+.rk-panel small { display: block; font-size: 0.78rem; color: #b9b58a; }
+
+/* Kotak bergaris kuning (Komponen, Bahan bakar, Bar) */
+.rk-box { margin: 0; min-width: 0; border: 1.5px solid var(--rk-yel-dim); border-radius: 8px; padding: 14px 16px 16px; }
+fieldset.rk-box > legend { padding: 0 6px; margin-left: -6px; }
+
+/* Chip kuning: roket dan anggaran */
+.rk-chips { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.rk-chip { display: flex; align-items: center; gap: 10px; padding: 8px 16px 8px 10px; min-width: 190px; background: var(--rk-yel); color: var(--rk-ink); border: 2px solid var(--rk-edge); border-radius: 8px; }
+.rk-chip img { width: 40px; height: 40px; object-fit: contain; flex: none; }
+.rk-chip b { display: block; font-family: var(--rk-font); text-transform: uppercase; font-size: 1.25rem; line-height: 1; letter-spacing: 0.5px; }
+.rk-panel .rk-chip small { color: var(--rk-ink); font-weight: 700; font-size: 0.8rem; margin-top: 2px; }
+
+/* Ukuran CubeSat (Level 1) */
+.rk-size-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.rk-size { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 6px; border: 1.5px solid var(--rk-yel-dim); border-radius: 8px; cursor: pointer; text-align: center; transition: transform 0.12s ease, background 0.12s ease; }
+.rk-size img { height: clamp(70px, 14vw, 120px); width: auto; display: block; }
+.rk-size b { font-family: var(--rk-font); font-size: 1.3rem; line-height: 1; }
+.rk-size:hover { transform: translateY(-2px); }
+.rk-size:has(input:checked) { background: rgba(204, 195, 78, 0.16); border-color: var(--rk-yel); box-shadow: inset 0 0 0 1.5px var(--rk-yel); }
+.rk-size:has(input:checked)::after { content: '✓'; position: absolute; top: 4px; right: 8px; font-weight: 900; }
+
+/* Komponen */
+.rk-items { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px 14px; }
+.rk-item { position: relative; display: flex; align-items: center; gap: 10px; padding: 8px 12px 8px 8px; border: 1.5px solid var(--rk-yel-dim); border-radius: 6px; cursor: pointer; transition: background 0.12s ease; }
+.rk-ico { width: 44px; height: 44px; flex: none; display: grid; place-items: center; border: 1.5px solid var(--rk-yel-dim); border-radius: 4px; }
+.rk-ico img { width: 40px; height: 40px; object-fit: contain; display: block; }
+.rk-item-text b { display: block; font-family: var(--rk-font); font-weight: 400; text-transform: uppercase; font-size: 1.05rem; line-height: 1.05; letter-spacing: 0.3px; }
+.rk-item:hover { background: rgba(204, 195, 78, 0.07); }
+.rk-item:has(input:checked) { background: var(--rk-yel); border-color: var(--rk-yel); color: var(--rk-ink); }
+.rk-panel .rk-item:has(input:checked) small { color: var(--rk-ink); }
+.rk-item:has(input:checked) .rk-ico { background: var(--rk-panel); border-color: var(--rk-panel); }
+.rk-item:has(input:checked)::after { content: '✓'; position: absolute; top: 2px; right: 6px; font-weight: 900; }
+
+/* Input asli disembunyikan tapi tetap bisa difokus dengan keyboard */
+.rk-item input, .rk-size input, .rk-assist input { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
+.rk-item:has(input:focus-visible), .rk-size:has(input:focus-visible), .rk-assist:has(input:focus-visible) { outline: 2px solid #fff; outline-offset: 2px; }
+
+/* Bantuan pilot: bar kuning dengan kotak centang di kanan */
+.rk-assist { position: relative; display: flex; align-items: center; gap: 12px; padding: 10px 14px 10px 10px; background: var(--rk-yel); color: var(--rk-ink); border: 2px solid var(--rk-edge); border-radius: 8px; cursor: pointer; }
+.rk-assist > img { width: 46px; height: 46px; object-fit: contain; flex: none; }
+.rk-assist-text { flex: 1; min-width: 0; }
+.rk-assist-text b { font-family: var(--rk-font); text-transform: uppercase; font-size: 1.3rem; letter-spacing: 0.5px; }
+.rk-tag { font-size: 0.72rem; font-weight: 700; padding: 1px 6px; border: 1.5px solid var(--rk-ink); border-radius: 999px; vertical-align: 3px; }
+.rk-panel .rk-assist small { color: #23315a; font-size: 0.8rem; }
+.rk-panel .rk-assist small.rk-dim { color: #4b5470; margin-top: 2px; }
+.rk-check { width: 22px; height: 22px; flex: none; border: 2.5px solid var(--rk-ink); border-radius: 3px; display: grid; place-items: center; font-weight: 900; font-size: 1rem; line-height: 1; }
+.rk-assist:has(input:checked) .rk-check::after { content: '✓'; }
+
+/* Bahan bakar: angka besar dan batang naik */
+.rk-fuel { display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 6px 16px; }
+.rk-fuel-read { display: flex; flex-direction: column; }
+.rk-big { font-family: var(--rk-font); font-weight: 900; font-size: clamp(2.4rem, 7vw, 3.2rem); line-height: 1; }
+.rk-fuel-bars { display: flex; align-items: flex-end; gap: 6px; height: 56px; }
+.rk-fuel-bars button { width: 16px; padding: 0; border: 2px solid var(--rk-yel); border-radius: 4px; background: transparent; cursor: pointer; }
+.rk-fuel-bars button:nth-child(1) { height: 30%; }
+.rk-fuel-bars button:nth-child(2) { height: 48%; }
+.rk-fuel-bars button:nth-child(3) { height: 66%; }
+.rk-fuel-bars button:nth-child(4) { height: 83%; }
+.rk-fuel-bars button:nth-child(5) { height: 100%; }
+.rk-fuel-bars button.on { background: var(--rk-yel); }
+.rk-panel input[type='range'] { grid-column: 1 / -1; width: 100%; accent-color: var(--rk-yel); }
+
+/* Bar massa / anggaran / slot dan tombol Luncurkan */
+.rk-bottom { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 16px; }
+.rk-bars { display: flex; flex-direction: column; gap: 10px; }
+.rk-bar-row { display: flex; flex-direction: column; gap: 4px; }
+.rk-bar { height: 11px; border: 1.5px solid var(--rk-yel); border-radius: 6px; overflow: hidden; }
+.rk-bar > i { display: block; height: 100%; background: var(--rk-yel); }
+.rk-bar.over { border-color: var(--rk-red); }
+.rk-bar.over > i { background: var(--rk-red); }
+.rk-launch { padding: 0; background: none; border: none; border-radius: 50%; cursor: pointer; transition: transform 0.15s ease, filter 0.15s ease; }
+.rk-launch img { width: clamp(120px, 22vw, 170px); height: auto; display: block; }
+.rk-launch:hover:not(:disabled) { transform: scale(1.05); }
+.rk-launch:active:not(:disabled) { transform: scale(0.95); }
+.rk-launch:disabled { opacity: 1; filter: grayscale(0.9) brightness(0.7); }
+.rk-launch:focus-visible { outline: 3px solid #fff; outline-offset: 4px; }
+
+.rk-warn { margin: -4px 0 0; padding: 8px 12px; border-radius: 6px; background: rgba(241, 83, 42, 0.15); color: #ffd2c4; font-size: 0.9rem; }
+.rk-warn[hidden] { display: none; }
+.rk-funds { display: flex; flex-direction: column; gap: 4px; }
+.rk-funds .rk-label { font-size: 1.25rem; }
+.rk-extra { color: #e6e1a8; }
+.rk-room { margin: 0; color: #e6e1a8; }
+
+/* HP: satu kolom, tombol Luncurkan tetap di samping bar kalau muat */
+@media (max-width: 520px) {
+  .rk-chip { flex: 1; min-width: 0; }
+  .rk-items { grid-template-columns: 1fr; }
+  .rk-bottom { gap: 10px; }
+  .rk-launch img { width: 110px; }
+  .rk-size small { font-size: 0.68rem; }
+  .rk-panel { padding: 18px 14px; gap: 14px; }
+  .rk-box { padding: 12px; }
+  .rk-label { font-size: 1rem; }
+  .rk-assist { align-items: flex-start; }
+  .rk-assist > img { width: 38px; height: 38px; }
+}
+.rk-panel .rk-extra small { display: inline; }
