@@ -14,14 +14,14 @@
 html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; }
 #app { min-height: 100%; }
 button { font: inherit; color: var(--text); background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 16px; cursor: pointer; }
-button.primary { background: var(--accent); border-color: var(--accent); color: #1a0d03; font-weight: 700; }
-/* button.primary {
-  /*background: transparent;
+/* button.primary { background: var(--accent); border-color: var(--accent); color: #1a0d03; font-weight: 700; }*/
+button.primary {
+  /*background: transparent;*/
   border: none;
   border-radius: 0;
   padding: 0;
   transition: transform 0.15s ease;
-}*/
+}
 
 button.primary img {
   width: min(190px, 45vw);
@@ -41,7 +41,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 input[type='text'] { font: inherit; padding: 10px; border-radius: 10px; border: 1px solid var(--line); background: #0b1020; color: var(--text); text-transform: uppercase; width: 8em; }
 .screen { max-width: 900px; margin: 0 auto; padding: 24px 16px; display: flex; flex-direction: column; gap: 16px; }
 .screen.home-screen {
-  position: relative;
+  /*position: relative;*/
   max-width: none;
   width: 100%;
   min-height: 100vh;
