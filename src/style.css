@@ -279,22 +279,34 @@ button.big { padding: 14px 16px; font-size: 1.1rem; font-weight: 700; }
 
 .contentlobby {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
+  inset: 0;                              /* top+right+bottom+left = 0 */
   z-index: 10;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px clamp(12px, 2.5vw, 28px);
+
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);  /* 50 : 50 */
+  gap: clamp(16px, 3vw, 40px);
+  padding: clamp(16px, 3vw, 40px);
+  align-items: center;                   /* kolom kiri & kanan vertikal center */
 }
 
-.contentlobby-left,
-.contentlobby-right {
+.contentlobby-left {
   display: flex;
   align-items: center;
-  gap: clamp(8px, 1.2vw, 16px);
+  justify-content: center;
+  min-width: 0;                          /* penting: biar gambar boleh menyusut */
+}
+
+.contentlobby-left .floating-icon {
+  max-width: 100%;
+  height: auto;
+}
+
+.contentlobby-right {
+  display: flex;
+  flex-direction: column;                /* ← kunci perbaikan */
+  gap: 12px;
+  min-width: 0;
+  max-width: 520px;                      /* biar tidak melebar penuh di layar besar */
 }
 
 /* Tombol setting */
