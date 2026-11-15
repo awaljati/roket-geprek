@@ -118,3 +118,28 @@ button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 @media (prefers-reduced-motion: reduce) { .coach.urgent .bubble { animation: none; } }
 /* Debrief: Pok-Pok senang saat misi berhasil */
 .pokpok-win { width: 140px; height: auto; }
+/* Level 4: kartu program pendaratan di tengah layar */
+.prog4 { grid-row: 1; grid-column: 1; z-index: 2; display: flex; align-items: center; justify-content: center; padding: 56px 12px 12px; min-height: 0; overflow: auto; pointer-events: none; }
+.prog4-card { pointer-events: auto; width: min(460px, 100%); display: flex; flex-direction: column; gap: 14px; background: rgba(17,24,41,0.95); }
+.prog4-card h2 { text-align: center; font-size: 1.3rem; }
+.prog4-card > small { text-align: center; min-height: 1.2em; }
+.prow { display: flex; flex-direction: column; gap: 6px; }
+.prow-head { display: flex; align-items: baseline; gap: 8px; }
+.prow-head b { flex: 1; }
+.prow-val { font-size: 1.15rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.prow-mark { font-size: 1.2rem; font-weight: 800; width: 1.2em; text-align: center; }
+.prow-mark.ok { color: var(--ok); }
+.prow-mark.bad { color: var(--bad); }
+.prow-ctl { display: flex; align-items: center; gap: 10px; }
+.prow-btn { width: 52px; height: 48px; padding: 0; font-size: 1.6rem; font-weight: 700; flex: none; }
+.pbar { position: relative; flex: 1; height: 14px; background: #0b1020; border: 1px solid var(--line); border-radius: 7px; }
+.pbar .pzone { position: absolute; top: 0; bottom: 0; background: rgba(63,209,122,0.55); border-radius: 6px; }
+.pbar .pdot { position: absolute; top: 50%; width: 20px; height: 20px; margin: -10px 0 0 -10px; border-radius: 50%; background: #fff; border: 3px solid var(--ok); }
+.pbar .pdot.bad { border-color: var(--bad); }
+button.big { padding: 14px 16px; font-size: 1.1rem; font-weight: 700; }
+.prog4-sp { display: flex; flex-direction: column; gap: 12px; }
+@media (max-width: 720px) {
+  .prog4 { padding: 40px 8px 8px; align-items: flex-start; }
+  .prog4-card { padding: 12px; gap: 10px; }
+  .prow-btn { width: 48px; height: 44px; }
+}

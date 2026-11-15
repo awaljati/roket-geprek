@@ -294,17 +294,64 @@ export function mountSpecialistPanel3(container, send) {
   }
 }
 
+// Baris program pendaratan Level 4 (dipakai kartu Navigator dan panel Spesialis):
+// tombol − / + besar, batang dengan zona aman hijau dan titik nilai sekarang, angka, dan ✓/✗.
+export const PROG_ROWS = {
+  entry: { title: 'Sudut masuk', key: 'entryDeg', unit: '°', down: 'entryDown', up: 'entryUp' },
+  chute: { title: 'Parasut', key: 'chuteKm', unit: ' km', down: 'chuteDown', up: 'chuteUp' },
+  retro: { title: 'Roket pendarat', key: 'retroKm', unit: ' km', down: 'retroDown', up: 'retroUp' },
+};
+
+export function progRowHtml(k, { buttons = true, note = '' } = {}) {
+  const r = PROG_ROWS[k];
+  const btn = (d, t) => (buttons ? `<button class="prow-btn" data-cmd="${d > 0 ? r.up : r.down}" aria-label="${r.title} ${t}">${t}</button>` : '');
+  return `<div class="prow" data-k="${k}">
+    <div class="prow-head"><b>${r.title}</b>${note ? `<small class="muted">${note}</small>` : ''}<span class="prow-val"></span><span class="prow-mark"></span></div>
+    <div class="prow-ctl">${btn(-1, '−')}<div class="pbar"><i class="pzone"></i><i class="pdot"></i></div>${btn(1, '+')}</div>
+  </div>`;
+}
+
+// Pasang tombol − / + di dalam `box` (tekan = satu langkah).
+export function bindProgRows(box, send) {
+  for (const b of box.querySelectorAll('.prow-btn')) {
+    b.onpointerdown = (e) => {
+      e.preventDefault();
+      if (!b.disabled) send(b.dataset.cmd);
+    };
+  }
+}
+
+export function updateProgRows(box, p, disabled = false) {
+  const n = (x) => String(x).replace('.', ',');
+  for (const row of box.querySelectorAll('.prow')) {
+    const k = row.dataset.k;
+    const r = PROG_ROWS[k];
+    const [lo, hi] = p.range[k];
+    const pct = (x) => Math.max(0, Math.min(100, ((x - lo) / (hi - lo)) * 100));
+    const [slo, shi] = p.safe[k];
+    const ok = p.ok[k];
+    row.querySelector('.pzone').style.cssText = `left:${pct(slo)}%;width:${pct(shi) - pct(slo)}%`;
+    const dot = row.querySelector('.pdot');
+    dot.style.left = pct(p[r.key]) + '%';
+    dot.classList.toggle('bad', !ok);
+    row.querySelector('.prow-val').textContent = n(p[r.key]) + r.unit;
+    const mark = row.querySelector('.prow-mark');
+    mark.textContent = ok ? '✓' : '✗';
+    mark.className = 'prow-mark ' + (ok ? 'ok' : 'bad');
+    for (const b of row.querySelectorAll('.prow-btn')) b.disabled = disabled;
+  }
+}
+
 // Panel Spesialis Level 4: radar badai matahari, ketinggian parasut, dan foto pertama dari Mars.
-export function mountSpecialistPanel4(container, send) {
+// solo: kartu program di layar terbang sudah memuat semua baris, jadi kartu program di panel ini disembunyikan.
+export function mountSpecialistPanel4(container, send, { solo = false } = {}) {
   container.innerHTML = `
     <h2>Spesialis</h2>
     <div class="status" id="sp-status"></div>
     <div class="card" id="sp-radar"><b>Radar badai matahari</b><div id="sp-storm"></div></div>
-    <div class="card" id="sp-prog"><b>Program pendaratan</b>
-      <div id="sp-chute"></div>
-      <div class="row"><button id="sp-cDown">Parasut − (1)</button><button id="sp-cUp">Parasut + (2)</button></div>
-      <button id="sp-ready">Siap (3)</button>
-      <div id="sp-ranges"></div>
+    <div class="card prog4-sp" id="sp-prog">
+      ${progRowHtml('chute')}
+      <button class="big" id="sp-ready">Siap (3)</button>
     </div>
     <div class="card" id="sp-edl" style="display:none"></div>
     <div class="card" id="sp-surface" style="display:none"><b>Di permukaan Mars</b> <small class="muted" id="sp-time"></small>
@@ -316,9 +363,8 @@ export function mountSpecialistPanel4(container, send) {
     <small class="muted" id="sp-log"></small>
   `;
   const $ = (s) => container.querySelector(s);
-  const KEYS = { 1: 'chuteDown', 2: 'chuteUp', 3: 'programReady', 4: 'sendPhoto' };
-  $('#sp-cDown').onclick = () => send('chuteDown');
-  $('#sp-cUp').onclick = () => send('chuteUp');
+  const KEYS = solo ? { 4: 'sendPhoto' } : { 1: 'chuteDown', 2: 'chuteUp', 3: 'programReady', 4: 'sendPhoto' };
+  bindProgRows($('#sp-prog'), send);
   $('#sp-ready').onclick = () => send('programReady');
   $('#sp-photo').onclick = () => send('sendPhoto');
   window.addEventListener('keydown', onKey);
@@ -341,7 +387,7 @@ export function mountSpecialistPanel4(container, send) {
       if (c.stormActive) status = v.radShield ? 'Badai lewat. Pelindung radiasi melindungi instrumen.' : v.instrumentsOn ? 'BADAI! Navigator, matikan instrumen sekarang!' : 'Badai lewat. Instrumen aman.';
       else if (c.stormInSec !== null) status = v.instrumentsOn && !v.radShield ? `Aba-aba: badai dalam ${Math.ceil(c.stormInSec)} detik! Navigator, matikan instrumen.` : `Badai dalam ${Math.ceil(c.stormInSec)} detik.`;
       else status = v.instrumentsOn ? `Menuju Mars. Awasi radar badai. Tiba dalam ${Math.ceil(c.arriveInSec)} detik.` : 'Radar tenang. Aba-aba: Navigator, nyalakan lagi instrumen.';
-    } else if (ph === 'program') status = p.ready ? 'Siap. Tunggu Navigator memulai masuk atmosfer.' : 'Waktu berhenti. Atur ketinggian parasut, cek angka Navigator, lalu tekan Siap.';
+    } else if (ph === 'program') status = solo ? 'Waktu berhenti. Atur program di kartu tengah layar.' : p.ready ? 'Siap. Tunggu Navigator memulai masuk atmosfer.' : 'Waktu berhenti. Atur parasut, lalu tekan Siap.';
     else if (ph === 'edl') status = 'Tujuh menit penuh ketegangan. Tidak ada yang bisa dikendalikan: tunggu sinyal.';
     else if (ph === 'landed' && v.surface) status = v.surface.sending ? 'Mengirim foto pertama…' : v.surface.pressed ? 'Foto terkirim.' : 'Mendarat! Tekan Kirim foto.';
     if (v.result) status = 'Misi selesai.';
@@ -356,19 +402,12 @@ export function mountSpecialistPanel4(container, send) {
         <div>${c.stormActive ? '<b style="color:var(--bad)">BADAI SEDANG LEWAT</b>' : warn ? `<b style="color:var(--bad)">⚠ Badai dalam ${Math.ceil(c.stormInSec)} detik</b>` : 'Tenang'}</div>
         <small>Instrumen: <b>${v.instrumentsOn ? 'menyala' : 'mati'}</b> · pelindung radiasi: ${v.radShield ? 'ada ✓' : 'tidak ada'} · kamera: ${v.cameraDamaged ? '<b style="color:var(--bad)">rusak</b>' : 'baik'}<br>Sisa badai di perjalanan: ${c.stormsLeft}</small>`;
 
-    // Program pendaratan (Spesialis melihat semua rentang aman)
-    $('#sp-prog').style.display = ph === 'program' ? '' : 'none';
-    const okMark = (k) => (p.ok[k] ? '✓' : '⚠');
-    const rng = (k, u) => `${n(p.safe[k][0])} … ${n(p.safe[k][1])}${u}`;
-    $('#sp-chute').innerHTML = `${okMark('chute')} Parasut dibuka di: <b>${n(p.chuteKm)} km</b> <small class="muted">aman ${rng('chute', ' km')}</small>`;
-    $('#sp-cDown').disabled = $('#sp-cUp').disabled = ph !== 'program';
+    // Program pendaratan: Spesialis hanya mengatur parasut lalu menekan Siap.
+    $('#sp-prog').style.display = ph === 'program' && !solo ? '' : 'none';
+    updateProgRows($('#sp-prog'), p, ph !== 'program');
     $('#sp-ready').disabled = ph !== 'program';
-    $('#sp-ready').className = p.ready ? 'primary' : '';
+    $('#sp-ready').className = 'big' + (p.ready ? ' primary' : '');
     $('#sp-ready').textContent = p.ready ? 'Siap ✓ (3 = batal)' : 'Siap (3)';
-    $('#sp-ranges').innerHTML = `<small>Angka Navigator:<br>
-      ${okMark('entry')} Sudut masuk <b>${n(p.entryDeg)}°</b> <span class="muted">aman ${rng('entry', '°')}</span><br>
-      ${okMark('retro')} Roket pendarat <b>${n(p.retroKm)} km</b> <span class="muted">aman ${rng('retro', ' km')}</span><br>
-      ${v.hasEdl ? '' : '<b style="color:var(--bad)">Tidak ada Paket Pendaratan Mars!</b>'}</small>`;
 
     // Tujuh menit
     const e = v.edl;
@@ -397,8 +436,8 @@ export function mountSpecialistPanel4(container, send) {
   };
 }
 
-export function mountPanelFor(level, container, send) {
-  if (level === 4) return mountSpecialistPanel4(container, send);
+export function mountPanelFor(level, container, send, opts) {
+  if (level === 4) return mountSpecialistPanel4(container, send, opts);
   if (level === 3) return mountSpecialistPanel3(container, send);
   return level === 2 ? mountSpecialistPanel2(container, send) : mountSpecialistPanel(container, send);
 }

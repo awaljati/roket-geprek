@@ -16,7 +16,7 @@ export function drawMars(ctx, canvas, view) {
   const h = (canvas.height = canvas.clientHeight * dpr);
   const g = { ctx, w, h, dpr, font: (px, bold = false) => `${bold ? '700 ' : ''}${px * dpr}px system-ui, sans-serif` };
   if (view.view === 'cruise') return drawCruise(g, view);
-  if (view.view === 'program') return drawProgram(g, view);
+  if (view.view === 'program') return drawProgram(g);
   if (view.view === 'edl') return drawEdl(g, view);
   return drawSurface(g, view);
 }
@@ -136,21 +136,13 @@ function drawCruise(g, v) {
   }
 }
 
-// ---------- Program pendaratan: koridor sudut masuk dan tangga ketinggian ----------
-function drawProgram(g, v) {
-  const { ctx, w, h, dpr } = g;
-  const pr = v.program;
-  space(g);
-  // Mars besar di bawah, dengan lapisan atmosfer tipis
-  const narrow = w / dpr < 520; // HP: HUD menutupi bagian kiri atas, jadi teks hiasan dikurangi
+// ---------- Program pendaratan: Mars redup sebagai latar. Angka dan tombol ada di kartu HTML (screens/flight.js). ----------
+function drawProgram(g) {
+  const { ctx, w, h } = g;
+  space(g, 0.5);
   const R = w * 1.4;
-  const mx = w * 0.42;
-  const my = h * 0.82 + R;
-  const atmo = 26 * dpr;
-  ctx.beginPath();
-  ctx.arc(mx, my, R + atmo, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(230,150,100,0.18)';
-  ctx.fill();
+  const mx = w * 0.5;
+  const my = h * 0.85 + R;
   const grd = ctx.createLinearGradient(0, my - R, 0, my - R + h * 0.3);
   grd.addColorStop(0, '#c4623b');
   grd.addColorStop(1, '#6e2c18');
@@ -158,74 +150,8 @@ function drawProgram(g, v) {
   ctx.arc(mx, my, R, 0, Math.PI * 2);
   ctx.fillStyle = grd;
   ctx.fill();
-  if (!narrow) label(g, 'atmosfer Mars (tipis: ~1% Bumi)', w * 0.06, my - R - atmo - 6 * dpr, '#f0b48e', 11, 'left');
-
-  // Titik masuk atmosfer dan koridor aman (hijau). Sudut negatif = menukik ke bawah.
-  const ex = w * 0.42;
-  const ey = my - R - atmo;
-  const len = Math.min(w * 0.3, h * 0.9);
-  const ray = (deg) => [ex - Math.cos((deg * Math.PI) / 180) * len, ey + Math.sin((deg * Math.PI) / 180) * len];
-  const [lo, hi] = pr.safe.entry;
-  const scaleDeg = 2.2; // sudut dilebihkan supaya terlihat (tidak sesuai skala)
-  ctx.beginPath();
-  ctx.moveTo(ex, ey);
-  const [ax, ay] = ray(lo * scaleDeg);
-  const [bx, by] = ray(hi * scaleDeg);
-  ctx.lineTo(ax, ay);
-  ctx.lineTo(bx, by);
-  ctx.closePath();
-  ctx.fillStyle = 'rgba(63,209,122,0.22)';
-  ctx.fill();
-  if (!narrow) label(g, `koridor aman ${lo}° … ${hi}°`, (ax + bx) / 2, Math.min(ay, by) - 8 * dpr, '#9cffc4', 11);
-  // Sudut yang dipilih Navigator
-  const [cx, cy] = ray(pr.entryDeg * scaleDeg);
-  ctx.beginPath();
-  ctx.moveTo(cx, cy);
-  ctx.lineTo(ex, ey);
-  ctx.strokeStyle = pr.ok.entry ? '#ffffff' : '#ff6b6b';
-  ctx.lineWidth = 2.5 * dpr;
-  ctx.setLineDash([8 * dpr, 6 * dpr]);
-  ctx.stroke();
-  ctx.setLineDash([]);
-  capsule(ctx, cx, cy, 9 * dpr, Math.atan2(ey - cy, ex - cx) + Math.PI / 2);
-  label(g, `sudut masuk ${fmt(pr.entryDeg)}°`, Math.max(60 * dpr, cx), cy - 16 * dpr, pr.ok.entry ? '#fff' : '#ff8a8a', 13, 'center', true);
-
-  // Tangga ketinggian (0–20 km): parasut (Spesialis) dan roket pendarat (Navigator)
-  const x0 = w - 120 * dpr;
-  const top = 120 * dpr;
-  const bot = h - 40 * dpr;
-  const maxKm = 20;
-  const yk = (km) => bot - (km / maxKm) * (bot - top);
-  ctx.fillStyle = 'rgba(17,24,41,0.85)';
-  ctx.fillRect(x0 - 16 * dpr, top - 30 * dpr, 132 * dpr, bot - top + 50 * dpr);
-  label(g, 'Ketinggian (km)', x0 + 50 * dpr, top - 14 * dpr, '#cfd8ea', 11, 'center', true);
-  ctx.strokeStyle = '#5b6680';
-  ctx.lineWidth = 1 * dpr;
-  ctx.beginPath();
-  ctx.moveTo(x0, top);
-  ctx.lineTo(x0, bot);
-  ctx.stroke();
-  for (let km = 0; km <= maxKm; km += 5) label(g, String(km), x0 - 4 * dpr, yk(km) + 4 * dpr, '#8a93a6', 10, 'right');
-  const band = (rng, col) => {
-    ctx.fillStyle = col;
-    ctx.fillRect(x0 + 2 * dpr, yk(rng[1]), 10 * dpr, yk(rng[0]) - yk(rng[1]));
-  };
-  band(pr.safe.chute, 'rgba(63,209,122,0.45)');
-  band(pr.safe.retro, 'rgba(255,170,80,0.55)');
-  const mark = (km, text, ok, col) => {
-    const y = yk(Math.min(maxKm, km));
-    ctx.beginPath();
-    ctx.moveTo(x0, y);
-    ctx.lineTo(x0 + 18 * dpr, y);
-    ctx.strokeStyle = ok ? col : '#ff6b6b';
-    ctx.lineWidth = 2.5 * dpr;
-    ctx.stroke();
-    label(g, text, x0 + 22 * dpr, y + 4 * dpr, ok ? col : '#ff8a8a', 11, 'left', true);
-  };
-  mark(pr.chuteKm, `parasut ${fmt(pr.chuteKm)}`, pr.ok.chute, '#9cffc4');
-  mark(pr.retroKm, `roket ${fmt(pr.retroKm)}`, pr.ok.retro, '#ffc58a');
-
-  if (!narrow) label(g, 'WAKTU BERHENTI', w * 0.42, h * 0.3, 'rgba(255,213,74,0.85)', 18, 'center', true);
+  ctx.fillStyle = 'rgba(5,7,15,0.55)'; // redupkan supaya kartu program mudah dibaca
+  ctx.fillRect(0, 0, w, h);
 }
 
 // Kapsul: kerucut dengan pelindung panas di depan (arah `rot`, 0 = menghadap ke bawah).

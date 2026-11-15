@@ -3,7 +3,7 @@ import { LEVEL_MODULES } from '../levels/index.js';
 import { LAUNCH_SITE } from '../data/levels.js';
 import { orbitCheck, orbitExtremes } from '../engine/flight.js';
 import { createView, prefers3D, setPrefer3D } from '../render/view.js';
-import { mountPanelFor } from './specialistPanel.js';
+import { mountPanelFor, progRowHtml, bindProgRows, updateProgRows } from './specialistPanel.js';
 import { createControls, controlAction } from '../engine/attitude.js';
 import { bindControls, helpHtml } from './controls.js';
 import { spendFunds } from './progress.js';
@@ -25,6 +25,7 @@ export function flightScreen(app, el) {
       <button class="menu-btn" id="menuBtn">☰ Menu</button>
       <div class="touch" id="pad"></div>
       <div class="touch" id="nav4" style="display:none"></div>
+      <div class="prog4" id="prog4" style="display:none"></div>
       <div class="overlay" id="pause">
         <div class="card pause-card">
           <h2>Misi dijeda</h2>
@@ -51,7 +52,7 @@ export function flightScreen(app, el) {
   // Panel kanan: Spesialis (solo) atau status room (navigator).
   let updatePanel = () => {};
   if (app.role === 'solo') {
-    updatePanel = mountPanelFor(app.level, $('#side'), (cmd) => M.command(game, cmd));
+    updatePanel = mountPanelFor(app.level, $('#side'), (cmd) => M.command(game, cmd), { solo: true });
   } else {
     $('#side').innerHTML = `<h2>Navigator</h2><p>Room <span class="code">${app.code}</span></p><p class="muted">Tombol wahana dipegang Spesialis di perangkatnya. Dengarkan aba-abanya.</p><div class="status" id="navst"></div>`;
     app.onCmd = (cmd) => M.command(game, cmd);
@@ -71,7 +72,7 @@ export function flightScreen(app, el) {
   );
 
   // Level 4: tombol Navigator untuk instrumen dan program pendaratan (dijalankan langsung di perangkat ini).
-  const nav4 = app.level === 4 ? mountNav4($('#nav4'), (cmd) => !paused && M.command(game, cmd)) : null;
+  const nav4 = app.level === 4 ? mountNav4($('#nav4'), $('#prog4'), (cmd) => !paused && M.command(game, cmd), app.role === 'solo') : null;
 
   // ---------- Menu jeda ----------
   let paused = false;
@@ -336,14 +337,7 @@ export function flightScreen(app, el) {
           ${v.cameraDamaged ? bad('Kamera rusak terkena badai') : ''}
           <small class="muted">Dengarkan Spesialis: dia melihat radar badai.</small>`;
       } else if (v.view === 'program') {
-        const p = v.program;
-        const mark = (k) => (game.assist ? (p.ok[k] ? ' ✓' : ' ⚠') : '');
-        const range = (k, unit) => (game.assist ? ` <small class="muted">aman ${n(p.safe[k][0])} … ${n(p.safe[k][1])}${unit}</small>` : '');
-        lines = `<b>Waktu berhenti: program pendaratan</b>
-          <span>Sudut masuk: <b>${n(p.entryDeg)}°</b>${mark('entry')}${range('entry', '°')}</span>
-          <span>Roket pendarat menyala: <b>${n(p.retroKm)} km</b>${mark('retro')}${range('retro', ' km')}</span>
-          <span>Parasut (Spesialis): <b>${n(p.chuteKm)} km</b> ${p.ready ? ok('siap ✓') : '<small class="muted">belum siap</small>'}</span>
-          ${v.instrumentsOn ? '' : bad('Instrumen mati: nyalakan (I)')}`;
+        lines = ''; // angka program ada di kartu tengah layar
       } else if (v.view === 'edl' && v.edl) {
         lines = `<b>Otomatis: tidak bisa dikendalikan</b>
           <span>Ketinggian ${v.edl.alt >= 10 ? Math.round(v.edl.alt) : n(v.edl.alt.toFixed(1))} km · ${Math.round(v.edl.speed)} m/s</span>`;
@@ -378,50 +372,61 @@ export function flightScreen(app, el) {
   };
 }
 
-// Level 4: tombol Navigator. Instrumen (saat perjalanan dan program), sudut masuk dan roket pendarat (saat program).
+// Level 4: tombol Navigator. Instrumen saat perjalanan (bar bawah); saat program, satu kartu di tengah layar.
+// solo: semua baris bisa diatur di kartu dan Spesialis otomatis Siap. Online: parasut hanya dari panel Spesialis.
 // Mengembalikan update(view); update.dispose() melepas keyboard.
-function mountNav4(box, send) {
-  box.innerHTML = `
-    <div class="pad-extra"><button id="n4-instr">Instrumen (I)</button></div>
-    <div class="pad-extra" id="n4-prog">
-      <button id="n4-eDown">Sudut − (U)</button><button id="n4-eUp">Sudut + (O)</button>
-      <button id="n4-rDown">Roket pendarat − (J)</button><button id="n4-rUp">Roket pendarat + (L)</button>
-      <button class="primary" id="n4-lock">Mulai masuk atmosfer (Enter)</button>
+function mountNav4(box, card, send, solo) {
+  box.innerHTML = `<div class="pad-extra"><button id="n4-instr">Instrumen (I)</button></div>`;
+  card.innerHTML = `
+    <div class="card prog4-card">
+      <h2>Program pendaratan</h2>
+      ${progRowHtml('entry')}
+      ${progRowHtml('chute', solo ? {} : { buttons: false, note: 'diatur Spesialis' })}
+      ${progRowHtml('retro')}
+      <button class="primary big" id="n4-lock">Mulai masuk atmosfer</button>
+      <small class="muted" id="n4-note"></small>
     </div>`;
-  const $ = (s) => box.querySelector(s);
-  const CMDS = { '#n4-instr': 'instrumentsToggle', '#n4-eDown': 'entryDown', '#n4-eUp': 'entryUp', '#n4-rDown': 'retroDown', '#n4-rUp': 'retroUp', '#n4-lock': 'lockProgram' };
-  for (const [id, cmd] of Object.entries(CMDS)) {
+  const $ = (s) => box.querySelector(s) || card.querySelector(s);
+  bindProgRows(card, send);
+  for (const [id, cmd] of [['#n4-instr', 'instrumentsToggle'], ['#n4-lock', 'lockProgram']]) {
     $(id).onpointerdown = (e) => {
       e.preventDefault();
       if (!$(id).disabled) send(cmd);
     };
   }
   const KEYS = { i: 'instrumentsToggle', u: 'entryDown', o: 'entryUp', j: 'retroDown', l: 'retroUp', enter: 'lockProgram' };
+  if (solo) Object.assign(KEYS, { 1: 'chuteDown', 2: 'chuteUp' });
+  let view = null;
   const onKey = (e) => {
     if (e.target && e.target.tagName === 'INPUT') return;
     const cmd = KEYS[e.key.toLowerCase()];
     if (!cmd || (e.repeat && (cmd === 'instrumentsToggle' || cmd === 'lockProgram'))) return;
+    if (cmd === 'instrumentsToggle' && view !== 'cruise') return; // saat program tombol instrumen disembunyikan
     e.preventDefault();
     send(cmd);
   };
   window.addEventListener('keydown', onKey);
-  const n = (x) => String(x).replace('.', ',');
   function update(v) {
-    const show = (v.view === 'cruise' || v.view === 'program') && !v.result;
-    box.style.display = show ? '' : 'none';
-    if (!show) return;
-    const instr = $('#n4-instr');
-    instr.textContent = v.instrumentsOn ? 'Instrumen: MENYALA (matikan) (I)' : 'Instrumen: MATI (nyalakan) (I)';
-    instr.className = v.instrumentsOn ? '' : 'primary';
-    const prog = v.view === 'program';
-    $('#n4-prog').style.display = prog ? '' : 'none';
+    view = v.result ? null : v.view;
+    const prog = view === 'program';
+    box.style.display = view === 'cruise' ? '' : 'none';
+    card.style.display = prog ? '' : 'none';
+    if (view === 'cruise') {
+      const instr = $('#n4-instr');
+      instr.textContent = v.instrumentsOn ? 'Instrumen: MENYALA (matikan) (I)' : 'Instrumen: MATI (nyalakan) (I)';
+      instr.className = v.instrumentsOn ? '' : 'primary';
+    }
     if (!prog) return;
     const p = v.program;
-    $('#n4-eDown').textContent = `Sudut − (U) · ${n(p.entryDeg)}°`;
-    $('#n4-rDown').textContent = `Roket pendarat − (J) · ${n(p.retroKm)} km`;
+    // Program butuh instrumen: dinyalakan otomatis. Di solo Spesialis otomatis siap.
+    if (!v.instrumentsOn) send('instrumentsToggle');
+    if (solo && !p.ready) send('programReady');
+    updateProgRows(card, p);
     const lock = $('#n4-lock');
     lock.disabled = !p.ready || !v.instrumentsOn;
-    lock.textContent = !v.instrumentsOn ? 'Mulai (nyalakan instrumen dulu)' : p.ready ? 'Mulai masuk atmosfer (Enter)' : 'Mulai (tunggu Spesialis siap)';
+    $('#n4-note').innerHTML = !v.hasEdl
+      ? '<b style="color:var(--bad)">Tidak ada Paket Pendaratan Mars!</b>'
+      : p.ready ? (solo ? 'Enter = mulai' : 'Spesialis siap ✓ · Enter = mulai') : 'Tunggu Spesialis menekan Siap.';
   }
   update.dispose = () => window.removeEventListener('keydown', onKey);
   return update;

@@ -736,6 +736,7 @@ export function snapshotLevel4(game, withPaths = true) {
       ready: pr.ready,
       locked: pr.locked,
       safe: { entry: L.entry.safeDeg, chute: L.chute.safeKm, retro: L.retro.safeKm },
+      range: { entry: [L.entry.minDeg, L.entry.maxDeg], chute: [L.chute.minKm, L.chute.maxKm], retro: [L.retro.minKm, L.retro.maxKm] },
       ok: { entry: inRange(pr.entryDeg, L.entry.safeDeg), chute: inRange(pr.chuteKm, L.chute.safeKm), retro: inRange(pr.retroKm, L.retro.safeKm) },
     },
     edl,
