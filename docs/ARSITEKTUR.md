@@ -101,4 +101,6 @@ Peluncuran Level 4 punya tampilan 3D; sesudahnya `render3d` mengembalikan `false
 - Roket, CubeSat, dan kapsul adalah gambar datar (sprite) yang selalu menghadap kamera.
 - `render3d.draw(view)` mengembalikan `false` untuk tampilan yang belum ada versi 3D-nya (Level 3 setelah masuk orbit Bulan). `view.js` lalu menggambar frame itu dengan `render2d` dan menukar kanvas di frame yang sama, jadi tidak ada layar kosong.
 - Tampilan 2D juga memakai `bumi.jpg` dan `bulan.jpg` (dipotong lingkaran); selama gambar belum termuat, planet berwarna polos.
+- Level 1 di 2D menggambar Bumi dari atas kutub selatan seperti 3D (dihitung sekali dari `bumi.jpg`), supaya stasiun bumi BRIN tepat di Biak. Level lain di 2D masih memakai potongan peta.
+- Atmosfer Bumi di 3D: bidang datar yang menghadap kamera, paling terang di tepi Bumi lalu memudar sampai ~1,1 jari-jari.
 - Pemain bisa memutar pandangan dengan mouse atau dua jari di HP. Pilihan 2D/3D ada di menu jeda dan disimpan di browser.

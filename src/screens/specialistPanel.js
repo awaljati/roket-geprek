@@ -28,8 +28,8 @@ export function mountSpecialistPanel(container, send) {
       countdown: `Hitung mundur aman: ${Math.ceil(v.countdown)} detik. Jangan buka apa pun.`,
       deploy: 'Aman. Buka panel dan antena.',
       transmit: v.inPass
-        ? `Di atas stasiun Bumi! Kirim sekarang (${Math.ceil(v.secondsLeftInPass)} detik lagi).`
-        : `Stasiun Bumi terlihat lagi dalam ${Math.ceil(v.secondsToPass)} detik.`,
+        ? `Di atas stasiun bumi BRIN di Biak! Kirim sekarang (${Math.ceil(v.secondsLeftInPass)} detik lagi).`
+        : `Stasiun bumi BRIN di Biak terlihat lagi dalam ${Math.ceil(v.secondsToPass)} detik.`,
       done: 'Misi selesai.',
     }[v.phase];
     $('#sp-status').textContent = phaseText || '';
