@@ -323,7 +323,99 @@ export async function createRenderer(canvas) {
     controls.minDistance = dist * 0.3;
     controls.maxDistance = dist * 2.5;
     camera.up.set(0, 1, 0);
-    controls.update();
+    home.pos.copy(camera.position);
+    home.target.copy(controls.target);
+    lookTarget.copy(controls.target);
+    if (intro.mode === 'done') controls.update(); // selama adegan pembuka, kamera diatur stepIntro()
+  }
+
+  // ---------- Adegan pembuka peluncuran ----------
+  // Sebelum lepas landas: kamera rendah dari arah selatan, menghadap utara ke Indonesia, roket berdiri di
+  // Biak. Setelah Gas + pertama: pindah halus (~2 detik) ke tampilan atas biasa. Hanya kamera; fisika tidak tahu.
+  const INTRO = {
+    centerLat: 4, // sedikit di utara Indonesia: dari kamera yang miring, Indonesia jadi tepat di tengah layar
+    centerLon: 118,
+    elevationDeg: 35, // sudut pandang kamera dari permukaan
+    halfW: 85, // lebar yang harus terlihat (u), cukup untuk Indonesia dan roket di Biak
+    halfH: 62,
+    moveMs: 2000,
+    // Layar tegak (HP): kamera lebih tegak dan titik tengah lebih ke utara, supaya Indonesia di tengah
+    // layar dan tidak tertutup HUD di atas.
+    portrait: { centerLat: 12, elevationDeg: 50 },
+  };
+  const reducedMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const home = { pos: new THREE.Vector3(), target: new THREE.Vector3() }; // tampilan atas biasa (dari frame())
+  const intro = { mode: 'intro', t0: 0, fromPos: new THREE.Vector3(), fromTarget: new THREE.Vector3(), fromUp: new THREE.Vector3() };
+  const lookTarget = new THREE.Vector3();
+  const WORLD_UP = new THREE.Vector3(0, 1, 0);
+  // Pemain memutar/zoom kamera: animasi berhenti, kamera tetap di tempatnya dan dikendalikan pemain.
+  controls.addEventListener('start', () => {
+    if (intro.mode === 'done') return;
+    intro.mode = 'done';
+    camera.up.copy(WORLD_UP);
+    controls.target.copy(lookTarget);
+  });
+  // Arah dari pusat Bumi ke (lintang, bujur). Bidang orbit = ekuator, selatan = +z (kamera atas melihat kutub
+  // selatan), timur searah jarum jam. Bujur Biak ada di sudut putar Bumi (landasan).
+  function surfaceDir(latDeg, lonDeg, earthAngle) {
+    const D = Math.PI / 180;
+    const th = earthAngle + (lonDeg - LAUNCH_SITE.lon) * D;
+    const c = Math.cos(latDeg * D);
+    return new THREE.Vector3(c * Math.sin(th), c * Math.cos(th), -Math.sin(latDeg * D));
+  }
+  function introPose(earthAngle) {
+    const D = Math.PI / 180;
+    const cfg = camera.aspect < 1 ? { ...INTRO, ...INTRO.portrait } : INTRO;
+    const radial = surfaceDir(cfg.centerLat, cfg.centerLon, earthAngle);
+    const target = radial.clone().multiplyScalar(EARTH.radius);
+    const south = new THREE.Vector3(0, 0, 1).addScaledVector(radial, -radial.z).normalize(); // arah selatan di permukaan
+    const e = cfg.elevationDeg * D;
+    const vfov = (camera.fov * Math.PI) / 180;
+    const dist = Math.max(INTRO.halfH, INTRO.halfW / camera.aspect) / Math.tan(vfov / 2);
+    const offset = south.multiplyScalar(Math.cos(e)).addScaledVector(radial, Math.sin(e));
+    return { pos: target.clone().addScaledVector(offset, dist), target, up: radial };
+  }
+  function applyCamera(pos, target, up) {
+    camera.position.copy(pos);
+    camera.up.copy(up);
+    lookTarget.copy(target);
+    camera.lookAt(target);
+  }
+  // Dipanggil setiap frame tampilan orbit Bumi, sesudah frame(). true = kamera diatur di sini (lewati controls).
+  function stepIntro(f, earthAngle) {
+    if (intro.mode === 'done') return false;
+    const onPad = f && f.status === 'pad' && !f.thrusting;
+    if (intro.mode === 'intro') {
+      if (onPad) {
+        const p = introPose(earthAngle);
+        applyCamera(p.pos, p.target, p.up);
+        return true;
+      }
+      if (reducedMotion || !f) return finishIntro();
+      intro.mode = 'moving';
+      intro.t0 = performance.now();
+      intro.fromPos.copy(camera.position);
+      intro.fromTarget.copy(lookTarget);
+      intro.fromUp.copy(camera.up);
+    }
+    const k = Math.min(1, (performance.now() - intro.t0) / INTRO.moveMs);
+    if (k >= 1) return finishIntro();
+    const s = k * k * (3 - 2 * k); // mulai dan berhenti pelan
+    applyCamera(
+      intro.fromPos.clone().lerp(home.pos, s),
+      intro.fromTarget.clone().lerp(home.target, s),
+      intro.fromUp.clone().lerp(WORLD_UP, s).normalize(),
+    );
+    return true;
+  }
+  function finishIntro() {
+    intro.mode = 'done';
+    camera.up.copy(WORLD_UP);
+    camera.position.copy(home.pos);
+    controls.target.copy(home.target);
+    lookTarget.copy(home.target);
+    camera.lookAt(home.target);
+    return false;
   }
 
   function resize() {
@@ -356,6 +448,12 @@ export async function createRenderer(canvas) {
     const stationAngle = v.station ? v.station.angle : localEarthAngle; // cadangan: stasiun di landasan (Biak)
     station.position.set(Math.sin(stationAngle) * EARTH.radius, Math.cos(stationAngle) * EARTH.radius, 0);
 
+    let introCam = false;
+    if (cislunar && intro.mode !== 'done') {
+      intro.mode = 'done'; // adegan pembuka hanya untuk peluncuran
+      camera.up.copy(WORLD_UP);
+      frameKey = '';
+    }
     if (cislunar) {
       // Level 3 mengirim kamera sendiri (mendekat ke Bulan saat masuk orbit). Bingkai diatur ulang hanya
       // saat kamera berubah, jadi pemain tetap bisa memutar pandangan saat kamera diam.
@@ -385,6 +483,7 @@ export async function createRenderer(canvas) {
     } else {
       if (moonRing) moonRing.visible = false;
       frame('earth', 0, 0, EARTH.orbitRadius * 1.3, EARTH.orbitRadius * 1.3);
+      introCam = stepIntro(v.flight, localEarthAngle);
       moon.visible = false;
       nominal.line.visible = false;
       prediction.set(null);
@@ -408,7 +507,7 @@ export async function createRenderer(canvas) {
     const s = Math.max(1, d / 650);
     craft.scale.set(s, s, s);
 
-    controls.update();
+    if (!introCam) controls.update();
     updateAtmosphere();
     renderer.render(scene, camera);
     return true;
