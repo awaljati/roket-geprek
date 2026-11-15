@@ -3,7 +3,7 @@ import { LEVEL_MODULES } from '../levels/index.js';
 import { bestStars, getFunds } from './progress.js';
 
 const CARDS = [
-  { level: 1, title: 'CubeSat Transmisi', where: 'Orbit rendah Bumi', what: 'Rakit CubeSat, masuk orbit, kirim sinyal pertama ke stasiun Bumi.', tag: 'Tutorial' },
+  { level: 1, title: 'CubeSat Transmisi', where: 'Orbit rendah Bumi', what: 'Rakit CubeSat, masuk orbit, kirim sinyal pertama ke stasiun bumi BRIN di Biak.', tag: 'Tutorial' },
   { level: 2, title: 'Memutari Bulan', where: 'Bumi → Bulan → Bumi', what: 'Koreksi lintasan, foto Bulan, lalu pulang lewat atmosfer seperti Artemis II.', tag: 'Menengah' },
   { level: 3, title: 'Kutub Selatan Bulan', where: 'Permukaan Bulan', what: 'Mendarat tanpa atmosfer di wilayah target Artemis: rem dengan mesin, turun pelan, tetap tegak.', tag: 'Lanjutan' },
   { level: 4, title: 'Mendarat di Mars', where: 'Permukaan Mars', what: 'Lindungi rover dari badai matahari, program pendaratannya, lalu kirim foto pertama dari Mars.', tag: 'Ahli' },

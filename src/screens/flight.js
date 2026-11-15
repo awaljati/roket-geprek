@@ -126,7 +126,7 @@ export function flightScreen(app, el) {
     if (game.phase === 'landed' && prevPhase !== 'landed') warp = 1;
     prevPhase = game.phase;
     // Percepat waktu hanya saat mesin mati dan tidak di fase genting.
-    // Level 4: game.noWarp saat badai matahari mendekat, supaya peringatan 8 detik tidak terlewat.
+    // game.noWarp: Level 4 saat badai matahari mendekat, Level 1 saat lewat di atas stasiun Biak.
     const calm = ctrl.throttle === 0 && ctrl.pulseLeft === 0 && !['flyby', 'entry', 'launch', 'descent', 'loi', 'edl'].includes(game.phase) && !game.noWarp;
     const speed = calm ? warp : 1;
     acc += Math.min(0.1, (now - last) / 1000) * speed;

@@ -14,7 +14,7 @@ import { LAUNCH_SITE } from '../data/levels.js';
 const TEXTURES = { earth: '/assets/textures/bumi.jpg', moon: '/assets/textures/bulan.jpg' };
 const COLORS = {
   earth: 0x2a6bc0,
-  atmosphere: 0x7fb6ff,
+  atmosphere: 0x9fd4ff, // biru muda
   moon: 0xa0a0a0,
   ring: 0x3fd17a,
   ringOk: 0x9cffc4,
@@ -95,11 +95,51 @@ export async function createRenderer(canvas) {
   const earthSpin = new THREE.Group();
   earthSpin.add(earth);
   scene.add(earthSpin);
+  // Pendaran atmosfer: bidang datar di pusat Bumi yang selalu menghadap kamera. Paling terang tepat di
+  // tepi Bumi yang terlihat, lalu memudar ke luar. Tipis (sampai ~1,1 jari-jari) supaya tidak mencapai
+  // cincin orbit, dan ditambahkan (additive) tanpa menulis depth supaya roket tetap terlihat di atasnya.
+  const ATMO_WIDTH = EARTH.radius * 0.1;
   const atmosphere = new THREE.Mesh(
-    new THREE.SphereGeometry(EARTH.radius * 1.06, 48, 24),
-    new THREE.MeshBasicMaterial({ color: COLORS.atmosphere, transparent: true, opacity: 0.16, side: THREE.BackSide }),
+    new THREE.PlaneGeometry(EARTH.radius * 2.6, EARTH.radius * 2.6),
+    new THREE.ShaderMaterial({
+      uniforms: {
+        uColor: { value: new THREE.Color(COLORS.atmosphere) },
+        uInner: { value: EARTH.radius },
+        uWidth: { value: ATMO_WIDTH },
+        uStrength: { value: 0.7 },
+      },
+      vertexShader: `
+        varying vec2 vPos;
+        void main() {
+          vPos = position.xy;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }`,
+      fragmentShader: `
+        uniform vec3 uColor;
+        uniform float uInner;
+        uniform float uWidth;
+        uniform float uStrength;
+        varying vec2 vPos;
+        void main() {
+          float t = (length(vPos) - uInner) / uWidth;
+          if (t < 0.0 || t > 1.0) discard;
+          float a = pow(1.0 - t, 2.2) * uStrength;
+          gl_FragColor = vec4(uColor * a, a);
+        }`,
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    }),
   );
+  atmosphere.renderOrder = -1;
   scene.add(atmosphere);
+  function updateAtmosphere() {
+    // Tepi Bumi yang terlihat (dari kamera perspektif) sedikit lebih besar dari jari-jarinya di bidang pusat.
+    atmosphere.quaternion.copy(camera.quaternion);
+    const d = camera.position.distanceTo(atmosphere.position);
+    const R = EARTH.radius;
+    atmosphere.material.uniforms.uInner.value = d > R * 1.01 ? (R * d) / Math.sqrt(d * d - R * R) : R;
+  }
   const moon = planet(CISLUNAR.moon.radius, COLORS.moon, TEXTURES.moon);
   moon.position.set(CISLUNAR.moon.x, CISLUNAR.moon.y, 0);
   scene.add(moon);
@@ -313,7 +353,7 @@ export async function createRenderer(canvas) {
     if (ea !== undefined) localEarthAngle = ea;
     else localEarthAngle += EARTH.spin / 60;
     earthSpin.rotation.z = -localEarthAngle;
-    const stationAngle = v.station ? v.station.angle : Math.PI / 4 + localEarthAngle;
+    const stationAngle = v.station ? v.station.angle : localEarthAngle; // cadangan: stasiun di landasan (Biak)
     station.position.set(Math.sin(stationAngle) * EARTH.radius, Math.cos(stationAngle) * EARTH.radius, 0);
 
     if (cislunar) {
@@ -369,6 +409,7 @@ export async function createRenderer(canvas) {
     craft.scale.set(s, s, s);
 
     controls.update();
+    updateAtmosphere();
     renderer.render(scene, camera);
     return true;
   }

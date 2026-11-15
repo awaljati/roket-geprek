@@ -5,6 +5,7 @@
 import { EARTH, ROCKET_TUNING } from '../engine/flight.js';
 import { CISLUNAR } from '../engine/cislunar.js';
 import { drawMars } from './mars2d.js';
+import { LAUNCH_SITE } from '../data/levels.js';
 
 const COLORS = {
   space: '#05070f',
@@ -21,6 +22,7 @@ const COLORS = {
 // Level 3: tekstur permukaan Bulan dipakai sebagai pola tanah; satu ubin tekstur selebar ini (u).
 const MOON_TEXTURE = '/assets/textures/bulan.jpg';
 const EARTH_TEXTURE = '/assets/textures/bumi.jpg';
+const EARTH_POLAR = 'bumi-kutub-selatan'; // penanda: Bumi dari atas kutub selatan (Level 1)
 const TEXTURE_WORLD_U = 420;
 
 export function createRenderer(canvas) {
@@ -39,21 +41,73 @@ export function createRenderer(canvas) {
     return img.complete && img.naturalWidth > 0 ? img : null;
   }
 
+  // Bumi dilihat dari atas kutub selatan, sama dengan tampilan 3D: ekuator di tepi, Biak (landasan dan
+  // stasiun bumi BRIN) tepat di puncak saat misi mulai, timur searah jarum jam. Dihitung sekali dari peta.
+  let polarEarth = null;
+  function polarEarthImage() {
+    if (polarEarth) return polarEarth;
+    const img = image(EARTH_TEXTURE);
+    if (!img) return null;
+    try {
+      const src = document.createElement('canvas');
+      src.width = Math.min(img.naturalWidth, 2048);
+      src.height = Math.round((src.width * img.naturalHeight) / img.naturalWidth);
+      const sctx = src.getContext('2d');
+      sctx.drawImage(img, 0, 0, src.width, src.height);
+      const sp = sctx.getImageData(0, 0, src.width, src.height).data;
+      const N = 512;
+      const out = document.createElement('canvas');
+      out.width = out.height = N;
+      const octx = out.getContext('2d');
+      const od = octx.createImageData(N, N);
+      const D = 180 / Math.PI;
+      for (let py = 0; py < N; py++) {
+        for (let px = 0; px < N; px++) {
+          const dx = (px + 0.5) / (N / 2) - 1;
+          const dy = (py + 0.5) / (N / 2) - 1; // ke bawah
+          const rho = Math.hypot(dx, dy);
+          if (rho > 1) continue;
+          const lat = -Math.acos(rho) * D; // proyeksi ortografis dari kutub selatan
+          const lon = LAUNCH_SITE.lon + Math.atan2(dx, -dy) * D; // sudut searah jarum jam dari puncak = ke timur
+          const u = ((((lon + 180) / 360) % 1) + 1) % 1;
+          const sx = Math.min(src.width - 1, Math.floor(u * src.width));
+          const sy = Math.min(src.height - 1, Math.floor(((90 - lat) / 180) * src.height));
+          const si = (sy * src.width + sx) * 4;
+          const oi = (py * N + px) * 4;
+          od.data[oi] = sp[si];
+          od.data[oi + 1] = sp[si + 1];
+          od.data[oi + 2] = sp[si + 2];
+          od.data[oi + 3] = 255;
+        }
+      }
+      octx.putImageData(od, 0, 0);
+      polarEarth = out;
+    } catch {
+      polarEarth = null; // gagal membaca piksel: tetap pakai peta biasa
+      return null;
+    }
+    return polarEarth;
+  }
+
   // Planet bulat di (x, y) dengan jari-jari r, di koordinat y ke atas. Peta tekstur (equirectangular) dipotong
   // lingkaran: diambil bagian tengahnya selebar setengah peta, lalu diputar `angle` (searah jarum jam) bersama planet.
   function planetDisc(x, y, r, url, fill, edge, edgeWidth, angle = 0) {
     ctx.beginPath();
     ctx.arc(x, y, r, 0, Math.PI * 2);
-    const img = image(url);
+    const polar = url === EARTH_POLAR ? polarEarthImage() : null;
+    const img = polar || image(url === EARTH_POLAR ? EARTH_TEXTURE : url);
     if (img) {
       ctx.save();
       ctx.clip();
       ctx.translate(x, y);
       ctx.scale(1, -1); // kembali ke y ke bawah supaya gambar tidak terbalik
       ctx.rotate(angle);
-      const sw = img.naturalWidth / 2;
-      const sh = img.naturalHeight;
-      ctx.drawImage(img, (img.naturalWidth - sw) / 2, 0, sw, sh, -r, -r, 2 * r, 2 * r);
+      if (polar) ctx.drawImage(polar, -r, -r, 2 * r, 2 * r);
+      else {
+        const sw = img.naturalWidth / 2;
+        const sh = img.naturalHeight;
+        ctx.drawImage(img, (img.naturalWidth - sw) / 2, 0, sw, sh, -r, -r, 2 * r, 2 * r);
+      }
       // sedikit gelap di tepi supaya terlihat bulat
       const shade = ctx.createRadialGradient(0, 0, r * 0.55, 0, 0, r);
       shade.addColorStop(0, 'rgba(0,0,0,0)');
@@ -98,7 +152,8 @@ export function createRenderer(canvas) {
     ctx.scale(scale, -scale); // y ke atas
 
     // Bumi (ikut berputar bersama landasan)
-    planetDisc(0, 0, EARTH.radius, EARTH_TEXTURE, COLORS.earth, COLORS.earthEdge, 3, view.flight.earthAngle || 0);
+    // Level 1: Bumi dari atas kutub selatan supaya stasiun bumi BRIN tepat di Biak. Level lain belum diubah.
+    planetDisc(0, 0, EARTH.radius, view.level === 1 ? EARTH_POLAR : EARTH_TEXTURE, COLORS.earth, COLORS.earthEdge, 3, view.flight.earthAngle || 0);
 
     // Stasiun Bumi (Level 1): ikut berputar bersama Bumi, dengan wilayah jangkauan antenanya
     if (view.level === 1 && view.station && ['countdown', 'deploy', 'transmit'].includes(view.phase)) {

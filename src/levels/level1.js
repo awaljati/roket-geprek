@@ -52,6 +52,7 @@ export function createLevel1(build) {
     data: 0,
     passIndex: 0, // jumlah lintasan stasiun yang sudah lewat sejak antena boleh dibuka
     inPass: false,
+    noWarp: false, // flight.js: percepat waktu dimatikan selama lewat di atas stasiun (setelah hitung mundur)
     log: [],
     result: null,
     // nilai turunan
@@ -112,6 +113,8 @@ export function stepLevel1(game, ctrl, dt) {
     const wasInPass = game.inPass;
     updateStation(game);
     if (wasInPass && !game.inPass) game.passIndex++;
+    // Seperti badai di Level 4: lintasan stasiun tidak boleh terlewat karena waktu dipercepat.
+    game.noWarp = game.inPass;
 
     if (game.transmitting && game.inPass && antennaReady(game)) {
       game.data = Math.min(L.dataForFullSignal, game.data + game.dataRate * dt);
@@ -182,6 +185,7 @@ export function command(game, cmd) {
 }
 
 function finish(game, success, failCode) {
+  game.noWarp = false;
   const fuelLeft = game.flight.fuel;
   const full = success && !failCode;
   let stars = 0;
@@ -229,7 +233,12 @@ export function snapshotLevel1(game, withTrail = true) {
     secondsToPass: game.secondsToPass ?? null,
     secondsLeftInPass: game.secondsLeftInPass ?? null,
     lastLog: game.log[game.log.length - 1] || '',
-    coach: game.assist && game.phase === 'launch' ? { msg: game.assist.msg, urgent: game.assist.urgent } : null,
+    coach:
+      game.assist && game.phase === 'launch'
+        ? { msg: game.assist.msg, urgent: game.assist.urgent }
+        : game.inPass && (game.phase === 'deploy' || game.phase === 'transmit')
+          ? { msg: 'Di atas stasiun Biak: kirim sinyal sekarang!', urgent: true }
+          : null,
     padTooWeak: !!game.flight.padTooWeak,
     result: game.result,
   };

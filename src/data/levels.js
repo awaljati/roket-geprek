@@ -47,10 +47,11 @@ export const LEVELS = {
     safeCountdownSec: 10, // asli ~30 menit
     // Stasiun Bumi: letaknya ikut berputar bersama Bumi. CubeSat bisa mengirim data hanya saat
     // berada di atas wilayah jangkauan antena stasiun (dihitung dari posisi, bukan jadwal).
-    stationOffsetDeg: 45, // posisi stasiun: 45° di timur landasan
+    // Stasiun bumi BRIN (dulu LAPAN) di Biak, pelacak satelit: letaknya sama dengan landasan peluncuran.
+    stationOffsetDeg: 0, // posisi stasiun dari landasan (0 = di Biak)
     stationCoverageDeg: 50, // lebar jangkauan ke tiap sisi (tidak sesuai skala; aslinya lebih sempit)
     dataForFullSignal: 10,
-    hint: 'Wait for the countdown before opening anything, then transmit only while you are over the ground station.',
+    hint: 'Wait for the countdown before opening anything, then transmit only while you are over the BRIN ground station in Biak.',
   },
   2: {
     name: 'Level 2: Memutari Bulan',
