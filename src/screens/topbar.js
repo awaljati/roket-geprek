@@ -10,7 +10,7 @@ export function topbarHtml({ flow = false } = {}) {
     <div class="headerlobby topbar${flow ? ' topbar-flow' : ''}">
       <div class="headerlobby-left">
         <button type="button" class="topbar-btn tb-back" data-tb="back" aria-label="Kembali" title="Kembali">
-          <img src="/assets/back-icon.svg" alt="">
+          <img src="/assets/back-button.svg" alt="">
         </button>
         <button type="button" class="topbar-btn tb-settings" data-tb="settings" aria-label="Pengaturan" title="Pengaturan">
           <img src="/assets/ui/pengaturan.webp" alt="">
