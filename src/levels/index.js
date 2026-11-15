@@ -16,7 +16,7 @@ export const LEVEL_MODULES = {
     defaultBuild: { size: '1U', items: ['cs-battery', 'cs-antenna-uhf'], fuel: 0.8, assist: true },
     briefing: 'Build a CubeSat, ride a rocket to low Earth orbit, deploy safely, and send your first signal to the BRIN ground station in Biak.',
     realMission: 'CubeSat buatan kampus yang diluncurkan lewat NASA CubeSat Launch Initiative, juga Surya Satellite-1 dari Indonesia (cek ulang).',
-    fact: 'Di Biak, Papua, ada stasiun bumi milik BRIN (dulu LAPAN) yang melacak satelit dan menerima datanya. Letaknya dekat khatulistiwa, jadi banyak satelit melintas di atasnya.',
+    fact: 'Di Biak, Papua, ada stasiun bumi milik BRIN (dulu LAPAN) untuk melacak satelit, mengirim perintah, dan menerima datanya. Karena dekat khatulistiwa, satelit yang orbitnya sejajar khatulistiwa, seperti LAPAN-A2, melintas di atasnya hampir setiap putaran. Stasiun ini juga membantu memantau peluncuran roket India (ISRO).',
   },
   2: {
     create: (build, seed) => L2.createLevel2(build, seed),
