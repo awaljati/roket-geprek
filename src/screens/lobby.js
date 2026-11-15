@@ -7,7 +7,6 @@ export function lobbyScreen(app, el) {
     <div class="headerlobby-left">
       <button id="back" class="btn-back" aria-label="Kembali">
         <img src="/assets/back-icon.svg" alt="" class="btn-back-icon" />
-        <span>Kembali</span>
       </button>
       <a class="btn-settinglobby" id="settings"
          href="http://itb.ac.id/"
