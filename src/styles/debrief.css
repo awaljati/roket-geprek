@@ -1,0 +1,101 @@
+/* Layar Debrief (desain DKV: public/layout screenshoot/). Dua kolom di atas latar ungu:
+   kiri = bintang, Pok-Pok, status; kanan = skor dan rincian. Class berawalan .db- */
+.debrief-screen {
+  --db-yel: #f2e45a;
+  --db-pink: #a92281;
+  --db-text: #ffffff;
+  --db-dim: #b8a9d6;
+  --db-font: 'Londrina Solid', system-ui, sans-serif;
+  min-height: 100vh;
+  min-height: 100svh;
+  /* Latar Pilih Misi digelapkan ke ungu kebiruan seperti layout (garis putus-putus jalur jadi samar) */
+  background: linear-gradient(rgba(18, 8, 72, 0.58), rgba(18, 8, 72, 0.58)), #1c0b54 url('/assets/misi/latar.webp') center / cover fixed no-repeat;
+  color: var(--db-text);
+}
+.db-wrap {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: clamp(20px, 4vw, 48px) clamp(16px, 4vw, 48px);
+  display: grid;
+  grid-template-columns: minmax(240px, 0.8fr) 1.2fr;
+  gap: clamp(20px, 4vw, 56px);
+  align-items: start;
+}
+
+/* Kiri: bintang melengkung, Pok-Pok, status */
+.db-left { position: sticky; top: clamp(20px, 4vw, 48px); display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.db-stars { display: flex; align-items: flex-end; justify-content: center; gap: clamp(8px, 2vw, 24px); }
+.db-star { width: clamp(56px, 7vw, 84px); height: auto; display: block; filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.35)); }
+.db-star.s1 { transform: translateY(-22px); }
+.win .db-star[src*='warna'] { animation: db-pop 0.5s ease-out backwards; }
+.win .db-star.s1 { animation-delay: 0.15s; }
+.win .db-star.s2 { animation-delay: 0.3s; }
+@keyframes db-pop { from { opacity: 0; scale: 0.3; } to { opacity: 1; scale: 1; } }
+.db-pokpok { width: clamp(180px, 22vw, 260px); height: auto; display: block; margin-top: 8px; }
+.win .db-pokpok { animation: naikTurun 2s ease-in-out infinite; }
+.db-status {
+  margin: 4px 0 0;
+  font-family: var(--db-font);
+  font-weight: 900;
+  font-size: clamp(1.8rem, 3.6vw, 2.4rem);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  paint-order: stroke fill;
+}
+.win .db-status { color: #d7ea4f; -webkit-text-stroke: 2px #3d6b12; text-shadow: 2px 3px 0 #3d6b12; }
+.lose .db-status { color: #ff8fc0; -webkit-text-stroke: 2px #7a1452; text-shadow: 2px 3px 0 #7a1452; }
+
+/* Kanan: judul, skor, rincian */
+.db-right { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.db-title {
+  margin: 0 0 6px;
+  font-family: var(--db-font);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: clamp(1.7rem, 3.8vw, 2.6rem);
+  line-height: 1.05;
+  color: var(--db-yel);
+  -webkit-text-stroke: 1.5px var(--db-pink);
+  paint-order: stroke fill;
+  text-shadow: 0 0 6px rgba(169, 34, 129, 0.9), 2px 2px 0 var(--db-pink);
+}
+.db-fail { padding: 10px 14px; border-radius: 10px; background: rgba(255, 93, 140, 0.16); border: 1.5px solid rgba(255, 143, 192, 0.6); line-height: 1.4; }
+.db-fail b { font-family: var(--db-font); font-weight: 900; letter-spacing: 0.5px; color: #ff8fc0; margin-right: 6px; }
+
+.db-sec { display: flex; flex-direction: column; gap: 10px; }
+.db-sec h3 { margin: 0; font-size: 1.35rem; font-weight: 700; }
+.db-row { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; }
+.db-k { font-weight: 700; font-size: 1.2rem; }
+.db-v { text-align: right; font-weight: 700; font-size: 1.2rem; font-variant-numeric: tabular-nums; }
+.db-v small { display: block; font-weight: 500; font-size: 0.75rem; color: var(--db-dim); margin-top: 2px; }
+.db-row.score .db-k { color: var(--db-yel); }
+.db-row.score .db-v { font-family: var(--db-font); font-weight: 900; font-size: clamp(2.2rem, 4.5vw, 3rem); line-height: 1; color: var(--db-yel); }
+.db-row.sub { padding-left: 0; }
+.db-row.sub .db-k { font-weight: 500; font-size: 0.92rem; color: var(--db-dim); }
+.db-row.sub .db-v { font-size: 1rem; }
+.db-text p, .db-text ul { margin: 0; color: #e6dcf5; font-size: 0.92rem; line-height: 1.45; }
+.db-text ul { padding-left: 1.2em; display: flex; flex-direction: column; gap: 4px; }
+
+.db-funds { padding: 12px 14px; border-radius: 10px; background: rgba(20, 6, 34, 0.55); border: 1px solid rgba(242, 228, 90, 0.35); font-size: 0.95rem; }
+.db-funds b { color: var(--db-yel); }
+.db-funds small { display: block; color: var(--db-dim); margin-top: 2px; }
+
+.db-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+.db-actions button { background: rgba(20, 6, 34, 0.7); border-color: rgba(255, 255, 255, 0.25); font-weight: 700; }
+.db-actions button.primary { background: var(--accent); border-color: var(--accent); color: #1a0d03; }
+.db-actions.small button { font-weight: 500; font-size: 0.9rem; padding: 8px 14px; }
+
+/* HP: satu kolom, bintang dan Pok-Pok di atas */
+@media (max-width: 760px) {
+  .debrief-screen { background-attachment: scroll; }
+  .db-wrap { grid-template-columns: 1fr; }
+  .db-left { position: static; }
+  .db-pokpok { width: 150px; }
+  .db-title { text-align: center; }
+  .db-k, .db-v { font-size: 1.05rem; }
+  .db-actions button { flex: 1 1 auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .win .db-pokpok, .win .db-star { animation: none; }
+}
