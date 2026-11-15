@@ -59,7 +59,7 @@ input[type='text'] { font: inherit; padding: 10px; border-radius: 10px; border: 
   z-index: 1;
 }
 
-.screen .lobby-screen {
+.screen.lobby-screen {
   max-width: none;
   width: 100%;
   min-height: 100vh;
