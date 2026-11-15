@@ -1,0 +1,63 @@
+/* Bingkai layar terbang (desain DKV: public/assets/frame.svg).
+   Gambar dipotong dua supaya bisa menyesuaikan ukuran layar apa pun:
+   - frame/jendela.webp (1920×885): jendela di atas kanvas, 9-slice supaya sudut miring tidak gepeng.
+   - frame/dok.webp (1920×195): ruang di bawah jendela, tempat tombol Gas dan lainnya menempel.
+   --fk = skala bingkai (1 = ukuran asli 1920 px). */
+.flight .view { --fk: 0.5; --dock-bg: #0d3b62; background: var(--dock-bg); }
+
+/* Jendela: menutupi tepi kanvas, transparan di tengah */
+.frame-window {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  border-style: solid;
+  border-image-source: url('/assets/frame/jendela.webp');
+  border-image-slice: 215 200 100 200 fill;
+  border-width: calc(215px * var(--fk)) calc(200px * var(--fk)) calc(100px * var(--fk)) calc(200px * var(--fk));
+  border-image-repeat: stretch;
+}
+
+/* Isi yang melayang di atas kanvas tetap di atas bingkai, dan masuk ke dalam jendela */
+.flight .hud { z-index: 3; left: calc(80px * var(--fk) + 8px); top: calc(160px * var(--fk)); }
+.flight .menu-btn { z-index: 3; right: calc(80px * var(--fk) + 8px); top: calc(160px * var(--fk)); }
+.flight .timeline { z-index: 3; top: calc(160px * var(--fk)); right: calc(80px * var(--fk) + 108px); max-width: 42%; }
+.flight .coach { margin-left: calc(120px * var(--fk) + 8px); margin-bottom: calc(100px * var(--fk) + 4px); }
+
+/* Dok: ruang bawah bingkai, tombol menempel di bagian datarnya */
+.flight .dock {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  min-height: calc(195px * var(--fk));
+  padding: calc(18px * var(--fk)) calc(380px * var(--fk)) calc(34px * var(--fk));
+  border-style: solid;
+  border-width: 0;
+  border-image-source: url('/assets/frame/dok.webp');
+  border-image-slice: 0 440 0 440 fill;
+  border-image-width: 0 calc(440px * var(--fk)) 0 calc(440px * var(--fk));
+  border-image-repeat: stretch;
+}
+.flight .dock .touch { background: transparent; border-top: 0; padding: 0; }
+.flight .dock button { background: rgba(7, 37, 78, 0.85); border-color: #2aa5c8; }
+.flight .dock button.primary { background: var(--accent); border-color: #ffb37a; color: #1a0d03; }
+.flight .dock button:disabled { background: rgba(7, 37, 78, 0.6); }
+
+/* Layar besar: bingkai sedikit lebih tebal */
+@media (min-width: 1400px) and (min-height: 800px) {
+  .flight .view { --fk: 0.6; }
+}
+
+/* HP: bingkai tipis, tombol tetap muat */
+@media (max-width: 720px) {
+  .flight .view { --fk: 0.22; }
+  .flight .dock { padding: 8px calc(300px * var(--fk)) 10px; min-height: 0; }
+  .flight .hud { left: calc(80px * var(--fk) + 4px); }
+  .flight .menu-btn { right: calc(80px * var(--fk) + 4px); }
+  .flight .timeline { right: calc(80px * var(--fk) + 84px); max-width: 40%; }
+  /* Pok-Pok di HP punya baris sendiri di bawah jendela */
+  .flight .coach { margin: 0; }
+}
