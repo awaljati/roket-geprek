@@ -71,7 +71,7 @@ export function createLevel4(build, seed = 'solo') {
     coach: null,
     noWarp: false, // flight.js: percepat waktu dimatikan saat badai mendekat
     flight: createFlight({ planet: EARTH, fuel: 1, orbitHoldSec: L.orbitHoldSec }),
-    launchAssist: build.assist !== false ? createAssist() : null,
+    launchAssist: createAssist({ steerOnly: build.assist === false }), // mode ahli: hanya kemudi
     rocketFuel: 1,
     fuel: build.fuel, // bahan bakar roket pendarat (slider Rakit)
     hasEdl: has('mars-edl'),

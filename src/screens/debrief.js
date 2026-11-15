@@ -60,7 +60,11 @@ export function debriefScreen(app, el) {
           }${r.success ? `<p class="muted">Foto pertama: ${Math.round(r.photoShare * 100)}% terkirim · kamera ${r.cameraDamaged ? 'rusak terkena badai' : 'baik ✓'}${r.frugal ? '' : ' · memakai dana cadangan'}</p>` : ''}`
         : ''
     }
-    ${r.advice && r.advice.length ? `<div class="card"><b>${r.success ? 'Supaya lebih baik' : 'Cara memperbaiki'}</b><ul>${r.advice.map((a) => `<li>${a}</li>`).join('')}</ul></div>` : ''}
+    ${(() => {
+      // Gagal di mode ahli: sarankan bantuan pilot paling atas.
+      const tips = [...(!r.success && app.build && app.build.assist === false ? ['Coba nyalakan Bantuan pilot di layar Rakit: pelatih memberi aba-aba kapan menekan Gas +, dan kemudi selanjutnya diatur otomatis.'] : []), ...(r.advice || [])];
+      return tips.length ? `<div class="card"><b>${r.success ? 'Supaya lebih baik' : 'Cara memperbaiki'}</b><ul>${tips.map((a) => `<li>${a}</li>`).join('')}</ul></div>` : '';
+    })()}
     ${M.fact ? `<p class="card">Fakta: ${M.fact}</p>` : ''}
     <p class="card">${
       r.reward ? `Dana misi diterima: <b>+${r.reward} juta $</b>` : 'Misi gagal: tidak ada dana misi.'

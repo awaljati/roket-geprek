@@ -60,7 +60,8 @@ export function flightScreen(app, el) {
   }
 
   const padSet =
-    app.level === 2 ? (game.assist ? 'moonAssist' : 'moon') : app.level >= 3 ? (game.assist ? 'moonAssist' : 'lunar') : game.assist ? 'basic' : 'manual';
+    // Peluncuran ke orbit selalu miring otomatis, jadi Level 1 dan 4 tidak butuh tombol putar.
+    app.level === 2 ? (game.assist ? 'moonAssist' : 'moon') : app.level === 4 ? 'moonAssist' : app.level === 3 ? (game.assist ? 'moonAssist' : 'lunar') : 'basic';
   const unbind = bindControls(
     $('#pad'),
     (action) => {

@@ -34,7 +34,7 @@ export function rakitScreen(app, el) {
         )
         .join('')}</div>
     </div>
-    <label class="card row"><input type="checkbox" id="assist"> <span><b>Bantuan pilot</b> (disarankan untuk pemula)<br><small class="muted">${
+    <label class="card row"><input type="checkbox" id="assist"> <span><b>Bantuan pilot</b> (disarankan)<br><small class="muted">${
       isCubeSat
         ? 'Roket dimiringkan otomatis dan mesin dimatikan tepat waktu. Kamu cukup menekan Gas + saat diminta.'
         : app.level === 4
@@ -42,7 +42,7 @@ export function rakitScreen(app, el) {
           : app.level === 3
           ? 'Pendarat dijaga tetap tegak dan gas dikurangi otomatis kalau berlebihan. Kamu cukup menekan Gas + saat diminta.'
           : 'Arah kapsul diatur otomatis (koreksi lintasan, membidik Bulan, pelindung panas). Kamu cukup menekan Gas + dan Ambil foto saat diminta.'
-    }</small></span></label>
+    }<br>Tanpa bantuan = mode ahli: roket tetap miring dan mesin mati otomatis saat ke orbit, tapi tanpa aba-aba: kamu sendiri yang menentukan kapan menyalakan mesin di puncak${app.level === 2 || app.level === 3 ? ', dan kemudi selanjutnya manual' : ''}.</small></span></label>
     <div class="card">
       <b>Bahan bakar ${isCubeSat ? 'roket' : app.level === 4 ? 'roket pendarat' : app.level === 3 ? 'pendarat' : 'kapsul'}: <span id="fuelv"></span></b>
       <input type="range" id="fuel" min="1" max="10" step="1" style="width:100%">
