@@ -2,6 +2,7 @@
 // Semua tampilan punya bentuk yang sama: createRenderer(canvas) -> { draw(view) }.
 // `view` = snapshot dari snapshotLevel1(): data saja, jadi bisa dikirim lewat room.
 
+import { translateCanvas } from '../i18n.js';
 import { ROCKET_SPRITE, rocketSpriteSize } from './sprites.js';
 import { EARTH, ROCKET_TUNING } from '../engine/flight.js';
 import { CISLUNAR } from '../engine/cislunar.js';
@@ -28,6 +29,7 @@ const TEXTURE_WORLD_U = 420;
 
 export function createRenderer(canvas) {
   const ctx = canvas.getContext('2d');
+  translateCanvas(ctx);
   const stars = Array.from({ length: 140 }, () => [Math.random(), Math.random(), Math.random() * 1.4]);
 
   // Tekstur planet (sama dengan tampilan 3D). Selama belum termuat (atau gagal), planet berwarna polos.

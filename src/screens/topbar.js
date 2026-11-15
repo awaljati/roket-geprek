@@ -2,6 +2,7 @@
 // kiri = Kembali, Pengaturan, dana cadangan (koin cabe); kanan = nama game dan kepala Pok-Pok.
 import { getFunds, resetProgress } from './progress.js';
 import { prefers3D, setPrefer3D } from '../render/view.js';
+import { getLang, setLang } from '../i18n.js';
 import '../styles/ui-dkv.css';
 
 // flow = ikut alur halaman (Rakit); tanpa flow = menempel di atas layar (Lobby, Pilih Misi).
@@ -21,6 +22,7 @@ export function topbarHtml({ flow = false } = {}) {
         </div>
       </div>
       <div class="headerlobby-right">
+        <button type="button" class="tb-lang" data-tb="lang" title="Bahasa / Language">${getLang() === 'en' ? 'ID' : 'EN'}</button>
         <span class="headerlobby-name">Roket Geprek</span>
         <img src="/assets/ui/kepala-ayam.webp" alt="" class="tb-ayam">
       </div>
@@ -31,6 +33,7 @@ export function topbarHtml({ flow = false } = {}) {
 export function bindTopbar(el, app, { back }) {
   el.querySelector('[data-tb="back"]').onclick = back;
   el.querySelector('[data-tb="settings"]').onclick = () => openSettings(app);
+  el.querySelector('[data-tb="lang"]').onclick = () => setLang(getLang() === 'en' ? 'id' : 'en');
 }
 
 function openSettings(app) {
@@ -39,6 +42,13 @@ function openSettings(app) {
   box.innerHTML = `
     <div class="tb-dialog" role="dialog" aria-modal="true" aria-labelledby="tb-title">
       <h3 id="tb-title">Pengaturan</h3>
+      <div class="tb-row">
+        <div><b>Bahasa / Language</b></div>
+        <div class="tb-seg">
+          <button type="button" data-lang="id">Indonesia</button>
+          <button type="button" data-lang="en">English</button>
+        </div>
+      </div>
       <div class="tb-row">
         <div><b>Tampilan</b><br><small>3D lebih indah; 2D lebih ringan untuk HP lama.</small></div>
         <div class="tb-seg">
@@ -61,6 +71,10 @@ function openSettings(app) {
   const showView = () =>
     box.querySelectorAll('[data-view]').forEach((b) => b.classList.toggle('on', (b.dataset.view === '3d') === prefers3D()));
   showView();
+  box.querySelectorAll('[data-lang]').forEach((b) => {
+    b.classList.toggle('on', b.dataset.lang === getLang());
+    b.onclick = () => b.dataset.lang !== getLang() && setLang(b.dataset.lang);
+  });
   box.querySelectorAll('[data-view]').forEach((b) => {
     b.onclick = () => {
       setPrefer3D(b.dataset.view === '3d');
