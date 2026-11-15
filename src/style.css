@@ -15,8 +15,9 @@ html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
 #app { min-height: 100%; }
 
 button { font: inherit; color: var(--text); background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 16px; cursor: pointer; }
-/* button.primary { background: var(--accent); border-color: var(--accent); color: #1a0d03; font-weight: 700; }*/
-button.primary {
+button.primary { background: var(--accent); border-color: var(--accent); color: #1a0d03; font-weight: 700; }
+/* Tombol bergambar (mis. MULAI di layar awal): tanpa kotak, hanya gambarnya */
+button.primary:has(> img) {
   background: transparent;
   border: none;
   border-radius: 0;
@@ -24,20 +25,13 @@ button.primary {
   z-index: 2;
   transition: transform 0.15s ease;
 }
-
-button.primary img {
+button.primary > img {
   width: min(190px, 45vw);
   height: auto;
   display: block;
 }
-
-button.primary:hover {
-  transform: scale(1.05);
-}
-
-button.primary:active {
-  transform: scale(0.95);
-}
+button.primary:has(> img):hover { transform: scale(1.05); }
+button.primary:has(> img):active { transform: scale(0.95); }
   
 .floating-icon {  width: min(460px, 82vw);  height: auto; pointer-events: none; animation: naikTurun 2s ease-in-out infinite;}
 @keyframes naikTurun { 0%, 100% { transform: translateY(0); } 50% {    transform: translateY(-10px);  } }
