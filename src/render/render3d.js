@@ -10,6 +10,7 @@
 import { EARTH, ROCKET_TUNING } from '../engine/flight.js';
 import { CISLUNAR } from '../engine/cislunar.js';
 import { LAUNCH_SITE } from '../data/levels.js';
+import { ROCKET_SPRITE, rocketSpriteSize } from './sprites.js';
 
 const TEXTURES = { earth: '/assets/textures/bumi.jpg', moon: '/assets/textures/bulan.jpg' };
 const COLORS = {
@@ -290,12 +291,70 @@ export async function createRenderer(canvas) {
   const antenna = part(new THREE.CylinderGeometry(0.2, 0.2, 9, 8), white, 0, 7);
   cubesat.add(antenna);
 
+  // Roket bergambar dari DKV: bidang datar yang berputar di sumbu roket supaya selalu menghadap kamera.
+  // Kalau kamera melihat searah sumbu roket (dari hidung), dipakai gambar tampak atas.
+  // Kalau gambar gagal dimuat, model 3D sederhana di atas tetap dipakai.
+  const spriteTex = {};
+  let spriteReady = false;
+  const loadSprite = (key, url) =>
+    loader.load(
+      url,
+      (tex) => {
+        tex.colorSpace = THREE.SRGBColorSpace;
+        spriteTex[key] = tex;
+        if (spriteTex.off && spriteTex.on) spriteReady = true;
+      },
+      undefined,
+      () => {},
+    );
+  loadSprite('off', ROCKET_SPRITE.off);
+  loadSprite('on', ROCKET_SPRITE.on);
+  loadSprite('top', ROCKET_SPRITE.top);
+  const sz = rocketSpriteSize();
+  const sideMat = new THREE.MeshBasicMaterial({ transparent: true, alphaTest: 0.05, side: THREE.DoubleSide, depthWrite: false });
+  const side = new THREE.Mesh(new THREE.PlaneGeometry(sz.w, sz.h), sideMat);
+  side.position.y = sz.tail - sz.h / 2; // ekor di y = 0, api di bawahnya
+  const sidePivot = new THREE.Group(); // berputar di sumbu Y (sumbu roket)
+  sidePivot.add(side);
+  const topSize = sz.w * 1.1;
+  const topMat = new THREE.MeshBasicMaterial({ transparent: true, alphaTest: 0.05, side: THREE.DoubleSide, depthWrite: false });
+  const topView = new THREE.Mesh(new THREE.PlaneGeometry(topSize, topSize / ROCKET_SPRITE.topAspect), topMat);
+  topView.position.y = sz.tail * 0.6;
+  const rocketSprite = new THREE.Group();
+  rocketSprite.add(sidePivot, topView);
+  const camLocal = new THREE.Vector3();
+
   const craft = new THREE.Group();
-  craft.add(rocket, capsule, cubesat);
+  craft.add(rocket, capsule, cubesat, rocketSprite);
   scene.add(craft);
 
+  function updateRocketSprite(thrusting) {
+    const map = thrusting ? spriteTex.on : spriteTex.off;
+    if (sideMat.map !== map) {
+      sideMat.map = map;
+      sideMat.needsUpdate = true;
+    }
+    // Arah kamera dilihat dari wahana (koordinat lokal: sumbu roket = +Y).
+    craft.updateMatrixWorld();
+    camLocal.copy(camera.position);
+    craft.worldToLocal(camLocal);
+    camLocal.sub(new THREE.Vector3(0, sz.tail * 0.5, 0)).normalize();
+    const alongAxis = Math.abs(camLocal.y) > 0.9 && spriteTex.top;
+    sidePivot.visible = !alongAxis;
+    topView.visible = !!alongAxis;
+    if (alongAxis) {
+      if (topMat.map !== spriteTex.top) {
+        topMat.map = spriteTex.top;
+        topMat.needsUpdate = true;
+      }
+      topView.lookAt(craft.localToWorld(camLocal.clone().multiplyScalar(1000)));
+    } else sidePivot.rotation.y = Math.atan2(camLocal.x, camLocal.z);
+  }
+
   function showCraft(kind, v, x, y, angle, thrusting) {
-    rocket.visible = kind === 'rocket';
+    const useSprite = kind === 'rocket' && spriteReady;
+    rocket.visible = kind === 'rocket' && !useSprite;
+    rocketSprite.visible = useSprite;
     capsule.visible = kind === 'capsule';
     cubesat.visible = kind === 'cubesat';
     const flicker = 0.8 + Math.random() * 0.4;
@@ -307,6 +366,7 @@ export async function createRenderer(canvas) {
     antenna.visible = !!v.antennaOpen;
     craft.position.set(x, y, 0);
     craft.rotation.set(0, 0, -angle); // sudut game searah jarum jam dari atas
+    if (useSprite) updateRocketSprite(!!thrusting);
   }
 
   // ---------- Kamera ----------

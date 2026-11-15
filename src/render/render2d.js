@@ -2,6 +2,7 @@
 // Semua tampilan punya bentuk yang sama: createRenderer(canvas) -> { draw(view) }.
 // `view` = snapshot dari snapshotLevel1(): data saja, jadi bisa dikirim lewat room.
 
+import { ROCKET_SPRITE, rocketSpriteSize } from './sprites.js';
 import { EARTH, ROCKET_TUNING } from '../engine/flight.js';
 import { CISLUNAR } from '../engine/cislunar.js';
 import { drawMars } from './mars2d.js';
@@ -230,6 +231,15 @@ export function createRenderer(canvas) {
       }
     } else {
       // Titik posisi roket = ekor roket, supaya roket berdiri tepat di permukaan Bumi.
+      // Gambar dari DKV kalau sudah termuat; kalau belum, bentuk sederhana di bawah.
+      const off = image(ROCKET_SPRITE.off);
+      const on = image(ROCKET_SPRITE.on);
+      const img = (f.thrusting && on) || off || on;
+      if (img) {
+        const sz = rocketSpriteSize();
+        ctx.scale(1, -1); // gambar memakai y ke bawah: hidung di atas, api di bawah ekor
+        ctx.drawImage(img, -sz.w / 2, -sz.tail, sz.w, sz.h);
+      } else {
       if (f.thrusting) {
         ctx.fillStyle = COLORS.flame;
         ctx.beginPath();
@@ -247,6 +257,7 @@ export function createRenderer(canvas) {
       ctx.lineTo(-4, 12);
       ctx.closePath();
       ctx.fill();
+      }
     }
     ctx.restore();
     ctx.restore();
