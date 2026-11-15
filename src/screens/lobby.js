@@ -4,7 +4,6 @@ export function lobbyScreen(app, el) {
   el.className = 'screen lobby-screen';
   el.innerHTML = `
     <div>
-      el.innerHTML = `
        <a class="btnlink"
          href="http://itb.ac.id/"
          target="_blank"
