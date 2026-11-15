@@ -262,7 +262,9 @@ function programCoach(game) {
   const [rlo, rhi] = L.retro.safeKm;
   if (!inRange(pr.entryDeg, L.entry.safeDeg)) return { msg: `Navigator: atur sudut masuk (U/O) ke ${elo}° sampai ${ehi}°. Sekarang ${fmt(pr.entryDeg)}°.`, urgent: false };
   if (!inRange(pr.retroKm, L.retro.safeKm)) return { msg: `Navigator: atur roket pendarat (J/L) menyala di ${fmt(rlo)}–${fmt(rhi)} km. Sekarang ${fmt(pr.retroKm)} km.`, urgent: false };
-  if (!pr.ready) return { msg: 'Spesialis: atur ketinggian parasut dibuka, lalu tekan Siap.', urgent: false };
+  const [clo, chi] = L.chute.safeKm;
+  if (!inRange(pr.chuteKm, L.chute.safeKm)) return { msg: `Spesialis: atur parasut dibuka di ${clo}–${chi} km. Sekarang ${fmt(pr.chuteKm)} km.`, urgent: false };
+  if (!pr.ready) return { msg: 'Spesialis: parasut sudah di rentang aman, tekan Siap.', urgent: false };
   return { msg: 'Program siap. Navigator: tekan Mulai masuk atmosfer (Enter).', urgent: true };
 }
 
@@ -640,7 +642,7 @@ function adviceFor(game, success, failCode, { frugal, photoShare }) {
         out.push(
           `Daya habis saat mengirim (butuh ${-(sf.basePower + sf.antenna.power)} W). Di Mars panel surya hanya menghasilkan ${Math.round(SF.solarShare * 100)}%${
             sf.panelFull ? ` (panel kamu ${sf.panelPower} W dari ${sf.panelFull} W)` : ', dan kamu tidak memasang panel surya'
-          }. Pasang panel surya besar, RTG, atau baterai.`,
+          }${sf.rtgPower ? `, ditambah RTG ${sf.rtgPower} W` : ''}. ${sf.rtgPower ? 'Tambah baterai atau panel surya besar.' : 'Pasang panel surya besar, RTG, atau baterai.'}`,
         );
       else if (!sf.pressed) out.push('Spesialis: tekan Kirim foto sebelum waktu di permukaan habis.');
     }
