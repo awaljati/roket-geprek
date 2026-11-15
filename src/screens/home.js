@@ -2,10 +2,11 @@ export function homeScreen(app, el) {
   el.className = 'screen center home-screen';
   el.innerHTML = `
        <a class="btnlink"
-         href="http://itb.ac.id/"
+         href="https://www.instagram.com/roketgeprek.studio/"
          target="_blank"
-         rel="noopener noreferrer">
-        <img src="/assets/ui/kepala-ayam.webp" alt="Kunjungi Kami" />
+         rel="noopener noreferrer"
+         title="Instagram @roketgeprek.studio">
+        <img src="/assets/ui/kepala-ayam.webp" alt="Instagram Roket Geprek (@roketgeprek.studio)" />
       </a>
       
     <img src="/assets/ui/judul.webp" alt="Roket Geprek" class="floating-icon" />
