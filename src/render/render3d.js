@@ -311,17 +311,22 @@ export async function createRenderer(canvas) {
   loadSprite('on', ROCKET_SPRITE.on);
   loadSprite('top', ROCKET_SPRITE.top);
   const sz = rocketSpriteSize();
-  const sideMat = new THREE.MeshBasicMaterial({ transparent: true, alphaTest: 0.05, side: THREE.DoubleSide, depthWrite: false });
+  // Lambert: roket ikut diterangi Matahari yang sama dengan Bumi (sisi siang terang, sisi malam redup), jadi
+  // tidak tampak seperti stiker. Warna sedikit diredam; emissive menjaga roket tetap terlihat di sisi malam.
+  const spriteMat = () =>
+    new THREE.MeshLambertMaterial({ color: 0xb4b4b4, emissive: 0x3a3a3a, transparent: true, alphaTest: 0.05, side: THREE.DoubleSide, depthWrite: false });
+  const sideMat = spriteMat();
   const side = new THREE.Mesh(new THREE.PlaneGeometry(sz.w, sz.h), sideMat);
   side.position.y = sz.tail - sz.h / 2; // ekor di y = 0, api di bawahnya
   const sidePivot = new THREE.Group(); // berputar di sumbu Y (sumbu roket)
   sidePivot.add(side);
   const topSize = sz.w * 1.1;
-  const topMat = new THREE.MeshBasicMaterial({ transparent: true, alphaTest: 0.05, side: THREE.DoubleSide, depthWrite: false });
+  const topMat = spriteMat();
   const topView = new THREE.Mesh(new THREE.PlaneGeometry(topSize, topSize / ROCKET_SPRITE.topAspect), topMat);
   topView.position.y = sz.tail * 0.6;
   const rocketSprite = new THREE.Group();
   rocketSprite.add(sidePivot, topView);
+  rocketSprite.scale.setScalar(0.75); // sedikit lebih kecil supaya tidak tampak raksasa di samping Indonesia
   const camLocal = new THREE.Vector3();
 
   const craft = new THREE.Group();
@@ -331,7 +336,7 @@ export async function createRenderer(canvas) {
   function updateRocketSprite(thrusting) {
     const map = thrusting ? spriteTex.on : spriteTex.off;
     if (sideMat.map !== map) {
-      sideMat.map = map;
+      sideMat.map = sideMat.emissiveMap = map;
       sideMat.needsUpdate = true;
     }
     // Arah kamera dilihat dari wahana (koordinat lokal: sumbu roket = +Y).
@@ -344,7 +349,7 @@ export async function createRenderer(canvas) {
     topView.visible = !!alongAxis;
     if (alongAxis) {
       if (topMat.map !== spriteTex.top) {
-        topMat.map = spriteTex.top;
+        topMat.map = topMat.emissiveMap = spriteTex.top;
         topMat.needsUpdate = true;
       }
       topView.lookAt(craft.localToWorld(camLocal.clone().multiplyScalar(1000)));

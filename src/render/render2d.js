@@ -238,7 +238,9 @@ export function createRenderer(canvas) {
       if (img) {
         const sz = rocketSpriteSize();
         ctx.scale(1, -1); // gambar memakai y ke bawah: hidung di atas, api di bawah ekor
+        ctx.filter = 'saturate(0.8) brightness(0.9)'; // diredam sedikit supaya menyatu dengan Bumi
         ctx.drawImage(img, -sz.w / 2, -sz.tail, sz.w, sz.h);
+        ctx.filter = 'none';
       } else {
       if (f.thrusting) {
         ctx.fillStyle = COLORS.flame;
