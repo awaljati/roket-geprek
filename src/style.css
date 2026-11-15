@@ -81,7 +81,7 @@ button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
   .timeline span:not(.on) { display: none; }
 }
 /* Panggung tampilan: kanvas 2D dan 3D bertumpuk di tempat yang sama */
-.stage { position: relative; min-height: 0; overflow: hidden; }
+.stage { grid-row: 1; grid-column: 1; position: relative; min-height: 0; overflow: hidden; }
 .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 /* Pilih misi */
 .level-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
