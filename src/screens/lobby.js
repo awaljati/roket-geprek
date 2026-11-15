@@ -17,7 +17,7 @@ export function lobbyScreen(app, el) {
         <img src="/assets/l-icon-setting.svg" />
       </a>
       <div class="coin" aria-label="Koin">
-        <img src="/assets/l-koin-cabe.svg" alt="" class="coin-icon" />
+        <img src="/assets/koin-cabe-merah.svg" alt="" class="coin-icon" />
         <span class="coin-text" id="coin-count">0</span>
       </div>
     </div>
