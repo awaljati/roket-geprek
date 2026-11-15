@@ -20,6 +20,7 @@ button.primary {
   border: none;
   border-radius: 0;
   padding: 0;
+  z-index: 2;
   transition: transform 0.15s ease;
 }
 
