@@ -254,3 +254,99 @@ button.big { padding: 14px 16px; font-size: 1.1rem; font-weight: 700; }
   .hud small.muted { display: none; }
   .hud { gap: 2px; max-width: 58%; }
 }
+
+/* ── Header ──────────────────────────────────────────── */
+.headerlobby {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px clamp(12px, 2.5vw, 28px);
+  min-height: clamp(56px, 7vw, 78px);
+
+  background-image: url('/assets/header-bg.svg');
+  background-size: 100% 100%;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.headerlobby-left,
+.headerlobby-right {
+  display: flex;
+  align-items: center;
+  gap: clamp(8px, 1.2vw, 16px);
+}
+
+/* Tombol setting */
+.btn-settinglobby {
+  width: clamp(36px, 3.6vw, 44px);
+  height: clamp(36px, 3.6vw, 44px);
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+}
+.btn-settinglobby img {
+  width: 60%;
+  height: 60%;
+  display: block;
+  object-fit: contain;
+}
+
+/* Widget koin: ikon + teks + bg svg transparan */
+.coin {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px clamp(10px, 1.4vw, 16px) 6px 8px;
+  min-height: clamp(32px, 3.4vw, 40px);
+  background: url('/assets/coin-bg.svg') center / 100% 100% no-repeat;
+}
+.coin-icon {
+  width: clamp(20px, 2vw, 26px);
+  height: clamp(20px, 2vw, 26px);
+  display: block;
+}
+.coin-text {
+  font-weight: 700;
+  font-size: clamp(0.85rem, 1.1vw, 1rem);
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+/* Nama di kiri btnlink */
+.headerlobby-name {
+  font-weight: 700;
+  font-size: clamp(0.9rem, 1.4vw, 1.1rem);
+  letter-spacing: 0.5px;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+/* Tombol ITB di header (override posisi lama) */
+.headerlobby .btnlink {
+  position: static;
+  top: auto;
+  right: auto;
+  animation: blink-2s 2s ease-in-out infinite;
+}
+.headerlobby .btnlink img {
+  max-height: clamp(36px, 4.5vw, 52px);
+  width: auto;
+  height: auto;
+  display: block;
+}
+
+@media (max-width: 720px) {
+  .headerlobby {
+    padding: 6px 10px;
+    min-height: 56px;
+  }
+  .headerlobby-name { display: none; } /* sembunyikan nama di HP sempit */
+}
+
