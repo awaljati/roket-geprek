@@ -6,6 +6,7 @@ import { mountPanelFor, progRowHtml, bindProgRows, updateProgRows } from './spec
 import { createControls, controlAction } from '../engine/attitude.js';
 import { bindControls, helpHtml } from './controls.js';
 import { spendFunds } from './progress.js';
+import '../styles/frame.css';
 
 const DT = 1 / 60;
 const MODE_NAME = { manual: 'manual', prograde: 'searah gerak', retrograde: 'lawan arah', left: 'kiri jalur', right: 'kanan jalur' };
@@ -13,6 +14,7 @@ const MODE_NAME = { manual: 'manual', prograde: 'searah gerak', retrograde: 'law
 export function flightScreen(app, el) {
   const M = LEVEL_MODULES[app.level];
   el.className = 'flight';
+  window.scrollTo(0, 0); // dari Rakit yang panjang, halaman sempat tergulir sehingga bagian atas bingkai tidak terlihat di HP
   el.innerHTML = `
     <div class="view">
       <div class="stage" id="stage"><canvas id="cv"></canvas></div>
@@ -22,8 +24,10 @@ export function flightScreen(app, el) {
         <details><summary class="muted">Kontrol</summary><div class="keys">${helpHtml()}</div></details>
       </div>
       <button class="menu-btn" id="menuBtn">☰ Menu</button>
-      <div class="touch" id="pad"></div>
-      <div class="touch" id="nav4" style="display:none"></div>
+      <div class="dock">
+        <div class="touch" id="pad"></div>
+        <div class="touch" id="nav4" style="display:none"></div>
+      </div>
       <div class="prog4" id="prog4" style="display:none"></div>
       <div class="overlay" id="pause">
         <div class="card pause-card">
@@ -40,6 +44,8 @@ export function flightScreen(app, el) {
   `;
   const $ = (s) => el.querySelector(s);
   const renderer = createView($('#stage'));
+  // Bingkai layar (desain DKV): jendela di atas kanvas, tidak menangkap klik.
+  $('#stage').insertAdjacentHTML('beforeend', '<div class="frame-window" aria-hidden="true"></div>');
   // Dana cadangan yang dipakai terpotong setiap kali misi dimulai (termasuk Ulangi misi).
   if (app.build.extraBudget) app.build.extraBudget = spendFunds(app.build.extraBudget);
   const game = M.create(app.build, app.code || 'solo');
