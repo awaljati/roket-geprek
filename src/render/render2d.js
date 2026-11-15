@@ -626,10 +626,8 @@ export function createRenderer(canvas) {
         // Label disembunyikan menjelang mendarat supaya tidak menutupi pendarat.
         if (view.altitude > 25) {
           ctx.font = `600 ${12 * dpr}px system-ui`;
-          ctx.fillText(`${s.name}${chosen ? ' ✓' : ''}`, px, py - pole - 18 * dpr);
-          ctx.fillStyle = 'rgba(220,230,255,0.85)';
-          ctx.font = `${10.5 * dpr}px system-ui`;
-          ctx.fillText(`es ${s.ice} · miring ≤ ${s.maxTiltDeg}° · ★ maks. ${s.maxStars}`, px, py - pole - 5 * dpr);
+          // Rincian titik (es, kemiringan, bintang) ada di panel Spesialis; di sini cukup namanya.
+          ctx.fillText(`${s.name}${chosen ? ' ✓' : ''}`, px, py - pole - 6 * dpr);
         }
       }
       // Titik di luar layar: panah di tepi

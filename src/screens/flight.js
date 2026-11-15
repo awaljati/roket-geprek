@@ -278,24 +278,21 @@ export function flightScreen(app, el) {
     const sf = v.surface;
     if (sf) {
       const pct = (a, b) => Math.round((a / b) * 100);
-      $('#hud').innerHTML = `<b>Di permukaan · sisa ${Math.ceil(sf.timeLeft)} detik${speed > 1 ? ' · Waktu ×' + speed : ''}</b>
-        <span${warn(sf.battery / sf.batteryMax < sf.lowPowerShare)}>Baterai ${pct(sf.battery, sf.batteryMax)}% · daya ${sf.powerNet > 0 ? '+' : ''}${sf.powerNet} W</span>
-        <span>Matahari: ${sf.alwaysDark ? 'selalu bayangan' : sf.sunlit ? 'terang' : 'bayangan bukit lewat'}</span>
-        <span>Spektrometer ${sf.spectrometer.has ? (sf.spectrometer.on ? 'menyala' : 'mati') : '-'} · Es ${sf.iceFound ? '✓ terdeteksi' : sf.scan ? 'memindai…' : 'belum'}</span>
-        <span${sf.antenna.sending ? ' style="color:var(--ok)"' : ''}>Antena ${sf.antenna.has ? `${sf.antenna.deg}° (Bumi ${sf.earthDeg}°)${sf.antenna.sending ? ' mengirim' : ''}` : '-'} · Data ${pct(sf.data, sf.dataTarget)}%</span>
-        <small class="muted">Tombol permukaan dipegang Spesialis</small>`;
+      // Ringkas: rincian (spektrometer, sudut antena) ada di panel Spesialis.
+      $('#hud').innerHTML = `<b>Di permukaan · sisa ${Math.ceil(sf.timeLeft)} detik${speed > 1 ? ' · ×' + speed : ''}</b>
+        <span${warn(sf.battery / sf.batteryMax < sf.lowPowerShare)}>Baterai ${pct(sf.battery, sf.batteryMax)}% · ${sf.alwaysDark ? 'gelap' : sf.sunlit ? 'terang' : 'bayangan'}</span>
+        <span>Es ${sf.iceFound ? '✓' : sf.scan ? 'memindai…' : 'belum'} · Data <b${sf.antenna.sending ? ' style="color:var(--ok)"' : ''}>${pct(sf.data, sf.dataTarget)}%</b></span>`;
       return;
     }
     $('#hud').innerHTML = `${controlLine(v, speed)}
       ${v.hasEngine ? '' : '<span style="color:var(--bad)">Tidak ada mesin pendarat!</span>'}
       ${v.engineLocked ? '<span style="color:var(--bad)">Mesin terkunci: Spesialis, pilih titik pendaratan dulu</span>' : ''}
       ${v.burnInSec !== null && v.burnInSec !== undefined ? `<span>Mulai mengerem ${v.burnInSec > 0.5 ? `dalam ${Math.ceil(v.burnInSec)} detik` : '<b>SEKARANG</b>'}</span>` : ''}
-      ${v.direction ? `<span${v.target && v.target.over ? ' style="color:var(--ok)"' : ''}>${v.direction}</span>` : ''}
-      <span>Ketinggian ${v.altitude.toFixed(0)} u</span>
-      <span${warn(lowAndFast)}>Kecepatan turun ${v.vDown.toFixed(1)} u/s${v.vDown < 0 ? ' (naik)' : ''}</span>
-      <span${warn(v.altitude < 40 && Math.abs(v.vSide) > max)}>Kecepatan menyamping ${Math.abs(v.vSide).toFixed(1)} u/s${Math.abs(v.vSide) > 0.2 ? (v.vSide > 0 ? ' →' : ' ←') : ''}</span>
-      <span${warn(tiltBad && v.altitude < 40)}>Kemiringan ${Math.round(Math.abs(v.tiltDeg))}° ${tiltBad ? '' : '✓'}</span>
-      <small class="muted">Aman mendarat: kecepatan ≤ ${max} u/s, miring ≤ ${v.maxLandingTiltDeg}° · gas ${Math.round(v.hoverThrottle * 100)}% = melayang</small>`;
+      ${v.direction && !(v.target && v.target.over) ? `<span>${v.direction}</span>` : ''}
+      <span>Tinggi ${v.altitude.toFixed(0)} u · <b${warn(lowAndFast)}>turun ${v.vDown.toFixed(1)} u/s${v.vDown < 0 ? ' (naik)' : ''}</b></span>
+      ${Math.abs(v.vSide) > 0.5 ? `<span${warn(v.altitude < 40 && Math.abs(v.vSide) > max)}>Menyamping ${Math.abs(v.vSide).toFixed(1)} u/s ${v.vSide > 0 ? '→' : '←'}</span>` : ''}
+      ${Math.abs(v.tiltDeg) > 2 ? `<span${warn(tiltBad)}>Miring ${Math.round(Math.abs(v.tiltDeg))}°</span>` : ''}
+      <small class="muted">Aman: ≤ ${max} u/s, miring ≤ ${v.maxLandingTiltDeg}°</small>`;
   }
 
   // Level 3 fase awal setelah peluncuran: orbit parkir, perjalanan ke Bulan, masuk orbit Bulan.
