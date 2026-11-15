@@ -36,7 +36,7 @@ export const LEVELS = {
   1: {
     name: 'Level 1: CubeSat Transmisi',
     rocket: 'kecil',
-    budget: 30,
+    budget: 22,
     body: 'CubeSat',
     orbitHoldSec: 3,
     minFuelFor3Stars: 0.3,
@@ -55,7 +55,7 @@ export const LEVELS = {
   2: {
     name: 'Level 2: Memutari Bulan',
     rocket: 'sedang',
-    budget: 90,
+    budget: 60,
     body: 'Kapsul',
     minFuelFor3Stars: 0.25,
     photoTarget: 6,
@@ -80,7 +80,7 @@ export const LEVELS = {
   3: {
     name: 'Level 3: Kutub Selatan Bulan',
     rocket: 'sedang',
-    budget: 160,
+    budget: 100,
     body: 'Pendarat',
     orbitHoldSec: 3,
     minFuelFor3Stars: 0.2,
@@ -195,7 +195,7 @@ export const LEVELS = {
   4: {
     name: 'Level 4: Mendarat di Mars',
     rocket: 'besar',
-    budget: 260,
+    budget: 190,
     body: 'Rover',
     minFuelFor3Stars: 0.15,
     photoTarget: 1,
