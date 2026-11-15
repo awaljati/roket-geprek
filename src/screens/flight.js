@@ -170,6 +170,8 @@ export function flightScreen(app, el) {
 
   // Pelatih: maskot Pok-Pok dan balon kata. Kalau gambarnya belum ada, hanya balon yang tampil.
   const pok = $('#pokpok');
+  // Muat ketiga ekspresi sejak awal supaya tidak berkedip saat berganti.
+  ['netral', 'cemas', 'senang'].forEach((n) => (new Image().src = `/assets/${n}.svg`));
   pok.onload = () => (pok.hidden = false);
   pok.onerror = () => (pok.hidden = true);
   let coachKey = '';
@@ -186,7 +188,7 @@ export function flightScreen(app, el) {
     box.style.display = 'flex';
     box.className = 'coach' + (c.urgent ? ' urgent' : '');
     $('#coachMsg').textContent = c.msg;
-    const src = `/assets/pokpok-${c.urgent ? 'panik' : 'normal'}.png`;
+    const src = `/assets/${c.urgent ? 'cemas' : 'netral'}.svg`;
     if (pok.getAttribute('src') !== src) pok.src = src;
   }
 

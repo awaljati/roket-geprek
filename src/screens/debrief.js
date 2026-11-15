@@ -22,7 +22,7 @@ export function debriefScreen(app, el) {
   el.className = 'screen center';
   el.innerHTML = `
     <h2>Debrief: ${L.name}</h2>
-    ${r.success ? '<img class="pokpok-win" src="/assets/pokpok-senang.png" alt="Pok-Pok senang" onerror="this.remove()">' : ''}
+    ${r.success ? '<img class="pokpok-win" src="/assets/senang.svg" alt="Pok-Pok senang" onerror="this.remove()">' : ''}
     <div class="stars">${'★'.repeat(r.stars)}${'☆'.repeat(3 - r.stars)}</div>
     <p><b>${r.success ? 'Misi berhasil' : 'Misi gagal'}</b>${r.failCode ? ` · ${r.failCode}` : ''}</p>
     ${r.failCode ? `<p>${FAIL_CODES[r.failCode]}</p>` : ''}
