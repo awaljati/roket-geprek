@@ -176,20 +176,36 @@ export function flightScreen(app, el) {
   pok.onload = () => (pok.hidden = false);
   pok.onerror = () => (pok.hidden = true);
   let coachKey = '';
+  // Main solo: status Spesialis (teks kuning di panel kanan) ikut dibacakan Pok-Pok di balon kata,
+  // jadi pemain cukup melihat satu tempat. Di mode online perangkat Spesialis tetap menampilkannya sendiri.
+  const spStatus = () => (app.role === 'solo' ? document.querySelector('#side #sp-status') : null);
   function drawCoach(v) {
     const box = $('#coach');
+    const st = spStatus();
+    if (st) st.style.display = 'none';
+    const status = st ? st.textContent.trim() : '';
     const c = v.coach && v.coach.msg ? v.coach : null;
-    const key = c ? (c.urgent ? '!' : '') + c.msg : '';
+    const main = c ? c.msg : status;
+    const extra = c && status && status !== c.msg ? status : '';
+    const urgent = !!(c && c.urgent);
+    const key = (urgent ? '!' : '') + main + '|' + extra;
     if (key === coachKey) return;
     coachKey = key;
-    if (!c) {
+    if (!main) {
       box.style.display = 'none';
       return;
     }
     box.style.display = 'flex';
-    box.className = 'coach' + (c.urgent ? ' urgent' : '');
-    $('#coachMsg').textContent = c.msg;
-    const src = `/assets/${c.urgent ? 'cemas' : 'netral'}.svg`;
+    box.className = 'coach' + (urgent ? ' urgent' : '');
+    const msg = $('#coachMsg');
+    msg.textContent = main;
+    if (extra) {
+      const small = document.createElement('small');
+      small.className = 'coach-extra';
+      small.textContent = extra;
+      msg.appendChild(small);
+    }
+    const src = `/assets/${urgent ? 'cemas' : 'netral'}.svg`;
     if (pok.getAttribute('src') !== src) pok.src = src;
   }
 

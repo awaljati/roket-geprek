@@ -245,3 +245,6 @@ button.big { padding: 14px 16px; font-size: 1.1rem; font-weight: 700; }
   .prog4-card { padding: 12px; gap: 10px; }
   .prow-btn { width: 48px; height: 44px; }
 }
+
+/* Balon Pok-Pok: status Spesialis di baris kedua (main solo) */
+.coach-extra { display: block; margin-top: 4px; font-weight: 500; font-size: 0.85em; opacity: 0.85; }
