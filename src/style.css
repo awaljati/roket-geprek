@@ -121,6 +121,7 @@ h2 { margin: 0; }
 
 @media (prefers-reduced-motion: reduce) {
   .btnlink { animation: none; }
+}
 
 @media (max-width: 720px) {
   .flight { grid-template-columns: 1fr; grid-template-rows: 60vh auto; height: auto; }
