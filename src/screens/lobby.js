@@ -1,9 +1,8 @@
 import { makeRoomCode, openRoom, hasFirebase } from '../net/room.js';
 
 export function lobbyScreen(app, el) {
-  el.className = 'screen';
+  el.className = 'screen lobby-screen';
   el.innerHTML = `
-    <h2>Lobby</h2>
     <p class="muted">Mode koneksi: ${hasFirebase ? 'online (Firebase)' : 'lokal: buka 2 tab di browser yang sama untuk tes'}</p>
     <div class="card row">
       <div style="flex:1"><b>Solo</b><br><span class="muted">Satu perangkat memegang Navigator dan Spesialis.</span></div>
