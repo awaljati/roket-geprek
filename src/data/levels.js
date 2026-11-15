@@ -154,7 +154,27 @@ export const LEVELS = {
         rimWidth: 20,
       },
     },
-    hint: 'Pick a landing site early, slide over it while still high, then descend slowly and upright. Gas 50% holds your descent speed; 75% slows you down. Only a smooth landing near the dark crater earns 3 stars.',
+    // Setelah mendarat (fase 5–6): daya, pindai es, kirim data. Nilai game, perlu balancing.
+    surface: {
+      timeSec: 60, // waktu di permukaan (detik layar)
+      landerBatteryWh: 40, // baterai kecil bawaan pendarat (ditambah storeWh item baterai)
+      whPerWattSec: 0.06, // Wh per watt per detik layar (waktu dipercepat), seperti WH_PER_WATT_SECOND Level 2
+      lowPowerShare: 0.1, // di bawah 10% baterai antena tidak bisa mengirim ("daya kurang")
+      // Bayangan bukit lain yang sesekali lewat di puncak bukit (waktunya dari seed)
+      shadowPasses: 2,
+      shadowSec: [8, 12], // lama satu bayangan
+      shadowStartSec: [6, 48], // kapan bayangan mulai (setelah mendarat)
+      shadowWarnSec: 4, // pelatih memberi tahu sekian detik sebelumnya
+      scanSec: 5, // lama memindai dengan spektrometer menyala
+      iceChance: { crater: 0.9, ridge: 0.2, outside: 0.1 }, // peluang es terdeteksi per pindaian
+      dataTarget: 100, // unit data yang harus terkirim (antena mengirim `data` unit per detik)
+      antennaStartDeg: 90, // 0 = cakrawala kanan, 90 = tegak ke atas, 180 = cakrawala kiri
+      antennaStepDeg: 3, // satu perintah putar (tombol ditahan = perintah berulang)
+      // Kekuatan sinyal: 100% tepat ke Bumi (earth.elevationDeg), turun lurus, 0% kalau selisih > signalZeroDeg.
+      signalZeroDeg: 30,
+      minSignal: 0.7, // data terkirim hanya kalau sinyal ≥ 70%; kecepatan = data antena × kekuatan sinyal
+    },
+    hint: 'Pick a landing site early, slide over it while still high, then descend slowly and upright. Gas 50% holds your descent speed; 75% slows you down. On the surface: turn the spectrometer off after scanning, and point the antenna low toward Earth on the right horizon. 3 stars: smooth landing near the dark crater, ice found, all data sent.',
   },
   4: { name: 'Level 4: Mendarat di Mars', rocket: 'besar', budget: 260, body: 'Rover', minFuelFor3Stars: 0.15, photoTarget: 1 },
 };
