@@ -354,16 +354,17 @@ button.big { padding: 14px 16px; font-size: 1.1rem; font-weight: 700; }
 
 .coin-text {
   font-weight: 700;
-  font-size: clamp(0.95rem, 1.4vw, 1.15rem); /* sedikit lebih besar agar seimbang */
+  font-size: clamp(1.05rem, 1.9vw, 1.45rem);   /* ← naik */
   font-variant-numeric: tabular-nums;
   color: var(--text);
   line-height: 1;
+  letter-spacing: 0.3px;                        /* opsional: angka lebih tegas */
 }
 
 /* Nama di kiri btnlink */
 .headerlobby-name {
   font-weight: 700;
-  font-size: clamp(0.9rem, 1.4vw, 1.1rem);
+  font-size: clamp(1.05rem, 1.9vw, 1.4rem);     /* ← naik */
   letter-spacing: 0.5px;
   color: var(--text);
   white-space: nowrap;
