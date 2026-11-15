@@ -123,7 +123,7 @@ export function debriefScreen(app, el) {
         <div class="db-actions">
           <button id="again">Main lagi</button>
           <button id="retry">Ubah rakitan</button>
-          <button class="primary" id="next" ${hasNext ? '' : 'disabled'}>${app.level >= LAST_LEVEL && r.success ? 'Level berikutnya belum dibuat' : 'Lanjut'}</button>
+          <button class="primary" id="next" ${hasNext ? '' : 'disabled'}>${app.level >= LAST_LEVEL && r.success ? 'Semua misi selesai' : 'Lanjut'}</button>
         </div>
         <div class="db-actions small"><button id="levels">Pilih misi lain</button><button id="home">Menu utama</button></div>
       </section>

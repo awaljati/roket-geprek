@@ -27,7 +27,7 @@ export function lobbyScreen(app, el) {
     </div>
     <div id="msg" class="status"></div>
     
-    <p class="muted">Mode koneksi: ${hasFirebase ? 'online (Firebase)' : 'lokal: buka 2 tab di browser yang sama untuk tes'}</p>
+    <p class="muted">${hasFirebase ? 'Mode online aktif: main berdua dari perangkat berbeda.' : 'Mode lokal: buka dua tab di browser yang sama.'}</p>
   </div>
   </div>
   `;

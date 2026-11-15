@@ -60,7 +60,7 @@ export const LEVELS = {
     body: 'Kapsul',
     minFuelFor3Stars: 0.25,
     photoTarget: 6,
-    // Nilai game (bukan skala asli), perlu balancing:
+    // Nilai game (bukan skala asli):
     capsuleAccel: 2, // u/s^2 saat gas penuh (mesin modul servis)
     fuelBurnPerSec: 0.2, // fraksi bahan bakar per detik saat gas penuh
     driftOut: [0.9, 1.4], // penyimpangan awal (u/s), arah acak dari seed
@@ -86,7 +86,7 @@ export const LEVELS = {
     orbitHoldSec: 3,
     minFuelFor3Stars: 0.2,
     maxLandingSpeed: 2, // u/s, kecepatan total saat menyentuh permukaan
-    // Nilai game (bukan skala asli), perlu balancing:
+    // Nilai game (bukan skala asli):
     requiredItem: 'lander-engine', // tanpa mesin pendarat: F-CRASH
     // Fase awal: peluncuran dari Biak ke orbit parkir (seperti Level 2), perjalanan otomatis ke Bulan,
     // lalu masuk orbit polar Bulan (LOI). Bahan bakar roket terpisah dari bahan bakar pendarat (slider Rakit):
@@ -171,7 +171,7 @@ export const LEVELS = {
         rimWidth: 20,
       },
     },
-    // Setelah mendarat (fase 5–6): daya, pindai es, kirim data. Nilai game, perlu balancing.
+    // Setelah mendarat (fase 5–6): daya, pindai es, kirim data. Nilai game.
     surface: {
       timeSec: 60, // waktu di permukaan (detik layar)
       landerBatteryWh: 40, // baterai kecil bawaan pendarat (ditambah storeWh item baterai)
@@ -202,7 +202,7 @@ export const LEVELS = {
     photoTarget: 1,
     orbitHoldSec: 3,
     requiredItem: 'mars-edl', // tanpa Paket Pendaratan Mars: F-ATMO
-    // Nilai game (bukan skala asli), perlu balancing:
+    // Nilai game (bukan skala asli):
     cruiseSec: 40, // perjalanan ke Mars (detik layar, bisa dipercepat); aslinya ~7 bulan
     // Badai matahari: waktunya dari seed (sama untuk semua tim battle). Rentang mulai dibagi rata per badai.
     storms: { count: 2, startSec: [10, 34], durationSec: [4, 6], warnSec: 8 },
