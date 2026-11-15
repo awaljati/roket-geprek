@@ -5,6 +5,7 @@ export function lobbyScreen(app, el) {
   el.innerHTML = `
     <div class="headerlobby">
     <div class="headerlobby-left">
+      <button id="back">Kembali</button>
       <button class="btn-settinglobby" id="settings" aria-label="Pengaturan">
         <img src="/assets/l-icon-setting.svg" alt="" />
       </button>
@@ -33,10 +34,6 @@ export function lobbyScreen(app, el) {
   
   <div class="contentlobby-right">
     <div class="card row">
-      <div style="flex:1"><b>Solo</b><br><span class="muted">Satu perangkat memegang Navigator dan Spesialis.</span></div>
-      <button class="primary" id="solo">Main solo</button>
-    </div>
-    <div class="card row">
       <div style="flex:1"><b>Buat room (Navigator)</b><br><span class="muted">Perangkat ini menyetir roket dan menjalankan fisika.</span></div>
       <button id="create">Buat room</button>
     </div>
@@ -45,8 +42,12 @@ export function lobbyScreen(app, el) {
       <input type="text" id="code" maxlength="4" placeholder="KODE">
       <button id="join">Gabung</button>
     </div>
+    <div class="card row">
+      <div style="flex:1"><b>Solo</b><br><span class="muted">Satu perangkat memegang Navigator dan Spesialis.</span></div>
+      <button class="primary" id="solo">Main solo</button>
+    </div>
     <div id="msg" class="status"></div>
-    <button id="back">Kembali</button>
+    
     <p class="muted">Mode koneksi: ${hasFirebase ? 'online (Firebase)' : 'lokal: buka 2 tab di browser yang sama untuk tes'}</p>
   </div>
   </div>
