@@ -2,6 +2,7 @@ import { LEVELS, CUBESAT_SIZES, ROCKETS } from '../data/levels.js';
 import { LEVEL_MODULES } from '../levels/index.js';
 import { REWARD } from '../data/levels.js';
 import { getFunds } from './progress.js';
+import { getLang } from '../i18n.js';
 import { topbarHtml, bindTopbar } from './topbar.js';
 import '@fontsource/londrina-solid/400.css';
 import '@fontsource/londrina-solid/900.css';
@@ -109,7 +110,7 @@ export function rakitScreen(app, el) {
       </div>
       <div class="rk-bottom">
         <div class="rk-box rk-bars" id="bars"></div>
-        <button type="button" class="rk-launch" id="launch" aria-label="Luncurkan"><img src="${A}tombol-luncurkan.svg" alt=""></button>
+        <button type="button" class="rk-launch" id="launch" aria-label="Luncurkan"><img src="${A}${getLang() === 'en' ? 'tombol-launch.svg' : 'tombol-luncurkan.svg'}" alt=""></button>
       </div>
       <p class="rk-warn" id="why"></p>
       <div class="rk-funds" id="fundsCard"></div>

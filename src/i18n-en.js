@@ -281,3 +281,12 @@ Object.assign(DICT, {
   'di luar titik pendaratan': 'outside the landing sites', 'es banyak': 'lots of ice', 'es sedikit': 'little ice', 'bintang maks. #': 'max # stars', 'Kamera baik': 'Camera OK', 'Kamera rusak terkena badai': 'Camera damaged by the storm', 'dalam # detik': 'in # seconds',
   'Di Level # ini bahan bakar roket, tidak dihitung ke massa CubeSat': 'On Level # this is rocket fuel; it does not count toward the CubeSat mass',
 });
+
+// Rakit: peringatan dan dana cadangan
+Object.assign(DICT, {
+  '(maks. #)': '(max #)', 'Tambah dana cadangan ke anggaran': 'Add reserve funds to the budget',
+  'Slot penuh: maksimal # komponen.': 'No slots left: at most # components.', 'Slot penuh: maksimal # komponen (pilih CubeSat yang lebih besar, misalnya #U).': 'No slots left: at most # components (pick a larger CubeSat, such as #U).',
+  'Anggaran terlewati: kurangi komponen atau bahan bakar.': 'Over budget: remove components or fuel.', 'Anggaran terlewati: kurangi komponen atau bahan bakar, atau tambah dari dana cadangan.': 'Over budget: remove components or fuel, or add from your reserve funds.',
+  'Tanpa mesin pendarat, pendarat tidak bisa mengerem (F-CRASH).': 'Without the lander engine, the lander cannot brake (F-CRASH).',
+  'Roket Geprek': 'Roket Geprek',
+});
