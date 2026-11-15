@@ -326,7 +326,9 @@ export async function createRenderer(canvas) {
   topView.position.y = sz.tail * 0.6;
   const rocketSprite = new THREE.Group();
   rocketSprite.add(sidePivot, topView);
-  rocketSprite.scale.setScalar(0.75); // sedikit lebih kecil supaya tidak tampak raksasa di samping Indonesia
+  // Ukuran roket: kecil saat adegan pembuka (dekat Indonesia), sedikit lebih besar di tampilan atas supaya
+  // tetap terlihat di orbit. Tidak sesuai skala; roket sungguhan jauh lebih kecil dari Bumi.
+  const SPRITE_SCALE = { intro: 0.4, orbit: 0.6 };
   const camLocal = new THREE.Vector3();
 
   const craft = new THREE.Group();
@@ -334,6 +336,7 @@ export async function createRenderer(canvas) {
   scene.add(craft);
 
   function updateRocketSprite(thrusting) {
+    rocketSprite.scale.setScalar(intro.mode === 'done' ? SPRITE_SCALE.orbit : SPRITE_SCALE.intro);
     const map = thrusting ? spriteTex.on : spriteTex.off;
     if (sideMat.map !== map) {
       sideMat.map = sideMat.emissiveMap = map;
