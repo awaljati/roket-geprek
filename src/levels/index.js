@@ -36,7 +36,7 @@ export const LEVEL_MODULES = {
     rakitItems: L3.RAKIT_ITEMS,
     defaultBuild: L3.DEFAULT_BUILD,
     briefing: 'Land near the lunar south pole, where Artemis plans to explore. There is no air to slow you down: brake your orbital speed with the engine, then descend slowly and stay upright. Touch down at 2 u/s or less.',
-    realMission: 'Artemis III (rencana): pendaratan manusia di dekat kutub selatan Bulan, wilayah yang diduga menyimpan es air di kawah yang selalu gelap. Juga Chandrayaan-3 dari India yang mendarat di dekat kutub selatan pada 2023.',
+    realMission: 'Artemis IV (rencana 2028): pendaratan astronaut pertama program Artemis, di dekat kutub selatan Bulan, wilayah yang diduga menyimpan es air di kawah yang selalu gelap. Artemis III (2027) kini menjadi uji coba di orbit Bumi. Juga Chandrayaan-3 dari India yang mendarat di dekat kutub selatan pada 2023.',
     fact: 'Di kutub selatan Bulan ada kawah yang dasarnya tidak pernah terkena Matahari selama miliaran tahun; di sanalah es air tersimpan.',
   },
 };

@@ -1,4 +1,4 @@
-// Level 3: Kutub Selatan Bulan (terinspirasi Artemis III).
+// Level 3: Kutub Selatan Bulan (terinspirasi pendaratan Artemis di kutub selatan; Artemis III kini uji coba di orbit Bumi, pendaratan pertama di Artemis IV).
 // Tahap 1: inti pendaratan. Tahap 2: pilihan titik pendaratan dan bayangan panjang dari Matahari rendah.
 // Tahap 3: di permukaan (daya, pindai es, kirim data ke Bumi).
 //
@@ -836,7 +836,7 @@ export function stepLevel3(game, ctrl, rawDt) {
   game.thrusting = move(game, throttle, dt);
   if (game.thrusting) {
     if (game.fuel === 0 && fuelBefore > 0) game.log.push('Bahan bakar habis!');
-    if (game.phase === 'orbit') startDescent(game);
+    if (game.phase === 'orbit' && game.siteChoice) startDescent(game);
   }
   if (game.trail.length === 0 || game.t - game.trail[game.trail.length - 1].t > 0.2) {
     game.trail.push({ x: c.x, y: c.y, t: game.t });
@@ -853,6 +853,7 @@ export function stepLevel3(game, ctrl, rawDt) {
     const maxTilt = site ? S[site].maxTiltDeg : L.maxLandingTiltDeg;
     game.touchdown = { speed: +speed.toFixed(2), tiltDeg: Math.round(tilt), site };
     game.thrusting = false;
+    game.precision = false; // waktu tidak lagi diperlambat setelah menyentuh permukaan
     if (ctrl) ctrl.throttle = 0;
     if (speed > L.maxLandingSpeed || tilt > maxTilt) {
       c.crashed = true;
@@ -878,7 +879,11 @@ function orbitStep(game, ctrl) {
   if (ctrl && game.assist) ctrl.mode = 'retrograde'; // siap mengerem: mesin menghadap lawan arah gerak
   const x = game.craft.x;
   if (!game.siteChoice) {
-    if (ctrl) ctrl.throttle = 0;
+    // Mesin terkunci: gas dan dorongan pendek (F) sama-sama diabaikan sampai titik dipilih.
+    if (ctrl) {
+      ctrl.throttle = 0;
+      ctrl.pulseLeft = 0;
+    }
     game.coach = { msg: 'Spesialis, pilih titik pendaratan dulu.', urgent: true };
     if (x > game.burnPlan.ridge - L.pickMinLeadU) {
       setPair(game, game.sites.k + 1, -Infinity);
@@ -1049,6 +1054,11 @@ function surfaceCoach(game) {
   const draining = sf.powerNet < 0;
   const secLeft = draining ? sf.battery / (-sf.powerNet * SF.whPerWattSec) : Infinity;
   const pass = nextPass(sf, t);
+  // Spektrometer sudah menyala dan pindaian pertama belum dilakukan: minta Pindai dulu, jangan minta dimatikan.
+  // Tanpa ini pelatih bolak-balik "nyalakan spektrometer" lalu "matikan spektrometer!" (dekat kawah tanpa RTG).
+  // Pengecualian: baterai akan habis sebelum pindaian selesai.
+  const needScan = sp.has && !sf.iceFound && sf.scans === 0;
+  if (needScan && sp.on && !sf.scan && secLeft > SF.scanSec + 2) return { msg: 'Spesialis: tekan Pindai sekarang.', urgent: true };
   if (draining && secLeft < SF.timeSec - t && sp.on && !sf.scan)
     return { msg: `Daya tinggal ${Math.round(share * 100)}%: matikan spektrometer!`, urgent: true };
   if (pass && pass.from - t <= SF.shadowWarnSec && sp.on && !sf.scan)
