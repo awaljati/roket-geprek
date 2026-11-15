@@ -301,7 +301,7 @@ button.big { padding: 14px 16px; font-size: 1.1rem; font-weight: 700; }
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 6px clamp(10px, 1.4vw, 16px) 6px 8px;
+  padding: 0px clamp(10px, 1.4vw, 16px) 6px 8px;
   min-height: clamp(32px, 3.4vw, 40px);
   background: url('/assets/coin-bg.svg') center / 100% 100% no-repeat;
 }
