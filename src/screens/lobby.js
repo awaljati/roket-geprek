@@ -3,7 +3,7 @@ import { makeRoomCode, openRoom, hasFirebase } from '../net/room.js';
 export function lobbyScreen(app, el) {
   el.className = 'screen lobby-screen';
   el.innerHTML = `
-    <div class="header">
+    <div>
       el.innerHTML = `
        <a class="btnlink"
          href="http://itb.ac.id/"
