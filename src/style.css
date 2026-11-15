@@ -41,17 +41,26 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 input[type='text'] { font: inherit; padding: 10px; border-radius: 10px; border: 1px solid var(--line); background: #0b1020; color: var(--text); text-transform: uppercase; width: 8em; }
 .screen { max-width: 900px; margin: 0 auto; padding: 24px 16px; display: flex; flex-direction: column; gap: 16px; }
 .screen.home-screen {
+  position: relative;
   max-width: none;
   width: 100%;
   min-height: 100vh;
   min-height: 100svh;
   margin: 0;
-  background-image: url('/assets/intro-screen.svg');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
+  overflow: hidden;
   gap: 20px;
 }
+
+.home-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+  pointer-events: none;
+}
+
 .center { align-items: center; text-align: center; justify-content: center; min-height: 80vh; }
 h1 { font-size: 2.6rem; margin: 0; }
 h2 { margin: 0; }
