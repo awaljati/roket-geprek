@@ -211,9 +211,10 @@ export function flightScreen(app, el) {
   function drawHud3(v, speed) {
     drawCoach(v);
     const steps = [
-      ['Orbit', v.phase === 'orbit'],
-      ['Turun', v.phase === 'descent'],
-      ['Mendarat', v.phase === 'landed' || (v.phase === 'done' && v.result && v.result.success)],
+      ['Pilih titik', v.stage === 'pick'],
+      ['Keluar orbit', v.stage === 'deorbit'],
+      ['Turun', v.stage === 'descent'],
+      ['Mendarat', v.stage === 'landed'],
     ];
     $('#timeline').innerHTML = steps.map(([n, on]) => `<span class="${on ? 'on' : ''}">${n}</span>`).join('');
     const max = v.maxLandingSpeed;
@@ -223,6 +224,8 @@ export function flightScreen(app, el) {
     const tiltBad = Math.abs(v.tiltDeg) > v.maxLandingTiltDeg;
     $('#hud').innerHTML = `${controlLine(v, speed)}
       ${v.hasEngine ? '' : '<span style="color:var(--bad)">Tidak ada mesin pendarat!</span>'}
+      ${v.engineLocked ? '<span style="color:var(--bad)">Mesin terkunci: Spesialis, pilih titik pendaratan dulu</span>' : ''}
+      ${v.burnInSec !== null && v.burnInSec !== undefined ? `<span>Mulai mengerem ${v.burnInSec > 0.5 ? `dalam ${Math.ceil(v.burnInSec)} detik` : '<b>SEKARANG</b>'}</span>` : ''}
       ${v.direction ? `<span${v.target && v.target.over ? ' style="color:var(--ok)"' : ''}>${v.direction}</span>` : ''}
       <span>Ketinggian ${v.altitude.toFixed(0)} u</span>
       <span${warn(lowAndFast)}>Kecepatan turun ${v.vDown.toFixed(1)} u/s${v.vDown < 0 ? ' (naik)' : ''}</span>

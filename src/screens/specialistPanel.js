@@ -145,24 +145,26 @@ export function mountSpecialistPanel3(container, send) {
     const tooFast = v.phase === 'descent' && v.vDown > v.targetDescent + 0.5;
     $('#sp-status').textContent =
       v.phase === 'orbit'
-        ? 'Di orbit rendah Bulan. Minta Navigator mengerem (Gas +).'
+        ? !v.siteChoice
+          ? 'Pilih titik pendaratan sekarang! Mesin Navigator terkunci sampai kamu memilih.'
+          : v.burnInSec > 0.5
+            ? `Aba-aba ke Navigator: mulai mengerem dalam ${Math.ceil(v.burnInSec)} detik.`
+            : 'Aba-aba: SEKARANG! Tekan Gas +'
         : v.phase === 'descent'
-          ? !v.siteChoice
-            ? 'Pilih titik pendaratan sekarang!'
-            : tooFast
+          ? tooFast
               ? 'Aba-aba: TERLALU CEPAT, tambah gas!'
               : `Aba-aba: ${v.direction}`
           : v.phase === 'landed'
             ? 'Mendarat!'
             : 'Misi selesai.';
-    const canPick = v.phase === 'descent' && v.sites;
+    const canPick = (v.phase === 'orbit' || v.phase === 'descent') && v.sites;
     for (const [id, btn] of [['ridge', '#sp-ridge'], ['crater', '#sp-crater']]) {
       const s = v.sites && v.sites.find((x) => x.id === id);
       $(btn).disabled = !canPick || v.siteChoice === id;
       $(btn).className = v.siteChoice === id ? 'primary' : '';
       $(btn).innerHTML = s
         ? `${s.name}${v.siteChoice === id ? ' ✓' : ''} (${id === 'ridge' ? 1 : 2})<br><small>${s.about} ★ maks. ${s.maxStars}</small>`
-        : `${id === 'ridge' ? 'Puncak bukit' : 'Dekat kawah gelap'} (setelah mulai turun)`;
+        : `${id === 'ridge' ? 'Puncak bukit' : 'Dekat kawah gelap'} (${id === 'ridge' ? 1 : 2})`;
     }
     $('#sp-site').textContent = v.direction || '';
     const ok = (b) => (b ? '✓' : '⚠');

@@ -17,6 +17,10 @@ const COLORS = {
   station: '#ffd54a',
 };
 
+// Level 3: tekstur permukaan Bulan dipakai sebagai pola tanah; satu ubin tekstur selebar ini (u).
+const MOON_TEXTURE = '/assets/textures/bulan.jpg';
+const TEXTURE_WORLD_U = 420;
+
 export function createRenderer(canvas) {
   const ctx = canvas.getContext('2d');
   const stars = Array.from({ length: 140 }, () => [Math.random(), Math.random(), Math.random() * 1.4]);
@@ -239,6 +243,25 @@ export function createRenderer(canvas) {
     }
   }
 
+  // ---------- Level 3 ----------
+  // Bintang redup (sedikit, supaya langit tetap terasa hitam) dan tekstur permukaan Bulan.
+  const landerStars = Array.from({ length: 70 }, () => [Math.random(), Math.random() * 0.8, 0.6 + Math.random() * 0.9, 0.12 + Math.random() * 0.3]);
+  let moonImg = null;
+  let moonPattern = null;
+  function moonTexture() {
+    if (!moonImg) {
+      moonImg = new Image();
+      moonImg.onload = () => (moonPattern = ctx.createPattern(moonImg, 'repeat'));
+      moonImg.src = MOON_TEXTURE;
+    }
+    return moonPattern;
+  }
+  let camScale = null; // skala kamera dihaluskan supaya tidak melompat saat zoom berubah
+  const hash = (n) => {
+    const s = Math.sin(n * 127.1 + 311.7) * 43758.5453;
+    return s - Math.floor(s);
+  };
+
   // Level 3: tampilan samping. Langit hitam, permukaan Bulan berbukit, Matahari rendah di cakrawala
   // (di kutub selatan Matahari selalu dekat cakrawala, jadi bayangan panjang dan kawah dalam selalu gelap).
   function drawLander(view) {
@@ -251,74 +274,19 @@ export function createRenderer(canvas) {
     const c = view.craft;
     const terrain = view.terrain || [];
     const mid = terrain[Math.floor(terrain.length / 2)] || { y: 0 };
-    // Kamera mengikuti pendarat; makin rendah, makin dekat.
-    const viewH = Math.max(60, view.altitude * 1.35 + 40);
-    const scale = h / viewH;
+    // Kamera mengikuti pendarat; makin rendah, makin dekat. Di orbit diperkecil supaya kedua penanda terlihat.
+    let want = h / Math.max(60, view.altitude * 1.35 + 40);
+    if (view.phase === 'orbit' && view.sites) {
+      const far = Math.max(...view.sites.map((s) => Math.abs(s.x - c.x) + s.halfWidth + 40));
+      want = Math.min(want, (w * 0.46) / far);
+    }
+    camScale = camScale === null || view.t < 0.05 ? want : camScale + (want - camScale) * 0.08;
+    const scale = camScale;
+    const viewH = h / scale;
     const bottomY = mid.y - 0.2 * viewH;
     const sx = (x) => w / 2 + (x - c.x) * scale;
     const sy = (y) => h - (y - bottomY) * scale;
-    const horizon = sy(mid.y);
-
-    // Matahari rendah, sebagian tertutup bukit
-    const sunX = w * 0.1;
-    // Matahari separuh terlihat di atas bukit pada posisi x-nya.
-    const sunWorldX = c.x + (sunX - w / 2) / scale;
-    const under = terrain.reduce((best, p) => (Math.abs(p.x - sunWorldX) < Math.abs(best.x - sunWorldX) ? p : best), mid);
-    const sunY = Math.min(h * 0.9, sy(under.y) - 4 * dpr);
-    const glow = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, 90 * dpr);
-    glow.addColorStop(0, 'rgba(255,244,214,0.55)');
-    glow.addColorStop(1, 'rgba(255,244,214,0)');
-    ctx.fillStyle = glow;
-    ctx.fillRect(0, 0, w, h);
-    ctx.beginPath();
-    ctx.arc(sunX, sunY, 14 * dpr, 0, Math.PI * 2);
-    ctx.fillStyle = '#fff8e1';
-    ctx.fill();
-
-    // Permukaan: sisi yang menghadap Matahari (kiri) lebih terang
-    if (terrain.length > 1) {
-      ctx.beginPath();
-      ctx.moveTo(sx(terrain[0].x), h);
-      for (const p of terrain) ctx.lineTo(sx(p.x), sy(p.y));
-      ctx.lineTo(sx(terrain[terrain.length - 1].x), h);
-      ctx.closePath();
-      const g = ctx.createLinearGradient(0, horizon - 40 * dpr, 0, h);
-      g.addColorStop(0, '#9b9b98');
-      g.addColorStop(1, '#2a2a2a');
-      ctx.fillStyle = g;
-      ctx.fill();
-      // Bayangan panjang (dihitung di level, p.s = 1 kalau dalam bayangan)
-      // Satu bentuk per bagian yang bersambung, supaya tidak ada garis sambungan.
-      ctx.fillStyle = 'rgba(0,0,0,0.72)';
-      let i = 0;
-      while (i < terrain.length) {
-        if (!terrain[i].s) {
-          i++;
-          continue;
-        }
-        const from = Math.max(0, i - 1);
-        while (i < terrain.length && terrain[i].s) i++;
-        const to = Math.min(terrain.length - 1, i);
-        ctx.beginPath();
-        ctx.moveTo(sx(terrain[from].x), h);
-        for (let j = from; j <= to; j++) ctx.lineTo(sx(terrain[j].x), sy(terrain[j].y));
-        ctx.lineTo(sx(terrain[to].x), h);
-        ctx.closePath();
-        ctx.fill();
-      }
-      for (let i = 1; i < terrain.length; i++) {
-        const a = terrain[i - 1];
-        const b = terrain[i];
-        // lereng naik ke kanan menghadap Matahari di kiri
-        const lit = !a.s && !b.s && b.y >= a.y;
-        ctx.beginPath();
-        ctx.moveTo(sx(a.x), sy(a.y));
-        ctx.lineTo(sx(b.x), sy(b.y));
-        ctx.strokeStyle = lit ? '#e8e6df' : a.s || b.s ? '#2b2b2b' : '#77776f';
-        ctx.lineWidth = 2 * dpr;
-        ctx.stroke();
-      }
-    }
+    const sunSlope = Math.tan(((view.sunElevationDeg || 4) * Math.PI) / 180);
 
     // Ketinggian permukaan di x (dari titik-titik snapshot)
     const groundY = (x) => {
@@ -329,8 +297,160 @@ export function createRenderer(canvas) {
       }
       return null;
     };
+    // Garis cakrawala (permukaan tertinggi) di sekitar kolom layar px
+    const skyline = (px) => {
+      let best = h;
+      for (const p of terrain) if (Math.abs(sx(p.x) - px) < 40 * dpr) best = Math.min(best, sy(p.y));
+      return best;
+    };
 
-    // Bayangan pendarat: memanjang di permukaan ke arah menjauhi Matahari
+    // Bintang redup
+    for (const [fx, fy, r, a] of landerStars) {
+      ctx.fillStyle = `rgba(220,230,255,${a})`;
+      ctx.fillRect(fx * w, fy * h, r * dpr, r * dpr);
+    }
+
+    // Matahari rendah di kiri, separuh tertutup bukit
+    const sunX = w * 0.1;
+    const sunY = Math.min(h * 0.9, skyline(sunX) - 4 * dpr);
+    const glow = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, 90 * dpr);
+    glow.addColorStop(0, 'rgba(255,244,214,0.55)');
+    glow.addColorStop(1, 'rgba(255,244,214,0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, w, h);
+    ctx.beginPath();
+    ctx.arc(sunX, sunY, 14 * dpr, 0, Math.PI * 2);
+    ctx.fillStyle = '#fff8e1';
+    ctx.fill();
+
+    // Bumi kecil biru-putih, rendah di cakrawala, di sisi berlawanan dengan Matahari
+    if (view.earth) drawEarth(view.earth, w, skyline, dpr);
+
+    if (terrain.length > 1) {
+      const surface = new Path2D();
+      surface.moveTo(sx(terrain[0].x), h);
+      for (const p of terrain) surface.lineTo(sx(p.x), sy(p.y));
+      surface.lineTo(sx(terrain[terrain.length - 1].x), h);
+      surface.closePath();
+      const topY = Math.min(...terrain.map((p) => sy(p.y)));
+
+      ctx.save();
+      ctx.clip(surface);
+      // Tanah: tekstur bulan.jpg yang diredupkan, menempel pada dunia (ikut bergerak dan zoom)
+      ctx.fillStyle = '#3c3c3a';
+      ctx.fillRect(0, 0, w, h);
+      const pat = moonTexture();
+      if (pat) {
+        const k = (TEXTURE_WORLD_U * scale) / moonImg.width;
+        pat.setTransform(new DOMMatrix().translateSelf(sx(0), sy(0)).scaleSelf(k));
+        ctx.globalAlpha = 0.5;
+        ctx.fillStyle = pat;
+        ctx.fillRect(0, 0, w, h);
+        ctx.globalAlpha = 1;
+      }
+
+      // Kawah kecil (hiasan, posisinya tetap di dunia)
+      const step = 36;
+      for (let i = Math.floor(terrain[0].x / step); i * step < terrain[terrain.length - 1].x; i++) {
+        if (hash(i) < 0.45) continue;
+        const x = i * step + hash(i + 0.5) * 30;
+        const gy = groundY(x);
+        if (gy === null) continue;
+        const rx = Math.max(2.5 * dpr, (2 + hash(i + 0.7) * 6) * scale);
+        const ry = rx * 0.35;
+        const cy = sy(gy) + (8 + hash(i + 0.3) * 70) * dpr + ry;
+        ctx.beginPath();
+        ctx.ellipse(sx(x), cy, rx, ry, 0, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0,0,0,0.45)';
+        ctx.fill();
+        ctx.beginPath(); // dinding dalam yang menghadap Matahari (kanan) lebih terang
+        ctx.ellipse(sx(x), cy, rx, ry, 0, -Math.PI / 2, Math.PI / 2);
+        ctx.strokeStyle = 'rgba(235,230,215,0.35)';
+        ctx.lineWidth = Math.max(1, ry * 0.35);
+        ctx.stroke();
+      }
+
+      // Lereng yang menghadap Matahari (naik ke kanan, Matahari di kiri) lebih terang
+      const lightBand = 28 * dpr;
+      for (let i = 1; i < terrain.length; i++) {
+        const a = terrain[i - 1];
+        const b = terrain[i];
+        if (a.s || b.s) continue;
+        const slope = Math.atan2(b.y - a.y, b.x - a.x);
+        const bright = Math.max(0, Math.min(1, Math.sin(slope + Math.atan(sunSlope)) / Math.sin(0.5)));
+        if (bright < 0.05) continue;
+        ctx.beginPath();
+        ctx.moveTo(sx(a.x), sy(a.y));
+        ctx.lineTo(sx(b.x), sy(b.y));
+        ctx.lineTo(sx(b.x), sy(b.y) + lightBand);
+        ctx.lineTo(sx(a.x), sy(a.y) + lightBand);
+        ctx.closePath();
+        ctx.fillStyle = `rgba(255,246,225,${0.3 * bright})`;
+        ctx.fill();
+      }
+
+      // Gradasi gelap ke bawah
+      const g = ctx.createLinearGradient(0, topY, 0, h);
+      g.addColorStop(0, 'rgba(0,0,0,0.05)');
+      g.addColorStop(1, 'rgba(0,0,0,0.85)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+
+      // Bayangan panjang (p.s = 1 kalau dalam bayangan, dihitung di level).
+      // Garis sinar Matahari disapu dari kiri; bayangan makin tebal makin jauh permukaan di bawah sinar,
+      // lalu menipis ke ujung. Sisi bawahnya digeser searah sinar, jadi bentuknya miring dan memanjang.
+      const band = Math.min(90 * dpr, h * 0.18);
+      const runs = [];
+      let line = terrain[0].s ? Infinity : -Infinity;
+      let run = null;
+      for (let j = 0; j < terrain.length; j++) {
+        const p = terrain[j];
+        line = j === 0 ? (p.s ? p.y + 30 : p.y) : Math.max(line - sunSlope * (p.x - terrain[j - 1].x), p.y);
+        if (p.s) {
+          if (!run) runs.push((run = j > 0 ? [{ p: terrain[j - 1], t: 0 }] : []));
+          run.push({ p, t: Math.min(band, Math.max(3 * dpr, (line - p.y) * scale * 2.5)) });
+        } else if (run) {
+          run.push({ p, t: 0 });
+          run = null;
+        }
+      }
+      const shadowPath = (r) => {
+        const path = new Path2D();
+        r.forEach(({ p }, j) => (j ? path.lineTo(sx(p.x), sy(p.y)) : path.moveTo(sx(p.x), sy(p.y))));
+        for (let j = r.length - 1; j >= 0; j--) path.lineTo(sx(r[j].p.x) + r[j].t * 1.6, sy(r[j].p.y) + r[j].t);
+        path.closePath();
+        return path;
+      };
+      for (const [blur, alpha] of [
+        [9, 0.35], // penumbra lebar
+        [2.5, 0.72], // inti bayangan
+      ]) {
+        ctx.filter = `blur(${blur * dpr}px)`;
+        ctx.fillStyle = `rgba(0,0,0,${alpha})`;
+        for (const r of runs) if (r.length > 1) ctx.fill(shadowPath(r));
+      }
+      ctx.filter = 'none';
+      ctx.restore();
+
+      // Garis permukaan: lereng terang lebih putih, bagian dalam bayangan gelap
+      for (let i = 1; i < terrain.length; i++) {
+        const a = terrain[i - 1];
+        const b = terrain[i];
+        const lit = !a.s && !b.s && b.y >= a.y;
+        ctx.beginPath();
+        ctx.moveTo(sx(a.x), sy(a.y));
+        ctx.lineTo(sx(b.x), sy(b.y));
+        ctx.strokeStyle = lit ? '#e8e6df' : a.s || b.s ? '#2b2b2b' : '#77776f';
+        ctx.lineWidth = 2 * dpr;
+        ctx.stroke();
+      }
+    }
+
+    // Kawah gelap di samping landasan: cekungan dengan bibir, dasar sangat gelap, kilau es biru muda
+    const crater = view.sites && view.sites.find((s) => s.bowl);
+    if (crater && terrain.length > 1) drawCrater(crater, { sx, sy, groundY, scale, dpr, w });
+
+    // Bayangan pendarat: memanjang di permukaan ke arah menjauhi Matahari, tepi lembut
     if (view.craftShadow && terrain.length > 1) {
       const { x0, x1 } = view.craftShadow;
       ctx.beginPath();
@@ -344,30 +464,46 @@ export function createRenderer(canvas) {
         else ctx.lineTo(sx(x), sy(y));
         started = true;
       }
+      ctx.filter = `blur(${2 * dpr}px)`;
       ctx.strokeStyle = 'rgba(0,0,0,0.85)';
       ctx.lineWidth = Math.max(3 * dpr, 2 * scale);
       ctx.lineCap = 'round';
       ctx.stroke();
       ctx.lineCap = 'butt';
+      ctx.filter = 'none';
     }
 
-    // Penanda titik pendaratan
+    // Penanda titik pendaratan: puncak bukit bergaris kuning, dekat kawah bergaris biru muda menyala
     if (view.sites) {
-      ctx.font = `600 ${12 * dpr}px system-ui`;
       ctx.textAlign = 'center';
       for (const s of view.sites) {
         const chosen = view.siteChoice === s.id;
-        const color = chosen ? '#ff8a3d' : '#9cc4ff';
+        const glowing = s.id === 'crater';
+        const color = glowing ? '#8fe3ff' : '#ffd23f';
         const px = sx(s.x);
         const py = sy(s.y);
-        if (px < -60 * dpr || px > w + 60 * dpr) continue;
+        if (px < -80 * dpr || px > w + 80 * dpr) continue;
+        const x0 = sx(s.x - s.halfWidth);
+        const x1 = sx(s.x + s.halfWidth);
+        const th = Math.max(4 * dpr, Math.min(10 * dpr, 1.2 * scale));
+        const stripe = th * 1.6;
+        ctx.save();
+        if (glowing) {
+          ctx.shadowColor = '#7fdcff';
+          ctx.shadowBlur = (chosen ? 18 : 12) * dpr;
+        }
+        ctx.fillStyle = '#141414';
+        ctx.fillRect(x0, py - th / 2, x1 - x0, th);
+        ctx.fillStyle = color;
+        for (let x = x0; x < x1; x += stripe * 2) ctx.fillRect(x, py - th / 2, Math.min(stripe, x1 - x), th);
+        ctx.restore();
+        if (chosen) {
+          ctx.strokeStyle = '#fff';
+          ctx.lineWidth = 1.5 * dpr;
+          ctx.strokeRect(x0 - 2 * dpr, py - th / 2 - 2 * dpr, x1 - x0 + 4 * dpr, th + 4 * dpr);
+        }
+        const pole = (glowing ? 72 : 34) * dpr; // tiang kawah lebih tinggi supaya label tidak bertumpuk
         ctx.strokeStyle = color;
-        ctx.lineWidth = (chosen ? 4 : 2.5) * dpr;
-        ctx.beginPath(); // lebar landasan
-        ctx.moveTo(sx(s.x - s.halfWidth), py);
-        ctx.lineTo(sx(s.x + s.halfWidth), py);
-        ctx.stroke();
-        const pole = 34 * dpr;
         ctx.lineWidth = 1.5 * dpr;
         ctx.beginPath();
         ctx.moveTo(px, py);
@@ -381,32 +517,54 @@ export function createRenderer(canvas) {
         ctx.fill();
         // Label disembunyikan menjelang mendarat supaya tidak menutupi pendarat.
         if (view.altitude > 25) {
+          ctx.font = `600 ${12 * dpr}px system-ui`;
           ctx.fillText(`${s.name}${chosen ? ' ✓' : ''}`, px, py - pole - 18 * dpr);
-          ctx.fillStyle = 'rgba(220,230,255,0.8)';
+          ctx.fillStyle = 'rgba(220,230,255,0.85)';
           ctx.font = `${10.5 * dpr}px system-ui`;
           ctx.fillText(`es ${s.ice} · miring ≤ ${s.maxTiltDeg}° · ★ maks. ${s.maxStars}`, px, py - pole - 5 * dpr);
-          ctx.font = `600 ${12 * dpr}px system-ui`;
         }
       }
-      // Titik terpilih di luar layar: panah di tepi
-      const t = view.sites.find((s) => s.id === view.siteChoice);
-      if (t) {
-        const px = sx(t.x);
-        if (px < 0 || px > w) {
-          const right = px > w;
-          const ex = right ? w - 18 * dpr : 18 * dpr;
-          const ey = h * 0.5;
-          ctx.fillStyle = '#ff8a3d';
-          ctx.beginPath();
-          ctx.moveTo(ex + (right ? 12 : -12) * dpr, ey);
-          ctx.lineTo(ex, ey - 10 * dpr);
-          ctx.lineTo(ex, ey + 10 * dpr);
-          ctx.fill();
-          ctx.textAlign = right ? 'right' : 'left';
-          ctx.fillText(`${t.name} ${Math.round(Math.abs(t.x - c.x))} u`, ex + (right ? -6 : 6) * dpr, ey - 16 * dpr);
-        }
-      }
+      // Titik di luar layar: panah di tepi
+      ctx.font = `600 ${12 * dpr}px system-ui`;
+      view.sites.forEach((s, i) => {
+        const px = sx(s.x);
+        if (px >= 0 && px <= w) return;
+        const right = px > w;
+        const ex = right ? w - 18 * dpr : 18 * dpr;
+        const ey = h * 0.62 + i * 34 * dpr; // di bawah kotak HUD
+        ctx.fillStyle = view.siteChoice === s.id ? '#fff' : s.id === 'crater' ? '#8fe3ff' : '#ffd23f';
+        ctx.beginPath();
+        ctx.moveTo(ex + (right ? 12 : -12) * dpr, ey);
+        ctx.lineTo(ex, ey - 10 * dpr);
+        ctx.lineTo(ex, ey + 10 * dpr);
+        ctx.fill();
+        ctx.textAlign = right ? 'right' : 'left';
+        ctx.fillText(`${s.name} ${Math.round(Math.abs(s.x - c.x))} u`, ex + (right ? -6 : 6) * dpr, ey - 14 * dpr);
+      });
       ctx.textAlign = 'start';
+    }
+
+    // Garis panduan tegak ke tanah saat waktu diperlambat dekat landasan kawah
+    if (view.precision) {
+      const gy = groundY(c.x);
+      if (gy !== null) {
+        ctx.strokeStyle = 'rgba(143,227,255,0.9)';
+        ctx.lineWidth = 1.5 * dpr;
+        ctx.setLineDash([5 * dpr, 5 * dpr]);
+        ctx.beginPath();
+        ctx.moveTo(sx(c.x), sy(c.y));
+        ctx.lineTo(sx(c.x), sy(gy));
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.beginPath();
+        ctx.moveTo(sx(c.x) - 8 * dpr, sy(gy));
+        ctx.lineTo(sx(c.x) + 8 * dpr, sy(gy));
+        ctx.stroke();
+      }
+      // Label di samping pendarat (tengah layar), tidak tertutup kotak HUD di kiri atas
+      ctx.fillStyle = 'rgba(143,227,255,0.95)';
+      ctx.font = `600 ${13 * dpr}px system-ui`;
+      ctx.fillText(`Waktu diperlambat ${String(view.slowFactor).replace('.', ',')}×`, sx(c.x) + 22 * dpr, sy(c.y) + 18 * dpr);
     }
 
     // Jejak
@@ -468,6 +626,118 @@ export function createRenderer(canvas) {
       ctx.fillText('MENDARAT', w / 2, h * 0.35);
       ctx.textAlign = 'start';
     }
+  }
+
+  // Bumi dilihat dari Bulan: bola kecil biru dengan awan putih, sisi yang menghadap Matahari (kiri) terang.
+  function drawEarth(e, w, skyline, dpr) {
+    const r = e.radiusPx * dpr;
+    const ex = w * e.xFrac;
+    const ey = Math.max(r * 3, skyline(ex) - r - e.elevationDeg * 3 * dpr);
+    const halo = ctx.createRadialGradient(ex, ey, r * 0.8, ex, ey, r * 3);
+    halo.addColorStop(0, 'rgba(120,180,255,0.3)');
+    halo.addColorStop(1, 'rgba(120,180,255,0)');
+    ctx.fillStyle = halo;
+    ctx.fillRect(ex - r * 3, ey - r * 3, r * 6, r * 6);
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(ex, ey, r, 0, Math.PI * 2);
+    ctx.clip();
+    const body = ctx.createRadialGradient(ex - r * 0.4, ey - r * 0.3, r * 0.1, ex, ey, r);
+    body.addColorStop(0, '#9fd0ff');
+    body.addColorStop(0.6, '#2f74c8');
+    body.addColorStop(1, '#123a75');
+    ctx.fillStyle = body;
+    ctx.fillRect(ex - r, ey - r, r * 2, r * 2);
+    ctx.fillStyle = 'rgba(255,255,255,0.8)'; // awan
+    for (const [ox, oy, rx, ry] of [
+      [-0.35, -0.45, 0.5, 0.16],
+      [0.2, 0.05, 0.45, 0.14],
+      [-0.2, 0.5, 0.4, 0.13],
+    ]) {
+      ctx.beginPath();
+      ctx.ellipse(ex + ox * r, ey + oy * r, rx * r, ry * r, -0.3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    const night = ctx.createLinearGradient(ex - r, ey, ex + r, ey);
+    night.addColorStop(0.45, 'rgba(0,0,10,0)');
+    night.addColorStop(1, 'rgba(0,0,10,0.75)');
+    ctx.fillStyle = night;
+    ctx.fillRect(ex - r, ey - r, r * 2, r * 2);
+    ctx.restore();
+  }
+
+  function drawCrater(s, { sx, sy, groundY, scale, dpr, w }) {
+    const { x, r } = s.bowl;
+    if (sx(x + r) < 0 || sx(x - r) > w) return;
+    const rimY = s.y;
+    // Dinding dalam di seberang (terlihat di cekungan profil permukaan): sangat gelap
+    const inner = new Path2D();
+    inner.moveTo(sx(x - r), sy(rimY));
+    inner.lineTo(sx(x + r), sy(rimY));
+    for (let i = 24; i >= 0; i--) {
+      const px = x - r + (2 * r * i) / 24;
+      const gy = groundY(px);
+      if (gy !== null) inner.lineTo(sx(px), sy(Math.min(gy, rimY)));
+    }
+    inner.closePath();
+    const wall = ctx.createLinearGradient(0, sy(rimY), 0, sy(rimY - s.bowl.depth));
+    wall.addColorStop(0, '#111214');
+    wall.addColorStop(1, '#030304');
+    ctx.fillStyle = wall;
+    ctx.fill(inner);
+    // Dasar kawah yang tidak pernah terkena cahaya: gelapkan tanah di bawahnya juga
+    const by = groundY(x);
+    if (by !== null) {
+      const dark = ctx.createRadialGradient(sx(x), sy(by), 0, sx(x), sy(by), r * scale * 1.1);
+      dark.addColorStop(0, 'rgba(0,0,0,0.9)');
+      dark.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = dark;
+      ctx.beginPath();
+      ctx.ellipse(sx(x), sy(by), r * scale * 1.1, r * scale * 0.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // Bibir kawah
+    ctx.strokeStyle = 'rgba(170,170,165,0.55)';
+    ctx.lineWidth = 2 * dpr;
+    for (const ex of [x - r, x + r]) {
+      ctx.beginPath();
+      for (let i = -6; i <= 6; i++) {
+        const px = ex + i * 0.8;
+        const gy = groundY(px);
+        if (gy === null) continue;
+        if (i === -6) ctx.moveTo(sx(px), sy(gy));
+        else ctx.lineTo(sx(px), sy(gy));
+      }
+      ctx.stroke();
+    }
+    // Kilau kecil biru muda: es di dasar kawah
+    const now = performance.now() / 1000;
+    ctx.save();
+    ctx.shadowColor = '#9fe8ff';
+    ctx.shadowBlur = 8 * dpr;
+    for (let i = 0; i < 6; i++) {
+      const px = x + (hash(i + 3.1) - 0.5) * r * 0.9;
+      const gy = groundY(px);
+      if (gy === null) continue;
+      const a = 0.35 + 0.65 * Math.abs(Math.sin(now * 2.2 + i * 1.7));
+      const qx = sx(px);
+      const qy = sy(gy) - (1 + hash(i + 7.3) * 2) * dpr;
+      const q = (1.2 + hash(i + 1.9) * 1.6) * dpr;
+      ctx.fillStyle = `rgba(190,240,255,${a})`;
+      ctx.beginPath(); // bintik bersudut empat
+      ctx.moveTo(qx, qy - q * 2);
+      ctx.lineTo(qx + q * 0.5, qy);
+      ctx.lineTo(qx, qy + q * 2);
+      ctx.lineTo(qx - q * 0.5, qy);
+      ctx.closePath();
+      ctx.moveTo(qx - q * 2, qy);
+      ctx.lineTo(qx, qy - q * 0.5);
+      ctx.lineTo(qx + q * 2, qy);
+      ctx.lineTo(qx, qy + q * 0.5);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
   }
 
   return { draw };
