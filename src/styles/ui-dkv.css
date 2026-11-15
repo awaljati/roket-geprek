@@ -98,3 +98,6 @@
   .lobby-screen .contentlobby-left .floating-icon { width: 120px; }
   .lobby-screen .contentlobby-right { max-width: none; }
 }
+
+/* Tombol bahasa di bar atas */
+.topbar .tb-lang { padding: 4px 10px; border-radius: 999px; font-weight: 700; font-size: 0.85rem; background: rgba(11, 16, 32, 0.75); border: 1px solid rgba(255, 255, 255, 0.5); color: #fff; }

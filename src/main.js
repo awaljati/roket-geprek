@@ -6,6 +6,7 @@ import { levelsScreen } from './screens/levels.js';
 import { flightScreen } from './screens/flight.js';
 import { spesialisScreen } from './screens/spesialis.js';
 import { debriefScreen } from './screens/debrief.js';
+import { startI18n } from './i18n.js';
 
 const SCREENS = {
   home: homeScreen,
@@ -61,5 +62,6 @@ window.addEventListener('popstate', () => {
 });
 
 window.roketGeprek = app; // memudahkan cek dari console
+startI18n();
 history.replaceState({ screen: 'home' }, '');
 app.go('home', { fromBack: true });
