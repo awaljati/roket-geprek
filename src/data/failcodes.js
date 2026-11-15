@@ -1,7 +1,7 @@
 // Kode gagal (F) dan sebagian (P). Teks pendek muncul di Debrief; lengkapnya di Game Design Final.
 export const FAIL_CODES = {
   'F-HEAVY': 'Wahana terlalu berat untuk roket atau ukuran CubeSat ini.',
-  'F-FUEL': 'Bahan bakar habis sebelum masuk orbit.',
+  'F-FUEL': 'Bahan bakar habis sebelum tujuan tercapai (masuk orbit atau mendarat).',
   'F-ORBIT': 'Kecepatan atau ketinggian tidak pas, wahana lepas dari cincin orbit.',
   'F-CRASH': 'Wahana menabrak permukaan (Bumi atau Bulan).',
   'F-DEPLOY': 'CubeSat dilepas sebelum roket masuk orbit.',
