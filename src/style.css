@@ -267,7 +267,7 @@ button.big { padding: 14px 16px; font-size: 1.1rem; font-weight: 700; }
   justify-content: space-between;
   gap: 12px;
   padding: 10px clamp(12px, 2.5vw, 28px);
-  min-height: clamp(56px, 7vw, 78px);
+  min-height: clamp(64px, 7vw, 78px);
 }
 
 .headerlobby-left,
@@ -293,13 +293,13 @@ button.big { padding: 14px 16px; font-size: 1.1rem; font-weight: 700; }
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 0;                          /* penting: biar gambar boleh menyusut */
+  min-width: 0;
+  left: 20px; 
 }
 
 .contentlobby-left .floating-icon {
   max-width: 100%;
   height: auto;
-  left: 10px;
 }
 
 .contentlobby-right {
@@ -317,33 +317,46 @@ button.big { padding: 14px 16px; font-size: 1.1rem; font-weight: 700; }
   padding: 0;
   display: grid;
   place-items: center;
+
+  background: transparent;      /* ← hapus warna panel dari aturan global */
+  border: none;                 /* ← hilangkan garis tepi */
+  box-shadow: none;             /* jaga-jaga kalau ada bayangan */
+  cursor: pointer;              /* tetap tunjukkan bisa diklik */
+  -webkit-tap-highlight-color: transparent; /* hilangkan highlight biru saat tap di HP */
 }
+
 .btn-settinglobby img {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  background: transparent;
+  display: block;
+  pointer-events: none; 
 }
 
 /* Widget koin: ikon + teks + bg svg transparan */
 .coin {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 0px clamp(10px, 1.4vw, 16px) 6px 8px;
-  min-height: clamp(32px, 3.4vw, 40px);
+  gap: clamp(6px, 0.8vw, 10px);
+  padding: 4px clamp(10px, 1.4vw, 16px) 4px 6px;
+  min-height: clamp(44px, 5vw, 60px);       /* naik — ikut ikon yang lebih besar */
   background: url('/assets/coin-bg.svg') center / 100% 100% no-repeat;
 }
+
 .coin-icon {
-  width: clamp(20px, 2vw, 26px);
-  height: clamp(20px, 2vw, 26px);
+  width:  clamp(32px, 4vw, 48px);           /* ← 20–26 → 32–48 */
+  height: clamp(32px, 4vw, 48px);
   display: block;
+  object-fit: contain;
+  flex: none;                                /* jangan menyusut saat ruang sempit */
 }
+
 .coin-text {
   font-weight: 700;
-  font-size: clamp(0.85rem, 1.1vw, 1rem);
+  font-size: clamp(0.95rem, 1.4vw, 1.15rem); /* sedikit lebih besar agar seimbang */
   font-variant-numeric: tabular-nums;
   color: var(--text);
+  line-height: 1;
 }
 
 /* Nama di kiri btnlink */
