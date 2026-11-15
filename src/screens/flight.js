@@ -105,6 +105,7 @@ export function flightScreen(app, el) {
   let last = performance.now();
   let acc = 0;
   let lastSend = 0;
+  let prevPhase = null;
   function frame(now) {
     if (paused) {
       last = now;
@@ -115,6 +116,10 @@ export function flightScreen(app, el) {
       raf = requestAnimationFrame(frame);
       return;
     }
+    // Percepat waktu dimatikan saat mendarat, supaya waktu di permukaan (Level 3) tidak ikut berjalan 3× tanpa disadari.
+    // Pemain boleh menekan T lagi kalau memang ingin mempercepat.
+    if (game.phase === 'landed' && prevPhase !== 'landed') warp = 1;
+    prevPhase = game.phase;
     // Percepat waktu hanya saat mesin mati dan tidak di fase genting.
     const calm = ctrl.throttle === 0 && ctrl.pulseLeft === 0 && !['flyby', 'entry', 'launch', 'descent', 'loi'].includes(game.phase);
     const speed = calm ? warp : 1;
