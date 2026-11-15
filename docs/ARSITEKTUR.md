@@ -103,4 +103,5 @@ Peluncuran Level 4 punya tampilan 3D; sesudahnya `render3d` mengembalikan `false
 - Tampilan 2D juga memakai `bumi.jpg` dan `bulan.jpg` (dipotong lingkaran); selama gambar belum termuat, planet berwarna polos.
 - Level 1 di 2D menggambar Bumi dari atas kutub selatan seperti 3D (dihitung sekali dari `bumi.jpg`), supaya stasiun bumi BRIN tepat di Biak. Level lain di 2D masih memakai potongan peta.
 - Atmosfer Bumi di 3D: bidang datar yang menghadap kamera, paling terang di tepi Bumi lalu memudar sampai ~1,1 jari-jari.
+- Adegan pembuka peluncuran (Level 1–4): sebelum lepas landas kamera melihat Indonesia dari samping dengan roket di Biak; setelah Gas + pertama (`flight.thrusting` atau lepas dari landasan) kamera pindah halus ~2 detik ke tampilan atas. Berhenti kalau pemain memutar kamera; langsung pindah kalau `prefers-reduced-motion`. Angkanya di `INTRO` (`render3d.js`).
 - Pemain bisa memutar pandangan dengan mouse atau dua jari di HP. Pilihan 2D/3D ada di menu jeda dan disimpan di browser.
