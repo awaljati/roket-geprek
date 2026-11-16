@@ -22,7 +22,8 @@
 .flight .hud { z-index: 3; left: calc(80px * var(--fk) + 8px); top: calc(160px * var(--fk)); }
 .flight .menu-btn { z-index: 3; right: calc(80px * var(--fk) + 8px); top: calc(160px * var(--fk)); }
 .flight .timeline { z-index: 3; top: calc(160px * var(--fk)); right: calc(80px * var(--fk) + 108px); max-width: 42%; }
-.flight .coach { margin-left: calc(120px * var(--fk) + 8px); margin-bottom: calc(100px * var(--fk) + 4px); }
+/* Pok-Pok duduk tepat di atas tepi bawah jendela (bagian tebal bingkai bawah = sekitar 40 px asli) */
+.flight .coach { margin-left: calc(120px * var(--fk) + 8px); margin-bottom: calc(40px * var(--fk)); }
 
 /* Dok: ruang bawah bingkai, tombol menempel di bagian datarnya */
 .flight .dock {
