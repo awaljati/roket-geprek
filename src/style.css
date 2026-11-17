@@ -53,8 +53,34 @@ input[type='text'] { font: inherit; padding: 10px; border-radius: 10px; border: 
   z-index: -1;         
 }
 
+/* Tombol MULAI di layar awal: gambar tombol polos + teks HTML (supaya bisa diterjemahkan).
+   Ukuran sama dengan gambar tombol-mulai.webp lama (600x337, lebar min(190px, 45vw)). */
+.home-screen button.tombol-biru {
+  --w: min(190px, 45vw);
+  width: var(--w);
+  aspect-ratio: 600 / 337;
+  padding: 0 0 calc(var(--w) * 0.02);
+  border: none;
+  border-radius: 0;
+  background: url('/assets/ui/tombol-biru.webp') center / 100% 100% no-repeat;
+  color: #0a5993;
+  font-family: 'Londrina Solid', system-ui, sans-serif;
+  font-weight: 900;
+  font-size: calc(var(--w) * 0.14);
+  line-height: 1;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease;
+}
+.home-screen button.tombol-biru:hover { transform: scale(1.05); }
+.home-screen button.tombol-biru:active { transform: scale(0.95); }
+
 .home-screen .floating-icon,
-.home-screen button.primary {
+.home-screen button.primary,
+.home-screen button.tombol-biru {
   position: relative;  
   z-index: 1;
 }
