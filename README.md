@@ -6,38 +6,66 @@ Satu pemain jadi **Navigator** yang menyetir roket, satu lagi jadi **Spesialis**
 
 ▶ **Main sekarang:** **https://roket-geprek.web.app** (cadangan: https://roket-geprek.vercel.app)
 
-![Level 2: memutari Bulan](docs/img/level2-bulan.png)
+![Pilih Misi: peta empat misi dari orbit Bumi sampai Mars](docs/img/02-pilih-misi.webp)
 
 ## Level
 
-| Level | Misi | Yang dipelajari | Status |
-|---|---|---|---|
-| 1. CubeSat Transmisi | Rakit CubeSat, bawa ke orbit rendah Bumi, kirim sinyal pertama | Gravity turn, kecepatan orbit, aturan pelepasan CubeSat, jendela stasiun Bumi | Bisa dimainkan |
-| 2. Memutari Bulan | Terbang memutari Bulan dan pulang, terinspirasi Artemis II | Lintasan *free return*, koreksi lintasan (MCC), koridor masuk atmosfer | Bisa dimainkan |
-| 3. Kutub Selatan Bulan | Masuk orbit Bulan, pilih titik pendaratan, mendarat, lalu cari es dan kirim data | Mendarat tanpa atmosfer, bayangan panjang di kutub, daya dan arah antena | Bisa dimainkan |
-| 4. Mendarat di Mars | Bawa rover ke Mars, hindari badai matahari, program pendaratannya, kirim foto pertama | Jeda sinyal, pendaratan otomatis ("tujuh menit penuh ketegangan"), atmosfer tipis | Bisa dimainkan |
+| Level | Misi | Yang dipelajari |
+|---|---|---|
+| **1. CubeSat Transmisi** | Rakit CubeSat, luncurkan dari Biak ke orbit rendah Bumi, kirim sinyal pertama ke stasiun bumi BRIN | Gravity turn, kecepatan orbit, aturan pelepasan CubeSat, jendela stasiun bumi |
+| **2. Memutari Bulan** | Terbang memutari Bulan dan pulang, terinspirasi Artemis II | Lintasan *free return*, koreksi lintasan (MCC), koridor masuk atmosfer |
+| **3. Kutub Selatan Bulan** | Masuk orbit Bulan, pilih titik pendaratan, mendarat, lalu cari es dan kirim data | Mendarat tanpa atmosfer, bayangan panjang di kutub, daya dan arah antena |
+| **4. Mendarat di Mars** | Bawa rover ke Mars, hindari badai matahari, program pendaratannya, kirim foto pertama | Jeda sinyal, pendaratan otomatis ("tujuh menit penuh ketegangan"), atmosfer tipis |
 
-<table><tr>
-<td><img src="docs/img/rakit-level1.png" alt="Layar Rakit"></td>
-<td><img src="docs/img/level1-terbang.png" alt="Level 1: menuju orbit"></td>
-</tr><tr>
-<td align="center">Rakit: massa, anggaran, slot</td>
-<td align="center">Level 1: menuju cincin orbit</td>
-</tr></table>
+<table>
+<tr>
+<td width="50%"><img src="docs/img/05-level1-orbit.webp" alt="Level 1: roket menuju cincin orbit dari Biak"></td>
+<td width="50%"><img src="docs/img/06-level2-bulan.webp" alt="Level 2: lintasan memutari Bulan dan garis prediksi"></td>
+</tr>
+<tr>
+<td align="center"><b>Level 1</b>: menuju cincin orbit, dipandu Pok-Pok</td>
+<td align="center"><b>Level 2</b>: memutari Bulan, Spesialis memotret</td>
+</tr>
+<tr>
+<td width="50%"><img src="docs/img/07-level3-mendarat.webp" alt="Level 3: pendarat turun di dekat kawah gelap kutub selatan Bulan"></td>
+<td width="50%"><img src="docs/img/08-level4-program.webp" alt="Level 4: kartu program pendaratan Mars"></td>
+</tr>
+<tr>
+<td align="center"><b>Level 3</b>: turun ke dekat kawah gelap</td>
+<td align="center"><b>Level 4</b>: program pendaratan Mars</td>
+</tr>
+</table>
+
+## Tampilan
+
+<table>
+<tr>
+<td width="50%"><img src="docs/img/01-layar-awal.webp" alt="Layar awal Roket Geprek"></td>
+<td width="50%"><img src="docs/img/01b-lobi.webp" alt="Lobi: Pok-Pok dan pilihan mode"></td>
+</tr>
+<tr>
+<td align="center">Layar awal</td>
+<td align="center">Lobi: main solo atau berdua lewat kode room</td>
+</tr>
+</table>
+
+Desain visual (Pok-Pok, layar, ikon) dibuat tim DKV. Bahan aslinya ada di [docs/desain/](docs/desain/).
 
 ## Cara main
 
-1. **Lobby:** pilih *Main solo* (satu perangkat), atau *Buat room* (Navigator) lalu bagikan kode 4 huruf ke Spesialis yang menekan *Gabung*.
-2. **Pilih misi:** semua level yang sudah tersedia bisa langsung dipilih, tidak perlu berurutan. Bintang terbaik tersimpan di browser.
-3. **Rakit:** pilih komponen. Bar massa, anggaran, dan slot harus hijau.
-4. **Terbang:** Navigator mengatur gas dan arah, Spesialis membuka panel, mengirim sinyal, memotret, dan membaca prediksi lintasan.
-5. **Debrief:** bintang, skor, alasan gagal, dan misi NASA nyata yang mirip.
+1. **Lobi:** pilih *Main solo* (satu perangkat), atau *Buat room* (Navigator) lalu bagikan kode 4 huruf ke Spesialis yang menekan *Gabung*.
+2. **Pilih Misi:** keempat misi bisa langsung dipilih, tidak perlu berurutan. Bintang terbaik tersimpan di browser.
+3. **Rakit:** pilih komponen dan bahan bakar. Massa, anggaran, dan slot tidak boleh terlewati.
+4. **Terbang:** Navigator mengatur gas dan arah, Spesialis membuka panel, mengirim sinyal, memotret, memilih titik pendaratan, atau mengatur parasut. Pemandu misi **Pok-Pok** memberi petunjuk di balon kata.
+5. **Debrief:** bintang, skor, alasan gagal dan cara memperbaikinya, satu fakta sains, dan misi nyata yang mirip.
+
+Bar atas di Lobi, Pilih Misi, dan Rakit berisi tombol **Kembali**, **Pengaturan** (ikon gerigi), dan **koin cabe** yang menunjukkan dana cadangan.
 
 **Dana misi:** misi yang berhasil dan hemat memberi dana (bintang, sisa anggaran, bonus orbit tepat atau foto lengkap). Dana cadangan bisa ditambahkan ke anggaran misi berikutnya di layar Rakit, maksimal 50% anggaran level, seperti misi sungguhan yang mendapat pendanaan lanjutan.
 
 **Bantuan pilot** (default nyala) mengatur arah roket secara otomatis, dan pemandu misi **Pok-Pok** memberi tahu kapan harus menekan tombol. Kalau dimatikan di layar Rakit (mode ahli), roket tetap miring sendiri saat ke orbit, tapi pemain menentukan sendiri kapan menyalakan mesin.
 
-**Pengaturan** (ikon gerigi): pilih tampilan 3D atau 2D, dan hapus progres.
+**Pengaturan** (ikon gerigi): bahasa Indonesia atau English, tampilan 3D atau 2D, dan hapus progres. Tombol **EN / ID** di bar atas juga mengganti bahasa.
 
 ### Kontrol Navigator
 
@@ -54,7 +82,11 @@ Semua tombol cukup diketuk. Di HP tersedia tombol besar di layar.
 | T | percepat waktu saat mesin mati |
 | Esc / P | menu jeda |
 
-Spesialis di Level 2: **1** buka panel surya, **2** ambil foto. Di Level 3 dan 4, tombol Spesialis ada di panel kanan (pilih titik pendaratan, pindai es, arahkan antena, atur parasut, kirim foto).
+Level 4, layar program pendaratan: **U / O** sudut masuk, **J / L** ketinggian roket pendarat, **Enter** mulai masuk atmosfer, **I** instrumen nyala/mati saat badai matahari.
+
+### Kontrol Spesialis
+
+Level 1: tombol di panel kanan (lepas CubeSat, buka panel dan antena, kirim sinyal). Level 2: **1** buka panel surya, **2** ambil foto. Level 3: **1 / 2** pilih titik pendaratan (puncak bukit / dekat kawah gelap), lalu di permukaan **3** spektrometer, **4** pindai, **5** antena, **6 / 7** putar antena. Level 4: **1/2** ketinggian parasut, **3** siap, **4** kirim foto.
 
 ## Akurasi sains
 
