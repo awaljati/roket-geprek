@@ -1,3 +1,5 @@
+import '@fontsource/londrina-solid/900.css';
+
 export function homeScreen(app, el) {
   el.className = 'screen center home-screen';
   el.innerHTML = `
@@ -10,9 +12,7 @@ export function homeScreen(app, el) {
       </a>
       
     <img src="/assets/ui/judul.webp" alt="Roket Geprek" class="floating-icon" />
-    <button class="primary" id="play">
-      <img src="/assets/ui/tombol-mulai.webp" alt="Mulai" />
-    </button>
+    <button class="tombol-biru" id="play">MULAI</button>
   `;
   el.querySelector('#play').onclick = () => app.go('lobby');
 }
