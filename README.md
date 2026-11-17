@@ -126,7 +126,7 @@ firebase deploy --only hosting --project roket-geprek
 
 ## Teknologi
 
-Vite dan JavaScript, tampilan 3D dengan Three.js (otomatis beralih ke canvas 2D kalau perangkat tidak mendukung), Firebase Realtime Database untuk room, deploy di Firebase Hosting dan Vercel. Tekstur Bumi dan Bulan dari NASA. Penjelasan struktur kode ada di [docs/ARSITEKTUR.md](docs/ARSITEKTUR.md), cara berkontribusi di [CONTRIBUTING.md](CONTRIBUTING.md), dan bahan desain dari tim DKV di [docs/desain/](docs/desain/).
+Vite dan JavaScript, tampilan 3D dengan Three.js (otomatis beralih ke canvas 2D kalau perangkat tidak mendukung), Firebase Realtime Database untuk room, deploy di Firebase Hosting dan Vercel. Tekstur Bumi dan Bulan dari NASA. Penjelasan struktur kode ada di [docs/ARSITEKTUR.md](docs/ARSITEKTUR.md), cara berkontribusi di [CONTRIBUTING.md](CONTRIBUTING.md), dan bahan desain di [docs/desain/](docs/desain/).
 
 Kode dibangun dengan bantuan asisten AI (Claude Code). Konsep game, desain misi, data, dan aset dikerjakan tim.
 
