@@ -3,6 +3,7 @@
 import { getFunds, resetProgress } from './progress.js';
 import { prefers3D, setPrefer3D } from '../render/view.js';
 import { getLang, setLang } from '../i18n.js';
+import { musicOn, setMusicOn } from '../music.js';
 import '../styles/ui-dkv.css';
 
 // flow = ikut alur halaman (Rakit); tanpa flow = menempel di atas layar (Lobby, Pilih Misi).
@@ -57,6 +58,13 @@ function openSettings(app) {
         </div>
       </div>
       <div class="tb-row">
+        <div><b>Musik</b></div>
+        <div class="tb-seg">
+          <button type="button" data-music="on">Nyala</button>
+          <button type="button" data-music="off">Mati</button>
+        </div>
+      </div>
+      <div class="tb-row">
         <div><b>Progres</b><br><small>Bintang dan dana cadangan tersimpan di browser ini.</small></div>
         <button type="button" data-a="reset">Hapus progres</button>
       </div>
@@ -79,6 +87,15 @@ function openSettings(app) {
     b.onclick = () => {
       setPrefer3D(b.dataset.view === '3d');
       showView();
+    };
+  });
+  const showMusic = () =>
+    box.querySelectorAll('[data-music]').forEach((b) => b.classList.toggle('on', (b.dataset.music === 'on') === musicOn()));
+  showMusic();
+  box.querySelectorAll('[data-music]').forEach((b) => {
+    b.onclick = () => {
+      setMusicOn(b.dataset.music === 'on');
+      showMusic();
     };
   });
   const close = () => {

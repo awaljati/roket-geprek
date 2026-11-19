@@ -11,6 +11,7 @@ Hanya gambar yang benar-benar dimuat game yang disimpan di sini, dalam versi rin
 | `debrief/` | Bintang dan Pok-Pok di layar Debrief |
 | `wahana/` | Gambar roket |
 | `textures/` | Tekstur Bumi dan Bulan dari NASA |
+| `music/` | Musik latar (`background.mp3`, berulang di semua layar) |
 
 `netral.svg`, `cemas.svg`, `senang.svg` = ekspresi Pok-Pok; `back-button.svg` = tombol Kembali.
 

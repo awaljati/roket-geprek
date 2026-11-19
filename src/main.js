@@ -7,6 +7,7 @@ import { flightScreen } from './screens/flight.js';
 import { spesialisScreen } from './screens/spesialis.js';
 import { debriefScreen } from './screens/debrief.js';
 import { startI18n } from './i18n.js';
+import { startMusic } from './music.js';
 
 const SCREENS = {
   home: homeScreen,
@@ -63,5 +64,6 @@ window.addEventListener('popstate', () => {
 
 window.roketGeprek = app; // memudahkan cek dari console
 startI18n();
+startMusic();
 history.replaceState({ screen: 'home' }, '');
 app.go('home', { fromBack: true });
