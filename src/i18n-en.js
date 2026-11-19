@@ -2,7 +2,7 @@
 // Nilai memakai '#' di urutan yang sama. Teks yang tidak ada di sini tetap tampil dalam bahasa Indonesia.
 export const DICT = {
   // ---------- Umum, lobi, pengaturan ----------
-  'MULAI': 'START', 'Kembali': 'Back', 'Pengaturan': 'Settings', 'Tampilan': 'Graphics', 'Progres': 'Progress', 'Tutup': 'Close', 'Batal': 'Cancel',
+  'MULAI': 'START', 'Kembali': 'Back', 'Pengaturan': 'Settings', 'Tampilan': 'Graphics', 'Musik': 'Music', 'Nyala': 'On', 'Mati': 'Off', 'Progres': 'Progress', 'Tutup': 'Close', 'Batal': 'Cancel',
   '#D lebih indah; #D lebih ringan untuk HP lama.': '#D looks better; #D is lighter for older phones.',
   'Bintang dan dana cadangan tersimpan di browser ini.': 'Stars and reserve funds are saved in this browser.',
   'Hapus progres': 'Reset progress', 'Ya, hapus': 'Yes, reset', 'Yakin? Bintang dan dana cadangan kembali ke #.': 'Are you sure? Stars and reserve funds go back to #.',
